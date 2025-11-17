@@ -314,7 +314,7 @@ Then: Export → Download as PNG/PDF
 ## 🔄 PART 2: USER FLOW DIAGRAMS
 
 ### **FLOW 1: Hotel Booking (Main Transaction)**
-
+#### [User Flow Hotel Booking](docs/UserFlow_HotelBooking.png)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                   HOTEL BOOKING FLOW                        │
@@ -403,7 +403,7 @@ Then: Export → Download as PNG/PDF
 ---
 
 ### **FLOW 2: Flight Booking (Main Transaction)**
-
+#### [User Flow Flight Booking](docs/UserFlow_FlightBooking.png)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                  FLIGHT BOOKING FLOW                        │
@@ -496,7 +496,7 @@ Then: Export → Download as PNG/PDF
 ---
 
 ### **FLOW 3: Payment Processing (Main Transaction)**
-
+#### [User Flow Payment Processing](docs/UserFlow_PaymentProcessing.png)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                 PAYMENT PROCESSING FLOW                     │
