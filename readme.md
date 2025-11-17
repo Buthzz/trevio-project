@@ -35,7 +35,7 @@
 | **Hendrik** | Project Manager & Full Stack Dev | Project coordination, backend core features, code review |
 | **Fajar** | Full Stack Dev & DevOps | Backend development, deployment, server setup, database optimization |
 | **Syadat** | User Flow & QA | data integrity, testing & quality assurance |
-| **Zek** | UI/UX Designer | Interface design, user experience, prototyping |
+| **Zakaria** | UI/UX Designer | Interface design, user experience, prototyping |
 | **Reno** | Frontend Developer | Frontend implementation, Tailwind CSS integration, responsive design |
 
 ---
