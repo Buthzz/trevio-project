@@ -138,7 +138,7 @@ docs/
 ```
 
 **Tugas:**
-- Design mockup (optional Figma)
+- Design mockup Figma
 - Customer UI dengan Tailwind
 - Search hotel controller (backend ringan)
 - Responsive mobile-first
