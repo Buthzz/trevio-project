@@ -1,0 +1,5 @@
+/vendor/
+/.env
+/public/uploads/*
+/logs/*.log
+.DS_Store

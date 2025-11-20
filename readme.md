@@ -1,312 +1,637 @@
-# 🏨✈️ Trevio - Travel Booking Platform
+# 🏨 Trevio - Hotel Booking Management System
 
-> Platform pemesanan hotel dan tiket pesawat berbasis web - Final Project Web Application Programming
+> Final Project - Web Application Programming | Ganjil 2025
 
-[![PHP Version](https://img.shields.io/badge/PHP-8.0+-blue.svg)](https://php.net)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0+-orange.svg)](https://mysql.com)
-[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0+-06B6D4.svg)](https://tailwindcss.com)
+[![PHP](https://img.shields.io/badge/PHP-8.0+-777BB4?logo=php&logoColor=white)](https://php.net)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?logo=mysql&logoColor=white)](https://mysql.com)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0+-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 
 ---
 
 ## 📋 Project Overview
 
-**Trevio** adalah aplikasi web pemesanan hotel dan tiket pesawat yang terinspirasi dari Traveloka. Sistem ini memungkinkan pengguna untuk mencari, membandingkan, dan memesan akomodasi hotel serta tiket penerbangan dengan mudah dan aman.
-
-### 🎯 Main Features
-
-#### **3 Main Transactions (Required):**
-1. **Hotel Booking** - Pemesanan kamar hotel dengan berbagai tipe
-2. **Flight Booking** - Pemesanan tiket pesawat (one-way/round-trip)
-3. **Payment Processing** - Pembayaran menggunakan Xendit Payment Gateway (Sandbox)
-
-#### **Additional Features:**
-- User authentication & authorization (Guest, User, Admin)
-- Search & filter (hotel by location, flight by route & date)
-- Booking history & management
-- Admin dashboard (manage hotels, flights, bookings)
-- Review & rating system (optional bonus)
+**Trevio** adalah sistem manajemen pemesanan hotel yang memungkinkan:
+- Multiple hotels dengan multiple owners
+- Manual payment verification oleh admin
+- Room slot management (automatic availability tracking)
+- Multi-channel notifications (Email & WhatsApp)
+- Reviews & rating system
+- Complete refund workflow
 
 ---
 
-## 👥 Team Members & Responsibilities
+## 🎯 Main Features
 
-| Name | Role | Responsibilities |
-|------|------|------------------|
-| **Hendrik** | Project Manager & Full Stack Dev | Project coordination, backend core features, code review |
-| **Fajar** | Full Stack Dev & DevOps | Backend development, deployment, server setup, database optimization |
-| **Reno** | Frontend Developer | Frontend implementation, Tailwind CSS integration, responsive design |
-| **Zakaria** | UI/UX Designer | Interface design, user experience, prototyping |
-| **Syadat** | User Flow & QA | data integrity, testing & quality assurance |
+### **3 Main Transactions:**
+
+#### 1️⃣ **Booking & Manual Payment Verification**
+- Customer memilih hotel dan kamar
+- Upload bukti transfer pembayaran
+- Admin verifikasi payment secara manual
+- Email invoice dikirim setelah konfirmasi
+- WhatsApp notification ke owner
+
+#### 2️⃣ **Room Slot Management** 
+- Owner set total slot kamar saat create/edit room
+- Slot otomatis ready untuk semua hari
+- Slot berkurang otomatis saat booking confirmed
+- Slot kembali saat booking cancelled/refunded
+- **No calendar per-date management needed!**
+
+#### 3️⃣ **Refund Processing**
+- Customer request refund dengan bank info
+- Admin review dan approve/reject
+- Transfer manual oleh admin
+- Upload bukti transfer refund
 
 ---
 
-## 🛠️ Technology Stack
+## 👥 User Roles
 
-- **Backend:** PHP 8.0+ (Native MVC Pattern)
-- **Frontend:** HTML5, Tailwind CSS 3.0+, Vanilla JavaScript
-- **Database:** MySQL 8.0+
-- **Payment Gateway:** Xendit (Sandbox Mode)
-- **Version Control:** Git & GitHub
-- **Deployment:** Shared Hosting / VPS (TBA)
+### **Customer**
+- Register/Login (Email + Password / Google OAuth)
+- Browse & search hotels
+- Check room availability (real-time slot check)
+- Book multiple rooms
+- Upload payment proof
+- Receive email invoice
+- View booking history
+- Request refund
+- Write reviews & ratings
+
+### **Hotel Owner**
+- Register/Login (Email + Password / Google OAuth)
+- Add/manage hotels
+- Add/manage rooms (set default slot count)
+- View bookings
+- Check-in guests
+- View reports (Chart.js)
+- Receive WhatsApp notification for new bookings
+
+### **Admin**
+- Login (Email + Password)
+- Verify/reject payments (view proof, add notes)
+- Process refunds
+- Manage users (activate/deactivate)
+- Manage hotels (approve/reject)
+- View global statistics & reports
+- Moderate reviews
 
 ---
 
-## 🗂️ Project Structure (MVC)
+## 🛠️ Tech Stack
+
+### **Backend:**
+- PHP 8.0+ (Native MVC Pattern)
+- MySQL 8.0+
+- PHPMailer (email notifications)
+- WhatsApp API (Fonnte/Wablas)
+- Google OAuth 2.0 (Sign in with Google)
+
+### **Frontend:**
+- Tailwind CSS 3.0+ (styling)
+- Chart.js (reports & statistics)
+- SweetAlert2 (beautiful alerts)
+- Vanilla JavaScript
+- Google Fonts
+
+### **Deployment:**
+- VPS Server (Ubuntu/CentOS)
+- Apache/Nginx
+- SSL Certificate (Let's Encrypt)
+
+---
+
+## 📊 Database Structure
+
+**9 Tables:**
+
+1. **users** - All users (customer, owner, admin)
+2. **hotels** - Hotels (owned by owners)
+3. **rooms** - Room types with slot count
+4. **bookings** - All booking transactions
+5. **payments** - Payment proofs & verification
+6. **refunds** - Refund requests & processing
+7. **reviews** - Customer reviews & ratings
+8. **notifications** - Notification logs (email & WhatsApp)
+9. **admin_activities** - Admin action audit log
+
+See full schema: [database/trevio_final.sql](database/trevio_final.sql)
+
+See ERD: [docs/ERD.png](docs/ERD.png)
+
+---
+
+## 🚀 Installation
+
+### **Prerequisites:**
+- PHP >= 8.0
+- MySQL >= 8.0
+- Composer (optional, for dependencies)
+- VPS Server with SSH access
+
+### **1. Clone Repository**
+```bash
+git clone https://github.com/your-team/trevio.git
+cd trevio
+```
+
+### **2. Configure Environment**
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit configuration
+nano .env
+```
+
+**Required configurations:**
+```env
+# Database
+DB_HOST=localhost
+DB_NAME=trevio
+DB_USER=root
+DB_PASS=your_password
+
+# App
+APP_URL=https://trevio.yourdomain.com
+APP_ENV=production
+
+# Email (Gmail SMTP)
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
+MAIL_FROM=noreply@trevio.com
+
+# WhatsApp (Fonnte)
+WHATSAPP_API_KEY=your_fonnte_api_key
+WHATSAPP_ENABLED=true
+
+# Google OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GOOGLE_REDIRECT_URI=https://trevio.yourdomain.com/auth/google-callback
+```
+
+### **3. Database Setup**
+```bash
+# Create database
+mysql -u root -p -e "CREATE DATABASE trevio"
+
+# Import schema
+mysql -u root -p trevio < database/trevio_final.sql
+
+# Import sample data (optional)
+mysql -u root -p trevio < database/seeders.sql
+```
+
+### **4. Set Permissions**
+```bash
+# Set upload directory permissions
+chmod -R 755 public/uploads
+chmod -R 755 logs
+
+# Set ownership (if on VPS)
+chown -R www-data:www-data public/uploads
+chown -R www-data:www-data logs
+```
+
+### **5. Configure Web Server**
+
+**Apache (.htaccess already included):**
+```apache
+# Enable mod_rewrite
+sudo a2enmod rewrite
+sudo systemctl restart apache2
+```
+
+**Nginx:**
+```nginx
+server {
+    listen 80;
+    server_name trevio.yourdomain.com;
+    root /var/www/trevio/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.0-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+}
+```
+
+### **6. Access Application**
+```
+http://your-domain.com
+or
+http://your-vps-ip
+```
+
+---
+
+## 🔑 Default Login Credentials
+
+**Admin:**
+```
+Email: admin@trevio.com
+Password: password123
+```
+
+**Owner:**
+```
+Email: owner@trevio.com
+Password: password123
+```
+
+**Customer:**
+```
+Email: customer@trevio.com
+Password: password123
+```
+
+⚠️ **IMPORTANT:** Change these passwords after first login!
+
+---
+
+## 💡 Room Slot Management Logic
+
+### **How It Works:**
+
+#### **When Owner Creates Room:**
+```php
+// Example: Owner creates "Deluxe Room" with 5 slots
+Room:
+- room_type: "Deluxe Room"
+- total_slots: 5        // Set by owner
+- available_slots: 5    // Default = total_slots
+
+// Slot is READY for ALL dates automatically!
+// No need to set availability per date
+```
+
+#### **When Customer Books:**
+```php
+// Customer books 2 rooms
+// Before booking:
+available_slots = 5
+
+// After booking confirmed:
+available_slots = 5 - 2 = 3
+
+// System automatically reduces slots
+```
+
+#### **When Booking Cancelled/Refunded:**
+```php
+// Restore slots
+available_slots = 3 + 2 = 5
+
+// Back to original
+```
+
+#### **Availability Check:**
+```php
+// When customer searches hotel for any date:
+SELECT * FROM rooms 
+WHERE hotel_id = ? 
+AND available_slots >= num_rooms_requested
+```
+
+**Result:** Simple, no per-date calendar needed! ✅
+
+---
+
+## 📧 Notification System
+
+### **Email Notifications (PHPMailer):**
+Sent for:
+- ✉️ Booking created (invoice attached)
+- ✉️ Payment verified
+- ✉️ Payment rejected
+- ✉️ Refund completed
+
+### **WhatsApp Notifications (Fonnte):**
+Sent to **OWNER** only for:
+- 📱 New booking confirmed
+- 📱 Guest check-in today reminder
+
+### **Setup:**
+
+**Email (Gmail):**
+1. Enable 2-Step Verification in Google Account
+2. Generate App Password
+3. Use in `.env` as `MAIL_PASSWORD`
+
+**WhatsApp (Fonnte):**
+1. Register at https://fonnte.com
+2. Get API key
+3. Use in `.env` as `WHATSAPP_API_KEY`
+
+---
+
+## 🔐 Google OAuth Setup
+
+### **1. Create Google OAuth App:**
+1. Go to: https://console.cloud.google.com/
+2. Create new project: "Trevio"
+3. Enable **Google+ API**
+4. Create OAuth 2.0 credentials
+5. Add authorized redirect URI:
+   ```
+   https://trevio.yourdomain.com/auth/google-callback
+   ```
+6. Copy Client ID & Client Secret
+
+### **2. Configure in .env:**
+```env
+GOOGLE_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your_client_secret_here
+GOOGLE_REDIRECT_URI=https://trevio.yourdomain.com/auth/google-callback
+```
+
+### **3. Add Google Sign-In Button:**
+Already included in `views/auth/login.php`
+
+---
+
+## 📊 Reports & Statistics
+
+### **Owner Reports (Chart.js):**
+- Revenue trend (line chart)
+- Booking trend (bar chart)
+- Occupancy rate (pie chart)
+- Room type performance
+
+### **Admin Reports:**
+- Total users (by role)
+- Total hotels
+- Total bookings (by status)
+- Revenue summary
+- Top performing hotels
+
+---
+
+## 🧪 Testing
+
+### **Test Accounts:**
+```
+Admin:
+- Email: admin@trevio.com
+- Password: password123
+
+Owner:
+- Email: owner@trevio.com
+- Password: password123
+
+Customer:
+- Email: customer@trevio.com
+- Password: password123
+```
+
+### **Test Scenarios:**
+
+**Customer Flow:**
+1. Register/Login (email or Google)
+2. Search hotel
+3. Check room availability
+4. Book room
+5. Upload payment proof
+6. Wait admin verification
+7. Receive invoice email
+8. Write review after stay
+
+**Owner Flow:**
+1. Login
+2. Add hotel
+3. Add rooms (set slots)
+4. View bookings
+5. Check-in guest
+6. View reports
+
+**Admin Flow:**
+1. Login
+2. Verify payment
+3. Reject payment (test)
+4. Process refund
+5. Manage users
+6. View statistics
+
+---
+
+## 📂 Key Files
 
 ```
 trevio/
 ├── app/
-│   ├── controllers/          # Controller layer
-│   │   ├── AuthController.php
-│   │   ├── HotelController.php
-│   │   ├── FlightController.php
-│   │   ├── BookingController.php
-│   │   ├── PaymentController.php
-│   │   └── AdminController.php
-│   │
-│   ├── models/               # Model layer (database interaction)
-│   │   ├── User.php
-│   │   ├── Hotel.php
-│   │   ├── Room.php
-│   │   ├── Flight.php
-│   │   ├── Booking.php
-│   │   ├── Payment.php
-│   │   └── Review.php
-│   │
-│   └── views/                # View layer (UI templates)
-│       ├── layouts/
-│       │   ├── header.php
-│       │   ├── footer.php
-│       │   └── navbar.php
-│       ├── auth/
-│       │   ├── login.php
-│       │   └── register.php
-│       ├── home/
-│       │   └── index.php
-│       ├── hotel/
-│       │   ├── search.php
-│       │   ├── detail.php
-│       │   └── booking.php
-│       ├── flight/
-│       │   ├── search.php
-│       │   ├── detail.php
-│       │   └── booking.php
-│       ├── booking/
-│       │   ├── history.php
-│       │   └── detail.php
-│       ├── payment/
-│       │   ├── checkout.php
-│       │   └── success.php
-│       └── admin/
-│           └── dashboard.php
-│
-├── config/                   # Configuration files
-│   ├── database.php
-│   ├── xendit.php
-│   └── app.php
-│
-├── core/                     # Core MVC framework classes
-│   ├── App.php              # Router & App initialization
-│   ├── Controller.php       # Base controller
-│   ├── Database.php         # Database connection handler
-│   └── Model.php            # Base model
-│
-├── public/                   # Public accessible files
-│   ├── css/
-│   │   └── style.css        # Custom CSS (complement Tailwind)
-│   ├── js/
-│   │   └── main.js          # Main JavaScript
-│   ├── images/
-│   └── index.php            # Entry point
-│
-├── database/
-│   ├── trevio.sql           # Database schema
-│   └── seeders.sql          # Sample data
-│
-├── docs/                     # Documentation
-│   ├── ERD.png
-│   ├── User_Flow.png
-│   └── API_Endpoints.md
-│
-├── .gitignore
-├── .htaccess                 # URL rewriting
-└── README.md
+│   ├── controllers/
+│   │   ├── AuthController.php          # Login + Google OAuth
+│   │   ├── BookingController.php       # Booking logic
+│   │   └── OwnerRoomController.php     # Room slot management
+│   ├── models/
+│   │   ├── Room.php                    # Room model (slot logic)
+│   │   └── Booking.php                 # Booking model
+│   └── views/
+│       └── ...
+├── config/
+│   ├── database.php                    # DB config
+│   └── google-oauth.php                # Google OAuth config
+├── libraries/
+│   ├── PHPMailer/                      # Email library
+│   ├── Mailer.php                      # Email wrapper
+│   └── WhatsApp.php                    # WhatsApp wrapper
+└── public/
+    ├── index.php                       # Entry point
+    └── uploads/                        # Upload directory
 ```
 
 ---
 
-## 🗄️ Database Schema (ERD)
+## 🚀 Deployment to VPS
 
-**5+ Tables Required:**
+### **Quick Deployment Guide:**
 
-1. **users** - User accounts (guest, user, admin)
-2. **hotels** - Hotel master data
-3. **rooms** - Hotel room types & availability
-4. **flights** - Flight schedules & routes
-5. **bookings** - All booking records (hotel + flight)
-6. **payments** - Payment transactions
-7. **reviews** - (Optional) User reviews & ratings
-
-*See detailed ERD in `/docs/ERD.png`*
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- PHP >= 8.0
-- MySQL >= 8.0
-- Composer (optional)
-- Git
-
-### Installation
-
-1. **Clone Repository**
-   ```bash
-   git clone https://github.com/Buthzz/trevio-project.git
-   cd trevio-project
-   ```
-
-2. **Database Setup**
-   ```bash
-   # Import database
-   mysql -u root -p < database/trevio.sql
-   
-   # Import sample data (optional)
-   mysql -u root -p trevio < database/seeders.sql
-   ```
-
-3. **Configuration**
-   ```bash
-   # Copy and edit config files
-   cp config/database.example.php config/database.php
-   cp config/xendit.example.php config/xendit.php
-   
-   # Edit with your credentials
-   nano config/database.php
-   nano config/xendit.php
-   ```
-
-4. **Run Development Server**
-   ```bash
-   cd public
-   php -S localhost:8000
-   ```
-
-5. **Access Application**
-   - URL: `http://localhost:8000`
-   - Admin: `admin@trevio.com` / `admin123`
-   - User: `user@trevio.com` / `user123`
-
----
-
-## 📅 Development Timeline
-
-### **Week P13** - Project Planning ✅
-- [x] System overview & requirements
-- [x] Database design (ERD)
-- [x] User flow mapping
-- [x] Git repository setup
-- [x] Project structure initialization
-
-### **Week P14** - Module Interconnection (In Progress)
-- [ ] Authentication system
-- [ ] Hotel booking module
-- [ ] Flight booking module
-- [ ] Payment gateway integration
-- [ ] Module integration testing
-
-### **Week P15** - Final Testing & Deployment
-- [ ] Full system testing (QA)
-- [ ] Bug fixing & optimization
-- [ ] Deployment to hosting
-- [ ] Final documentation
-- [ ] Presentation preparation
-
----
-
-## 🔐 Environment Variables
-
-Create `config/database.php`:
-```php
-<?php
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'trevio');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+**1. Connect to VPS:**
+```bash
+ssh root@your-vps-ip
 ```
 
-Create `config/xendit.php`:
-```php
-<?php
-define('XENDIT_API_KEY', 'your-sandbox-api-key');
-define('XENDIT_MODE', 'sandbox'); // sandbox or production
+**2. Install LAMP Stack:**
+```bash
+# Update system
+apt update && apt upgrade -y
+
+# Install Apache, MySQL, PHP
+apt install apache2 mysql-server php8.0 php8.0-mysql php8.0-curl php8.0-gd php8.0-mbstring -y
 ```
 
----
+**3. Clone & Setup:**
+```bash
+cd /var/www
+git clone https://github.com/your-team/trevio.git
+cd trevio
+cp .env.example .env
+nano .env  # Configure
+```
 
-## 🧪 Testing Credentials (Sandbox)
+**4. Database:**
+```bash
+mysql -u root -p < database/trevio_final.sql
+```
 
-### Xendit Test Cards:
-- **Success:** `4000000000000002`
-- **Failed:** `4000000000000010`
+**5. Permissions:**
+```bash
+chown -R www-data:www-data /var/www/trevio
+chmod -R 755 /var/www/trevio/public/uploads
+```
 
-### Admin Access:
-- Email: `admin@trevio.com`
-- Password: `admin123`
+**6. Apache Config:**
+```bash
+nano /etc/apache2/sites-available/trevio.conf
+```
 
----
-
-## 📖 Documentation
-
-- [Database Schema & ERD](docs/ERD.png)
-- [User Flow Diagram](docs/User_Flow.png)
-- [API Endpoints](docs/API_Endpoints.md)
-- [Git Workflow Guide](docs/Git_Workflow.md)
-
----
-
-## 🤝 Git Workflow
+```apache
+<VirtualHost *:80>
+    ServerName trevio.yourdomain.com
+    DocumentRoot /var/www/trevio/public
+    
+    <Directory /var/www/trevio/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+    
+    ErrorLog ${APACHE_LOG_DIR}/trevio-error.log
+    CustomLog ${APACHE_LOG_DIR}/trevio-access.log combined
+</VirtualHost>
+```
 
 ```bash
-# Create feature branch
-git checkout -b feature/hotel-booking
-
-# Make changes and commit
-git add .
-git commit -m "feat: add hotel search functionality"
-
-# Push to remote
-git push origin feature/hotel-booking
-
-# Create Pull Request on GitHub
-# After review, merge to main
+a2ensite trevio
+a2enmod rewrite
+systemctl restart apache2
 ```
 
-**Commit Message Convention:**
-- `feat:` new feature
-- `fix:` bug fix
-- `docs:` documentation
-- `style:` formatting, CSS
-- `refactor:` code restructuring
-- `test:` adding tests
-- `chore:` maintenance
+**7. SSL (Let's Encrypt):**
+```bash
+apt install certbot python3-certbot-apache -y
+certbot --apache -d trevio.yourdomain.com
+```
+
+**Full guide:** [docs/Deployment_Guide.md](docs/Deployment_Guide.md)
 
 ---
 
-## 📞 Contact
+## 🎨 UI/UX Features
 
-**Lecturer:** Moh. Kautsar Sophan , S.Kom., M.MT  
-**Course:** Web Application Programming - Ganjil 2025
-
-For questions or issues, please contact the project manager:
-- **Hendrik** - [hendrikprw@gmail.com]
+- ✨ Responsive design (mobile-first)
+- 🎨 Modern Tailwind CSS
+- 📊 Interactive charts (Chart.js)
+- 🔔 Beautiful alerts (SweetAlert2)
+- 🖼️ Image galleries
+- ⭐ Star rating system
+- 📱 Mobile-friendly forms
+- 🔍 Real-time search
+- 🎯 Loading indicators
 
 ---
 
-## 📄 License
+## 📝 Documentation
 
-This project is created for educational purposes as part of the Web Application Programming final project.
+- [ERD Diagram](docs/ERD.png)
+- [User Flow](docs/User_Flow.pdf)
+- [Deployment Guide](docs/Deployment_Guide.md)
+- [API Documentation](docs/API_Documentation.md) (if applicable)
+
+---
+
+## 👨‍💻 Team Members
+
+| Name | Role | Responsibilities |
+|------|------|------------------|
+| **Hendrik** | Project Manager & Full Stack | Backend core, coordination |
+| **Fajar** | Full Stack & DevOps | Backend, deployment, notifications |
+| **Syadat** | Database & QA | Database design, testing |
+| **Zek** | UI/UX Designer | Interface design, user experience |
+| **Reno** | Frontend Developer | Frontend implementation, Tailwind |
+
+---
+
+## 📊 Project Statistics
+
+- **Total Files:** 50+
+- **Lines of Code:** 5000+
+- **Database Tables:** 9
+- **Main Transactions:** 3
+- **User Roles:** 3
+- **Notification Channels:** 2 (Email + WhatsApp)
+
+---
+
+## 🐛 Known Issues & Solutions
+
+### **Issue: Upload size limit**
+```ini
+# php.ini
+upload_max_filesize = 10M
+post_max_size = 10M
+```
+
+### **Issue: Email not sending**
+- Check Gmail app password
+- Check SMTP settings
+- Check firewall (port 587)
+
+### **Issue: Google OAuth not working**
+- Verify redirect URI exactly matches
+- Check Client ID & Secret
+- Enable Google+ API
+
+---
+
+## 🔄 Version History
+
+### **v1.0.0 (Current)**
+- Initial release
+- Manual payment verification
+- Room slot management
+- Email & WhatsApp notifications
+- Google OAuth integration
+- Reviews & rating system
+
+---
+
+## 📞 Support
+
+For questions or issues:
+- **Project Manager:** Hendrik - hendrik@email.com
+- **Lecturer:** Moch Kautsar Sophan
+
+---
+
+## 📜 License
+
+This project is created for educational purposes as part of Web Application Programming final project.
 
 **© 2025 Trevio Team. All Rights Reserved.**
-```
+
+---
+
+## 🙏 Acknowledgments
+
+- Moch Kautsar Sophan (Lecturer)
+- PHP Community
+- Tailwind CSS Team
+- Chart.js Contributors
+- SweetAlert2 Team
+- Google OAuth Documentation
+- Fonnte WhatsApp API
+
+---
+
+**Built with ❤️ by Trevio Team**
