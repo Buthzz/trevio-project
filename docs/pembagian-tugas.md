@@ -27,7 +27,7 @@ trevio-project/
 ## 👨‍💻 Pembagian Tugas Detail
 
 ### **1️⃣ Hendrik (Project Manager + Full Stack)**
-**Folder:** `app/controllers/` + `config/`
+**Folder:** `app/controllers/` + `config/` + `libraries/`
 
 ```
 app/controllers/
@@ -41,19 +41,26 @@ app/models/
 
 config/
 ├── database.php                 ✅ DB connection
-└── google-oauth.php             ✅ Google OAuth config
+├── google-oauth.php             ✅ Google OAuth config
+└── (semua file di folder config)
+
+libraries/
+├── Mailer.php                   ✅ Email notifications (PHPMailer)
+├── WhatsApp.php                 ✅ WhatsApp API wrapper
+└── (semua file di folder libraries)
 ```
 
 **Tugas:**
 - Setup MVC structure & routing
 - Authentication system
 - Booking transaction core
+- Email & WhatsApp libraries
 - Koordinasi merge PR
 
 ---
 
 ### **2️⃣ Fajar (Backend + Database + DevOps)**
-**Folder:** `app/controllers/admin/` + `libraries/` + `database/`
+**Folder:** `app/controllers/admin/` + `database/` + `docs/`
 
 ```
 app/controllers/admin/
@@ -65,10 +72,6 @@ app/models/
 ├── Payment.php                  ✅ Payment CRUD
 └── Refund.php                   ✅ Refund CRUD
 
-libraries/
-├── Mailer.php                   ✅ Email notifications (PHPMailer)
-└── WhatsApp.php                 ✅ WhatsApp API wrapper
-
 database/
 ├── trevio_final.sql             ✅ Database schema
 └── seeders.sql                  ✅ Sample data
@@ -79,14 +82,14 @@ docs/
 
 **Tugas:**
 - Admin payment & refund logic
-- Email & WhatsApp integration
 - Database design & migration
-- VPS deployment
+- Sample data (seeders)
+- VPS deployment documentation
 
 ---
 
 ### **3️⃣ Syadat (QA + User Flow + Backend Ringan)**
-**Folder:** `app/controllers/owner/` + `tests/`
+**Folder:** `app/controllers/owner/` + `tests/` + `docs/`
 
 ```
 app/controllers/owner/
@@ -115,7 +118,7 @@ docs/
 ---
 
 ### **4️⃣ Zakaria (UI/UX + Frontend + Backend Ringan)**
-**Folder:** `app/views/customer/` + `app/controllers/customer/`
+**Folder:** `app/views/customer/` + `app/controllers/customer/` + `docs/`
 
 ```
 app/views/customer/
@@ -125,7 +128,7 @@ app/views/customer/
 └── booking-form.php             ✅ Booking form
 
 app/controllers/customer/
-└── SearchController.php         ✅ Search logic (SELECT query 15 baris)
+└── SearchController.php         ✅ Search logic (SELECT query ~15 baris)
 
 public/css/
 └── custom.css                   ✅ Custom styles (jika perlu)
@@ -143,7 +146,7 @@ docs/
 ---
 
 ### **5️⃣ Reno (Frontend + Backend Ringan)**
-**Folder:** `app/views/owner/` + `app/views/admin/`
+**Folder:** `app/views/owner/` + `app/views/admin/` + `public/js/`
 
 ```
 app/views/owner/
@@ -159,7 +162,7 @@ app/views/admin/
 └── statistics.php               ✅ Global statistics
 
 app/controllers/
-└── ProfileController.php        ✅ Edit profile (UPDATE query 15 baris)
+└── ProfileController.php        ✅ Edit profile (UPDATE query ~15 baris)
 
 public/js/
 ├── charts.js                    ✅ Chart.js init
@@ -237,18 +240,22 @@ docs: update dokumentasi
 
 ## 📁 File Ownership (Siapa Pegang Apa?)
 
-| File | Owner | Boleh Edit? |
-|------|-------|-------------|
+| File/Folder | Owner | Boleh Edit? |
+|-------------|-------|-------------|
 | `AuthController.php` | Hendrik | ❌ Tanya dulu |
+| `config/*` | Hendrik | ❌ Tanya dulu |
+| `libraries/*` | Hendrik | ❌ Tanya dulu |
 | `PaymentController.php` | Fajar | ❌ Tanya dulu |
+| `database/*` | Fajar | ❌ Tanya dulu |
 | `HotelController.php` | Syadat | ❌ Tanya dulu |
+| `RoomController.php` | Syadat | ❌ Tanya dulu |
 | `SearchController.php` | Zek | ❌ Tanya dulu |
 | `ProfileController.php` | Reno | ❌ Tanya dulu |
 | `views/customer/*` | Zek | ✅ Style boleh |
 | `views/owner/*` | Reno | ✅ Style boleh |
+| `views/admin/*` | Reno | ✅ Style boleh |
 | `public/css/*` | Zek/Reno | ✅ Bebas |
 | `public/js/*` | Reno | ✅ Bebas |
-| `database/*` | Fajar | ❌ Tanya dulu |
 
 ---
 
@@ -259,11 +266,12 @@ docs: update dokumentasi
 - [ ] BookingController (create booking)
 - [ ] User & Booking model
 - [ ] Database connection config
+- [ ] Mailer & WhatsApp library
 
 ### **Fajar:**
 - [ ] PaymentController (verify payment)
 - [ ] RefundController (process refund)
-- [ ] Mailer & WhatsApp library
+- [ ] Payment & Refund model
 - [ ] Database schema & seeders
 - [ ] VPS deployment guide
 

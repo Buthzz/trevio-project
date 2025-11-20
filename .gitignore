@@ -1,5 +1,23 @@
-/vendor/
-/.env
-/public/uploads/*
-/logs/*.log
+# Environment
+.env
+
+# Uploads
+public/uploads/*
+!public/uploads/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
 .DS_Store
+Thumbs.db
+
+# Composer
+vendor/
