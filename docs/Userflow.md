@@ -24,8 +24,12 @@ Customer → Request Refund → Admin Review → Approve → Transfer Back
 
 ## 👥 USER FLOWS BY ROLE
 
+development
 ### 🛍️ **CUSTOMER FLOW**
 
+### **FLOW 1: Hotel Booking (Main Transaction)**
+#### [User Flow Hotel Booking](docs/UserFlow_HotelBooking.png)
+main
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ CUSTOMER: BOOKING FLOW (Main Transaction 1)                 │
@@ -123,8 +127,13 @@ START
 
 ---
 
+development
 ### 🛍️ **CUSTOMER: REFUND REQUEST FLOW**
 
+=======
+### **FLOW 2: Flight Booking (Main Transaction)**
+#### [User Flow Flight Booking](docs/UserFlow_FlightBooking.png)
+main
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ CUSTOMER: REFUND REQUEST FLOW                               │
@@ -181,8 +190,13 @@ START (from My Bookings)
 
 ---
 
+development
 ### 🏨 **HOTEL OWNER FLOW**
 
+=======
+### **FLOW 3: Payment Processing (Main Transaction)**
+#### [User Flow Payment Processing](docs/UserFlow_PaymentProcessing.png)
+main
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ HOTEL OWNER: INVENTORY MANAGEMENT (Main Transaction 2)      │
