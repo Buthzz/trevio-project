@@ -121,17 +121,21 @@ docs/
 **Folder:** `app/views/customer/` + `app/controllers/customer/` + `docs/`
 
 ```
-app/views/customer/
-├── home.php                     ✅ Landing page
+app/views/home
+├── index.php 
+                    ✅ Landing page
+app/views/hotel
 ├── search.php                   ✅ Search & filter hotels
-├── hotel-detail.php             ✅ Hotel detail page
-└── booking-form.php             ✅ Booking form
+├── detail.php             ✅ Hotel detail page
+app/views/booking
+└── semua file booking            ✅ Booking form
 
 app/controllers/customer/
 └── SearchController.php         ✅ Search logic (SELECT query ~15 baris)
 
 public/css/
 └── custom.css                   ✅ Custom styles (jika perlu)
+|- tailwind.min.css
 
 docs/
 └── Design_System.md             ✅ UI/UX guidelines
