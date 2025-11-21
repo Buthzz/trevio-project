@@ -155,22 +155,24 @@ docs/
 ```
 app/views/owner/
 ├── dashboard.php                ✅ Owner dashboard
-├── hotels.php                   ✅ List hotels
-├── rooms.php                    ✅ List rooms
-└── reports.php                  ✅ Reports Chart.js
+├── hotels                  ✅ List hotels
+├── rooms                    ✅ List rooms
+├── bookings                    ✅ List bookings
+└── reports                  ✅ Reports Chart.js
 
 app/views/admin/
 ├── dashboard.php                ✅ Admin dashboard
-├── payments.php                 ✅ Payment verification list
-├── refunds.php                  ✅ Refund processing list
-└── statistics.php               ✅ Global statistics
-
-app/controllers/
-└── ProfileController.php        ✅ Edit profile (UPDATE query ~15 baris)
+├── payments                 ✅ Payment verification list
+├── refunds                  ✅ Refund processing list
+├── hotels                      ✅ Hotels
+└── users               ✅ Users
 
 public/js/
 ├── charts.js                    ✅ Chart.js init
 └── alerts.js                    ✅ SweetAlert2 wrapper
+
+app/controllers/
+└── ProfileController.php        ✅ Edit profile (UPDATE query ~15 baris)
 ```
 
 **Tugas:**
