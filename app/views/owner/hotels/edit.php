@@ -25,40 +25,43 @@
                     <h2 class="text-xl font-bold text-gray-800">Informasi Hotel</h2>
                 </div>
 
-                <form class="p-6 space-y-6">
+                <form action="/owner/hotels/update" method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+                    <input type="hidden" name="hotel_id" value="<?php echo htmlspecialchars($hotel['id'] ?? ''); ?>">
+                    
                     <!-- Nama Hotel -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Nama Hotel *</label>
-                            <input type="text" placeholder="Masukkan nama hotel" value="Aria Centra Surabaya" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="text" name="hotel_name" placeholder="Masukkan nama hotel" value="<?php echo htmlspecialchars($hotel['name'] ?? 'Aria Centra Surabaya'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Kota/Kabupaten *</label>
-                            <input type="text" placeholder="Contoh: Surabaya" value="Surabaya" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="text" name="city" placeholder="Contoh: Surabaya" value="<?php echo htmlspecialchars($hotel['city'] ?? 'Surabaya'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                     </div>
 
                     <!-- Alamat -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Alamat Lengkap *</label>
-                        <input type="text" placeholder="Jalan Sudirman No. 1" value="Jalan Sudirman No. 1, Jakarta" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <input type="text" name="address" placeholder="Jalan Sudirman No. 1" value="<?php echo htmlspecialchars($hotel['address'] ?? 'Jalan Sudirman No. 1, Jakarta'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                     </div>
 
                     <!-- Deskripsi -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Hotel *</label>
-                        <textarea placeholder="Jelaskan fasilitas dan keunggulan hotel Anda..." rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>Aria Centra Surabaya terletak di Surabaya dan menawarkan akomodasi dengan akses Wi-Fi gratis di seluruh areanya.</textarea>
+                        <textarea name="description" placeholder="Jelaskan fasilitas dan keunggulan hotel Anda..." rows="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required><?php echo htmlspecialchars($hotel['description'] ?? 'Aria Centra Surabaya terletak di Surabaya dan menawarkan akomodasi dengan akses Wi-Fi gratis di seluruh areanya.'); ?></textarea>
                     </div>
 
                     <!-- Kontak -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Telepon *</label>
-                            <input type="tel" placeholder="+62..." value="+62 31 5678 9000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="tel" name="phone" placeholder="+62..." value="<?php echo htmlspecialchars($hotel['phone'] ?? '+62 31 5678 9000'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                            <input type="email" placeholder="hotel@example.com" value="info@ariacentra.com" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="email" name="email" placeholder="hotel@example.com" value="<?php echo htmlspecialchars($hotel['email'] ?? 'info@ariacentra.com'); ?>" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                     </div>
 
@@ -67,27 +70,27 @@
                         <label class="block text-sm font-medium text-gray-700 mb-3">Fasilitas Hotel</label>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded" checked>
+                                <input type="checkbox" name="facilities[]" value="wifi" class="w-4 h-4 text-blue-500 rounded" checked>
                                 <span class="text-gray-700">WiFi Gratis</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded" checked>
+                                <input type="checkbox" name="facilities[]" value="pool" class="w-4 h-4 text-blue-500 rounded" checked>
                                 <span class="text-gray-700">Kolam Renang</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="gym" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">Gym</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded" checked>
+                                <input type="checkbox" name="facilities[]" value="restaurant" class="w-4 h-4 text-blue-500 rounded" checked>
                                 <span class="text-gray-700">Restoran</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="bar" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">Bar</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded" checked>
+                                <input type="checkbox" name="facilities[]" value="parking" class="w-4 h-4 text-blue-500 rounded" checked>
                                 <span class="text-gray-700">Parkir Gratis</span>
                             </label>
                         </div>
@@ -97,11 +100,11 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Foto Hotel</label>
                         <div class="mb-4">
-                            <img src="https://images.unsplash.com/photo-1564501049351-005e2b3e547d?w=400&h=300&fit=crop" alt="Hotel" class="w-32 h-32 object-cover rounded-lg">
+                            <img src="<?php echo htmlspecialchars($hotel['photo'] ?? 'https://images.unsplash.com/photo-1564501049351-005e2b3e547d?w=400&h=300&fit=crop'); ?>" alt="Hotel" class="w-32 h-32 object-cover rounded-lg">
                             <p class="text-sm text-gray-500 mt-2">Klik di bawah untuk mengubah foto</p>
                         </div>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
-                            <input type="file" class="hidden" accept="image/*">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition" onclick="document.getElementById('hotel_photo').click()">
+                            <input type="file" name="hotel_photo" id="hotel_photo" class="hidden" accept="image/jpeg,image/png,image/jpg">
                             <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
@@ -113,10 +116,10 @@
                     <!-- Status -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Status Hotel</label>
-                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option>ACTIVE</option>
-                            <option>INACTIVE</option>
-                            <option>MAINTENANCE</option>
+                        <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="active">ACTIVE</option>
+                            <option value="inactive">INACTIVE</option>
+                            <option value="maintenance">MAINTENANCE</option>
                         </select>
                     </div>
 

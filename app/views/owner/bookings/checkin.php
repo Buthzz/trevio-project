@@ -28,12 +28,14 @@
                             <h2 class="text-xl font-bold text-gray-800">Form Check-in</h2>
                         </div>
 
-                        <form class="p-6 space-y-6">
+                        <form action="/owner/bookings/checkin/process" method="POST" class="p-6 space-y-6">
+                            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+                            
                             <!-- Nomor Pemesanan -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Nomor Pemesanan / Booking ID *</label>
                                 <div class="flex gap-2">
-                                    <input type="text" placeholder="Masukkan nomor pemesanan" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    <input type="text" name="booking_id" placeholder="Masukkan nomor pemesanan" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                                     <button type="button" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-semibold transition">
                                         Cari
                                     </button>
@@ -97,7 +99,7 @@
                             <!-- Kamar yang Ditugaskan -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Kamar yang Ditugaskan *</label>
-                                <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <select name="room_assignment" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                                     <option value="">-- Pilih Kamar --</option>
                                     <option value="101">Room 101</option>
                                     <option value="102">Room 102</option>
@@ -110,15 +112,15 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Status Pembayaran</label>
                                 <div class="space-y-2">
                                     <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="payment" value="paid" class="w-4 h-4" checked>
+                                        <input type="radio" name="payment_status" value="paid" class="w-4 h-4" checked>
                                         <span class="text-gray-700">Sudah Lunas</span>
                                     </label>
                                     <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="payment" value="partial" class="w-4 h-4">
+                                        <input type="radio" name="payment_status" value="partial" class="w-4 h-4">
                                         <span class="text-gray-700">Pembayaran Sebagian</span>
                                     </label>
                                     <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="payment" value="pending" class="w-4 h-4">
+                                        <input type="radio" name="payment_status" value="pending" class="w-4 h-4">
                                         <span class="text-gray-700">Belum Dibayar</span>
                                     </label>
                                 </div>
@@ -127,7 +129,7 @@
                             <!-- Catatan Check-in -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Catatan Check-in</label>
-                                <textarea placeholder="Tambahkan catatan jika ada..." rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                <textarea name="notes" placeholder="Tambahkan catatan jika ada..." rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                             </div>
 
                             <!-- Buttons -->

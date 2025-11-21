@@ -25,11 +25,13 @@
                     <h2 class="text-xl font-bold text-gray-800">Detail Kamar</h2>
                 </div>
 
-                <form class="p-6 space-y-6">
+                <form action="/owner/rooms/store" method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+                    <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+                    
                     <!-- Pilih Hotel -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Pilih Hotel *</label>
-                        <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        <select name="hotel_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                             <option value="">-- Pilih Hotel --</option>
                             <option value="1">Aria Centra Surabaya</option>
                         </select>
@@ -39,11 +41,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Nama Kamar *</label>
-                            <input type="text" placeholder="Contoh: Room 101" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="text" name="room_name" placeholder="Contoh: Room 101" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Tipe Kamar *</label>
-                            <select class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <select name="room_type" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                                 <option value="">-- Pilih Tipe --</option>
                                 <option value="single">Single Room</option>
                                 <option value="double">Double Room</option>
@@ -58,22 +60,22 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Harga per Malam (Rp) *</label>
-                            <input type="number" placeholder="100000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="number" name="price" placeholder="100000" min="0" step="1000" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Kapasitas Penghuni *</label>
-                            <input type="number" placeholder="1" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="number" name="capacity" placeholder="1" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Jumlah Kamar *</label>
-                            <input type="number" placeholder="5" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                            <input type="number" name="total_rooms" placeholder="5" min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                     </div>
 
                     <!-- Deskripsi -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Deskripsi Kamar</label>
-                        <textarea placeholder="Jelaskan detail dan fitur kamar..." rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        <textarea name="description" placeholder="Jelaskan detail dan fitur kamar..." rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                     </div>
 
                     <!-- Fasilitas Kamar -->
@@ -81,35 +83,35 @@
                         <label class="block text-sm font-medium text-gray-700 mb-3">Fasilitas Kamar</label>
                         <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="ac" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">AC</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="wifi" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">WiFi</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="tv" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">TV</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="bathroom" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">Kamar Mandi Pribadi</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="balcony" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">Balkon</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="minibar" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">Mini Bar</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="safe" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">Safe Box</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" class="w-4 h-4 text-blue-500 rounded">
+                                <input type="checkbox" name="facilities[]" value="shower" class="w-4 h-4 text-blue-500 rounded">
                                 <span class="text-gray-700">Shower</span>
                             </label>
                         </div>
@@ -118,8 +120,8 @@
                     <!-- Foto Kamar -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Foto Kamar *</label>
-                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition">
-                            <input type="file" class="hidden" accept="image/*">
+                        <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition" onclick="document.getElementById('room_photo').click()">
+                            <input type="file" name="room_photo" id="room_photo" class="hidden" accept="image/jpeg,image/png,image/jpg" required>
                             <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
                             </svg>
