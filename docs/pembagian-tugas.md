@@ -118,12 +118,11 @@ docs/
 ---
 
 ### **4️⃣ Zakaria (UI/UX + Frontend + Backend Ringan)**
-**Folder:** `app/views/customer/` + `app/controllers/customer/` + `docs/`
+**Folder:** `app/views/` + `app/controllers/customer/` + `docs/`
 
 ```
 app/views/home
-├── index.php 
-                    ✅ Landing page
+├── index.php                    ✅ Landing page
 app/views/hotel
 ├── search.php                   ✅ Search & filter hotels
 ├── detail.php             ✅ Hotel detail page
