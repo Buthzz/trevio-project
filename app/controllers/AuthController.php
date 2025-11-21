@@ -2,140 +2,94 @@
 
 namespace App\Controllers;
 
+use App\Core\Controller;
 use App\Models\User;
-use App\Core\Controller; // Asumsi ada base controller
-use App\Core\Database;
 
 class AuthController extends Controller {
     private $userModel;
 
     public function __construct() {
         $this->userModel = new User();
+        if (isset($_SESSION['login_attempts']) && $_SESSION['login_attempts'] > 5) {
+            if (time() - $_SESSION['last_attempt_time'] < 900) { // 15 min block
+                die("Too many login attempts. Please try again later.");
+            }
+            unset($_SESSION['login_attempts']);
+        }
     }
 
-    /**
-     * Menampilkan halaman Login
-     */
     public function login() {
-        // Jika sudah login, redirect ke dashboard sesuai role
-        if (isset($_SESSION['user_id'])) {
-            header('Location: ' . BASE_URL . '/dashboard');
-            exit;
+        $this->checkGuest();
+        // Generate CSRF Token
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
-
+        
         $data = [
             'title' => 'Login - Trevio',
-            'google_auth_url' => $this->getGoogleAuthUrl()
+            'google_auth_url' => $this->getGoogleAuthUrl(),
+            'csrf_token' => $_SESSION['csrf_token']
         ];
-        
         $this->view('auth/login', $data);
     }
 
-    /**
-     * Menampilkan halaman Register
-     */
     public function register() {
-        if (isset($_SESSION['user_id'])) {
-            header('Location: ' . BASE_URL . '/dashboard');
-            exit;
+        $this->checkGuest();
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
-
-        $data = [
-            'title' => 'Daftar - Trevio'
-        ];
-
+        $data = ['title' => 'Daftar - Trevio', 'csrf_token' => $_SESSION['csrf_token']];
         $this->view('auth/register', $data);
     }
 
-    /**
-     * Proses Login (POST)
-     */
     public function authenticate() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
-        }
+        $this->validateRequest();
+        $this->validateCsrf();
 
-        // Sanitize inputs
-        $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+        $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
         $password = $_POST['password'] ?? '';
 
-        // Validasi dasar
-        if (empty($email) || empty($password)) {
-            $_SESSION['flash_error'] = "Email dan Password wajib diisi.";
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
+        if (!$email || empty($password)) {
+            $this->incrementLoginAttempts();
+            $this->redirectWithError('/auth/login', "Email tidak valid atau password kosong.");
         }
 
-        // Cari user by email
         $user = $this->userModel->findByEmail($email);
 
-        if ($user) {
-            // Verifikasi password
-            // Catatan: Untuk user Google login, password mungkin null/random, jadi cek auth_provider
-            if ($user['auth_provider'] == 'email' && password_verify($password, $user['password'])) {
-                $this->createUserSession($user);
-            } else {
-                $_SESSION['flash_error'] = "Password salah atau akun terdaftar dengan Google.";
-                header('Location: ' . BASE_URL . '/auth/login');
-                exit;
-            }
+        if ($user && $user['auth_provider'] === 'email' && password_verify($password, $user['password'])) {
+            $this->loginUser($user);
         } else {
-            $_SESSION['flash_error'] = "Akun tidak ditemukan. Silakan daftar.";
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
+            $this->incrementLoginAttempts();
+            $this->redirectWithError('/auth/login', "Kredensial tidak cocok.");
         }
     }
 
-    /**
-     * Proses Register (POST)
-     */
     public function store() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '/auth/register');
-            exit;
-        }
+        $this->validateRequest();
+        $this->validateCsrf();
 
-        // Ambil data dari form
-        $fullName = filter_input(INPUT_POST, 'full_name', FILTER_SANITIZE_STRING);
-        $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+        // Sanitize & Validate
+        $fullName = strip_tags(trim($_POST['full_name']));
+        $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
         $password = $_POST['password'] ?? '';
-        $role = $_POST['user_type'] ?? 'customer'; // guest (customer) atau host (owner)
+        $role = ($_POST['user_type'] === 'host') ? 'owner' : 'customer';
 
-        // Mapping role dari form value ke database enum
-        $dbRole = ($role === 'host') ? 'owner' : 'customer';
-
-        // Validasi
-        if (empty($fullName) || empty($email) || empty($password)) {
-            $_SESSION['flash_error'] = "Semua kolom wajib diisi.";
-            header('Location: ' . BASE_URL . '/auth/register');
-            exit;
+        if (!$email || empty($fullName) || strlen($password) < 8) {
+            $this->redirectWithError('/auth/register', "Data tidak valid. Password minimal 8 karakter.");
         }
 
-        if (strlen($password) < 8) {
-            $_SESSION['flash_error'] = "Password minimal 8 karakter.";
-            header('Location: ' . BASE_URL . '/auth/register');
-            exit;
-        }
-
-        // Cek email duplikat
         if ($this->userModel->findByEmail($email)) {
-            $_SESSION['flash_error'] = "Email sudah terdaftar.";
-            header('Location: ' . BASE_URL . '/auth/register');
-            exit;
+            $this->redirectWithError('/auth/register', "Email sudah terdaftar.");
         }
 
-        // Hash password
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
-
-        // Simpan ke database
         $data = [
             'name' => $fullName,
             'email' => $email,
             'password' => $hashedPassword,
-            'role' => $dbRole,
+            'role' => $role,
             'auth_provider' => 'email',
-            'is_verified' => 1, // Auto verified untuk MVP, nanti bisa ubah ke 0 butuh email verif
+            'is_verified' => 1, // In prod, set to 0 and send email verification
             'is_active' => 1
         ];
 
@@ -143,16 +97,11 @@ class AuthController extends Controller {
             $_SESSION['flash_success'] = "Registrasi berhasil! Silakan login.";
             header('Location: ' . BASE_URL . '/auth/login');
             exit;
-        } else {
-            $_SESSION['flash_error'] = "Terjadi kesalahan sistem.";
-            header('Location: ' . BASE_URL . '/auth/register');
-            exit;
         }
+        
+        $this->redirectWithError('/auth/register', "Terjadi kesalahan sistem.");
     }
 
-    /**
-     * Proses Logout
-     */
     public function logout() {
         session_unset();
         session_destroy();
@@ -160,27 +109,55 @@ class AuthController extends Controller {
         exit;
     }
 
-    /**
-     * Setup User Session
-     */
-    private function createUserSession($user) {
+    // --- Helpers ---
+
+    private function loginUser($user) {
+        // Security: Prevent Session Fixation
+        session_regenerate_id(true);
+        $_SESSION['login_attempts'] = 0;
+
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
-        
-        // Redirect ke dashboard yang sesuai
+
         header('Location: ' . BASE_URL . '/dashboard');
         exit;
     }
 
-    // ==========================================
-    // GOOGLE OAUTH SECTION
-    // ==========================================
+    private function validateCsrf() {
+        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            die("CSRF Validation Failed");
+        }
+    }
 
-    /**
-     * Generate Google Login URL
-     */
+    private function validateRequest() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '/auth/login');
+            exit;
+        }
+    }
+
+    private function checkGuest() {
+        if (isset($_SESSION['user_id'])) {
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+    }
+
+    private function redirectWithError($path, $message) {
+        $_SESSION['flash_error'] = $message;
+        header('Location: ' . BASE_URL . $path);
+        exit;
+    }
+
+    private function incrementLoginAttempts() {
+        $_SESSION['login_attempts'] = ($_SESSION['login_attempts'] ?? 0) + 1;
+        $_SESSION['last_attempt_time'] = time();
+    }
+
+    // --- Google OAuth (Secured) ---
+
     private function getGoogleAuthUrl() {
         $params = [
             'client_id'     => getenv('GOOGLE_CLIENT_ID'),
@@ -192,21 +169,14 @@ class AuthController extends Controller {
         return 'https://accounts.google.com/o/oauth2/v2/auth?' . http_build_query($params);
     }
 
-    /**
-     * Handle Callback from Google
-     */
     public function googleCallback() {
         if (!isset($_GET['code'])) {
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
+            $this->redirectWithError('/auth/login', "Gagal autentikasi Google.");
         }
 
-        $code = $_GET['code'];
-        
-        // 1. Exchange code for token
         $tokenUrl = 'https://oauth2.googleapis.com/token';
         $postData = [
-            'code' => $code,
+            'code' => $_GET['code'],
             'client_id' => getenv('GOOGLE_CLIENT_ID'),
             'client_secret' => getenv('GOOGLE_CLIENT_SECRET'),
             'redirect_uri' => getenv('GOOGLE_REDIRECT_URI'),
@@ -218,58 +188,50 @@ class AuthController extends Controller {
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        // Security: Verify SSL Peer (MITM Prevention)
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true); 
+        
         $response = curl_exec($ch);
+        if (curl_errno($ch)) {
+            $this->redirectWithError('/auth/login', "Connection Error: " . curl_error($ch));
+        }
         curl_close($ch);
 
         $tokenData = json_decode($response, true);
-
         if (!isset($tokenData['access_token'])) {
-            $_SESSION['flash_error'] = "Gagal login dengan Google.";
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
+            $this->redirectWithError('/auth/login', "Invalid Google Token.");
         }
 
-        // 2. Get User Profile
-        $accessToken = $tokenData['access_token'];
-        $userInfoUrl = 'https://www.googleapis.com/oauth2/v2/userinfo?access_token=' . $accessToken;
-        
+        // Get User Info
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $userInfoUrl);
+        curl_setopt($ch, CURLOPT_URL, 'https://www.googleapis.com/oauth2/v2/userinfo?access_token=' . $tokenData['access_token']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
         $userInfo = json_decode(curl_exec($ch), true);
         curl_close($ch);
 
-        // 3. Check or Create User in DB
         $email = $userInfo['email'];
-        $googleId = $userInfo['id'];
-        $name = $userInfo['name'];
-        $picture = $userInfo['picture'];
-
         $user = $this->userModel->findByEmail($email);
 
         if ($user) {
-            // User exists, update google_id if empty
             if (empty($user['google_id'])) {
-                $this->userModel->update($user['id'], ['google_id' => $googleId, 'profile_image' => $picture]);
+                $this->userModel->update($user['id'], ['google_id' => $userInfo['id'], 'profile_image' => $userInfo['picture']]);
             }
-            $this->createUserSession($user);
+            $this->loginUser($user);
         } else {
-            // Create new user
             $newUser = [
-                'name' => $name,
+                'name' => $userInfo['name'],
                 'email' => $email,
-                'google_id' => $googleId,
+                'google_id' => $userInfo['id'],
                 'auth_provider' => 'google',
-                'role' => 'customer', // Default role for Google login
+                'role' => 'customer',
                 'is_verified' => 1,
                 'is_active' => 1,
-                'profile_image' => $picture
+                'profile_image' => $userInfo['picture']
             ];
-            
             $userId = $this->userModel->create($newUser);
             $newUser['id'] = $userId;
-            
-            $this->createUserSession($newUser);
+            $this->loginUser($newUser);
         }
     }
 }
