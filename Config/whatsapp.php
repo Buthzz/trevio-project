@@ -6,7 +6,7 @@
  * Digunakan oleh libraries/WhatsApp.php untuk mengirim notifikasi.
  */
 
-define('WHATSAPP_API_KEY', 'PSb4ar7j6d482Bvphgc1'); 
+define('WHATSAPP_API_KEY', 'disini'); 
 
 // Status aktifasi fitur WhatsApp (true jika 'WHATSAPP_ENABLED' di .env adalah true)
 define('WHATSAPP_ENABLED', (bool) (getenv('WHATSAPP_ENABLED') === 'true'));
