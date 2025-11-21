@@ -6,12 +6,12 @@
  */
 
 // URL Dasar Aplikasi (sesuaikan dengan APP_URL di .env)
-define('BASE_URL', 'http://localhost:8000');
+define('BASE_URL', getenv('APP_URL') ?: 'http://localhost:8000');
 
 // Pengaturan Environment
-define('APP_NAME', 'Trevio');
-define('APP_ENV', 'development'); // production, staging, development
-define('APP_DEBUG', true); // true saat development
+define('APP_NAME', getenv('APP_NAME') ?: 'Trevio');
+define('APP_ENV', getenv('APP_ENV') ?: 'development'); // production, staging, development
+define('APP_DEBUG', filter_var(getenv('APP_DEBUG'), FILTER_VALIDATE_BOOLEAN) ?: true); // true saat development
 
 // Role Pengguna
 define('ROLE_CUSTOMER', 'customer');
