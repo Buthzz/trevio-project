@@ -48,7 +48,7 @@ $pageTitle  = $pageTitle ?? 'Trevio';
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
         <a class="inline-flex items-center gap-3" href="/">
             <span class="sr-only">Beranda Trevio</span>
-            <img class="h-30 w-auto" src="../../../public/images/trevio.svg" alt="Logo Trevio">
+            <img class="h-10 w-auto" src="/public/images/trevio.svg" alt="Logo Trevio">
         </a>
 
         <div class="hidden items-center gap-6 md:flex">
