@@ -26,6 +26,7 @@
                 </div>
 
                 <form action="/owner/rooms/store" method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+                    <!-- CSRF Token for form security - prevents Cross-Site Request Forgery attacks -->
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
                     
                     <!-- Pilih Hotel -->
@@ -120,6 +121,7 @@
                     <!-- Foto Kamar -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Foto Kamar *</label>
+                        <!-- Note: Server-side validation required for file type, size (5MB max), and content verification -->
                         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition" onclick="document.getElementById('room_photo').click()">
                             <input type="file" name="room_photo" id="room_photo" class="hidden" accept="image/jpeg,image/png,image/jpg" required>
                             <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

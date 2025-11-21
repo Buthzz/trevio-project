@@ -29,6 +29,7 @@
                         </div>
 
                         <form action="/owner/bookings/checkin/process" method="POST" class="p-6 space-y-6">
+                            <!-- CSRF Token for form security - prevents Cross-Site Request Forgery attacks -->
                             <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
                             
                             <!-- Nomor Pemesanan -->

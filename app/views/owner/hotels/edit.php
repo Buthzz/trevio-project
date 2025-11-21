@@ -26,7 +26,9 @@
                 </div>
 
                 <form action="/owner/hotels/update" method="POST" enctype="multipart/form-data" class="p-6 space-y-6">
+                    <!-- CSRF Token for form security - prevents Cross-Site Request Forgery attacks -->
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+                    <!-- Hotel ID to identify which hotel to update - Backend must verify ownership -->
                     <input type="hidden" name="hotel_id" value="<?php echo htmlspecialchars($hotel['id'] ?? ''); ?>">
                     
                     <!-- Nama Hotel -->
@@ -103,6 +105,7 @@
                             <img src="<?php echo htmlspecialchars($hotel['photo'] ?? 'https://images.unsplash.com/photo-1564501049351-005e2b3e547d?w=400&h=300&fit=crop'); ?>" alt="Hotel" class="w-32 h-32 object-cover rounded-lg">
                             <p class="text-sm text-gray-500 mt-2">Klik di bawah untuk mengubah foto</p>
                         </div>
+                        <!-- Note: Server-side validation required for file type, size (5MB max), and content verification -->
                         <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition" onclick="document.getElementById('hotel_photo').click()">
                             <input type="file" name="hotel_photo" id="hotel_photo" class="hidden" accept="image/jpeg,image/png,image/jpg">
                             <svg class="w-12 h-12 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
