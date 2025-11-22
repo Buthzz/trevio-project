@@ -1,0 +1,46 @@
+name: Auto Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          port: 22
+          script: |
+            # LOGIC UNTUK PRODUCTION
+            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+              echo "Deploying to PRODUCTION..."
+              cd /var/www/trevio-prod
+              
+              # Cek apakah folder kosong (clone pertama kali) atau update
+              if [ ! -d ".git" ]; then
+                git clone -b main https://github.com/Buthzz/trevio-project.git .
+              else
+                git pull origin main
+              fi
+            fi
+
+            # LOGIC UNTUK DEVELOPMENT
+            if [ "${{ github.ref }}" = "refs/heads/development" ]; then
+              echo "Deploying to DEVELOPMENT..."
+              cd /var/www/trevio-dev
+              
+              if [ ! -d ".git" ]; then
+                git clone -b development https://github.com/Buthzz/trevio-project.git .
+              else
+                git pull origin development
+              fi
+            fi
+            
+            echo "Deployment Finished!"
