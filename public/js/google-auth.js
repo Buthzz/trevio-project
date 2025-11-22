@@ -24,12 +24,9 @@ const GoogleAuth = (function () {
   // PRIVATE CONSTANTS
   // ================================================================
 
-  const GOOGLE_OAUTH_CONFIG = {
+ const GOOGLE_OAUTH_CONFIG = {
     // Ganti dengan Google OAuth Client ID Anda
-    CLIENT_ID:
-      window.GOOGLE_CLIENT_ID ||
-      process.env.GOOGLE_CLIENT_ID ||
-      '',
+    CLIENT_ID: window.GOOGLE_CLIENT_ID || '',  // <--- Cukup begini saja
     SCOPE: ['profile', 'email'],
     DISCOVERY_DOCS: [
       'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',

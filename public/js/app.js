@@ -110,15 +110,16 @@ const App = (function () {
     return document.getElementById(id);
   };
 
-  /**
-   * Set inner HTML dengan sanitasi basic
+ /**
+   * Set text content (LEBIH AMAN)
    * @param {Element|string} element - Element atau selector
-   * @param {string} html - HTML content
+   * @param {string} text - Text content
    */
-  const setHTML = (element, html) => {
+  const setHTML = (element, text) => {
     const el = typeof element === 'string' ? querySelector(element) : element;
     if (el) {
-      el.innerHTML = html;
+      // GANTI DARI innerHTML KE textContent
+      el.textContent = text; 
     }
   };
 
