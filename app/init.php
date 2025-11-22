@@ -58,6 +58,11 @@ if (file_exists(__DIR__ . '/../config/config.php')) {
 // - Does not override existing $_ENV/$_SERVER values
 // - Format: KEY=value (quotes not supported)
 // - Security: Do not commit secrets in .env to version control
+// Load environment variables from .env file
+// - Skips lines starting with #
+// - Does not override existing $_ENV/$_SERVER values
+// - Format: KEY=value (quotes not supported)
+// - Security: Do not commit secrets in .env to version control
 if (file_exists(__DIR__ . '/../.env')) {
     $lines = @file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     if ($lines === false) {
