@@ -27,7 +27,12 @@ class Model {
             $this->db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
             // Tampilkan pesan error namun hindari menampilkan password di layar production
-            die("Database Connection Error: " . $e->getMessage());
+            if (getenv('APP_ENV') === 'production') {
+                error_log("Database Connection Error: " . $e->getMessage());
+                die("Database Connection Error. Please contact support.");
+            } else {
+                die("Database Connection Error: " . $e->getMessage());
+            }
         }
     }
 
