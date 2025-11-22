@@ -59,7 +59,11 @@ if (file_exists(__DIR__ . '/../config/config.php')) {
 // - Format: KEY=value (quotes not supported)
 // - Security: Do not commit secrets in .env to version control
 if (file_exists(__DIR__ . '/../.env')) {
-    $lines = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $lines = @file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        // Optionally log error or handle gracefully
+        return;
+    }
     foreach ($lines as $line) {
         if (strpos(trim($line), '#') === 0) continue; // Skip komentar
         list($name, $value) = explode('=', $line, 2);
