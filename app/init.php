@@ -70,7 +70,7 @@ if (file_exists(__DIR__ . '/../.env')) {
         return;
     }
     foreach ($lines as $line) {
-        if (strpos(trim($line), '#') === 0) continue; // Skip komentar
+        if (strpos(trim($line), '#') === 0) continue; // Skip comment
         if (strpos($line, '=') === false) continue; // Skip lines without '='
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
