@@ -8,29 +8,34 @@ use PDOException;
 
 class Booking extends Model {
     
+    /**
+     * Nama tabel utama
+     */
     protected $table = 'bookings';
 
     /**
      * Membuat booking baru
-     * @param array $data Booking data including customer_id, hotel_id, room_id, dates, pricing
-     * @return int|false Booking ID if successful, false otherwise
+     * * @param array $data Data booking lengkap
+     * @return int|false ID booking yang baru dibuat atau false jika gagal
      */
-    public function create($data) {
-        $fields = [
+    public function create(array $data): int|false {
+        // Whitelist field yang diizinkan untuk insert
+        $allowedFields = [
             'booking_code', 'customer_id', 'hotel_id', 'room_id',
             'check_in_date', 'check_out_date', 'num_nights', 'num_rooms',
             'price_per_night', 'subtotal', 'tax_amount', 'service_charge', 'total_price',
             'guest_name', 'guest_email', 'guest_phone', 'booking_status'
         ];
 
+        // Filter data
+        $data = array_intersect_key($data, array_flip($allowedFields));
+
         $params = [];
         $values = [];
         
-        foreach ($fields as $field) {
-            if (isset($data[$field])) {
-                $params[] = $field;
-                $values[] = ":{$field}";
-            }
+        foreach ($data as $field => $value) {
+            $params[] = $field;
+            $values[] = ":{$field}";
         }
 
         if (empty($params)) {
@@ -38,19 +43,23 @@ class Booking extends Model {
             return false;
         }
 
-        $query = "INSERT INTO {$this->table} (" . implode(", ", $params) . ") VALUES (" . implode(", ", $values) . ")";
+        $columns = implode(", ", $params);
+        $placeholders = implode(", ", $values);
+
+        $query = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
 
         try {
             $this->db->query($query);
-            foreach ($fields as $field) {
-                if (isset($data[$field])) {
-                    $this->db->bind(":{$field}", $data[$field]);
-                }
+            
+            foreach ($data as $field => $value) {
+                $this->db->bind(":{$field}", $value);
             }
+            
             if ($this->db->execute()) {
-                return $this->db->lastInsertId();
+                return (int) $this->db->lastInsertId();
             }
             return false;
+
         } catch (PDOException $e) {
             error_log("Booking Create Error: " . $e->getMessage());
             return false;
@@ -58,11 +67,11 @@ class Booking extends Model {
     }
 
     /**
-     * Mencari booking berdasarkan Kode Booking (untuk validasi & detail)
-     * @param string $code Booking code
-     * @return array|false Booking details with hotel and room info, or false if not found
+     * Mencari booking berdasarkan Kode Booking
+     * * @param string $code Kode booking (misal: BK2025...)
+     * @return array|false Data booking atau false
      */
-    public function findByCode($code) {
+    public function findByCode(string $code): array|false {
         $query = "SELECT b.*, h.name as hotel_name, r.room_type 
                   FROM {$this->table} b
                   JOIN hotels h ON b.hotel_id = h.id
@@ -80,20 +89,20 @@ class Booking extends Model {
     }
 
     /**
-     * Submit Pembayaran (Customer Upload Bukti)
-     * - Insert ke tabel payments
-     * - Update status booking jadi 'pending_verification'
-     * @param int $bookingId
-     * @param string $proofFile
-     * @param string $bankName
-     * @param string $accountName
-     * @return bool
+     * Submit Pembayaran dengan Transaksi Atomik
+     * Memisahkan info bank dan akun untuk data yang lebih rapi.
+     * * @param int $bookingId
+     * @param string $proofFile Nama file bukti transfer
+     * @param string $bankName Nama Bank Pengirim
+     * @param string $accountName Nama Pemilik Rekening
+     * @param string $accountNumber Nomor Rekening (Opsional)
+     * @return bool Status keberhasilan
      */
-    public function submitPayment($bookingId, $proofFile, $bankName, $accountName) {
+    public function submitPayment(int $bookingId, string $proofFile, string $bankName, string $accountName, string $accountNumber = ''): bool {
         try {
             $this->db->beginTransaction();
 
-            // 0. Get booking amount
+            // 1. Ambil total harga untuk validasi/pencatatan
             $this->db->query("SELECT total_price FROM {$this->table} WHERE id = :id");
             $this->db->bind(':id', $bookingId);
             $booking = $this->db->single();
@@ -102,18 +111,31 @@ class Booking extends Model {
                 throw new PDOException("Booking not found");
             }
 
-            // 1. Insert Payment
-            $queryPayment = "INSERT INTO payments (booking_id, payment_method, transfer_amount, transfer_from_bank, payment_proof, payment_status, created_at) 
-                             VALUES (:booking_id, 'bank_transfer', :amount, :bank_name, :proof, 'uploaded', NOW())";
+            // 2. Insert ke tabel payments
+            // Catatan: Idealnya tabel payments memiliki kolom 'transfer_from_account' dan 'transfer_from_number'.
+            // Jika schema database belum update, kita simpan detail akun di 'payment_notes' atau kolom relevan.
+            
+            $fullAccountDetail = $accountName . ($accountNumber ? " ({$accountNumber})" : "");
+
+            $queryPayment = "INSERT INTO payments (
+                booking_id, payment_method, transfer_amount, 
+                transfer_from_bank, payment_proof, payment_notes,
+                payment_status, created_at
+            ) VALUES (
+                :booking_id, 'bank_transfer', :amount, 
+                :bank_name, :proof, :account_detail,
+                'uploaded', NOW()
+            )";
             
             $this->db->query($queryPayment);
             $this->db->bind(':booking_id', $bookingId);
             $this->db->bind(':amount', $booking['total_price']);
-            $this->db->bind(':bank_name', $bankName . ' - ' . $accountName); // Gabung info bank
+            $this->db->bind(':bank_name', $bankName);
             $this->db->bind(':proof', $proofFile);
+            $this->db->bind(':account_detail', "Sender: " . $fullAccountDetail); // Simpan detail pengirim
             $this->db->execute();
 
-            // 2. Update Booking Status
+            // 3. Update Status Booking
             $queryBooking = "UPDATE {$this->table} SET booking_status = 'pending_verification' WHERE id = :id";
             $this->db->query($queryBooking);
             $this->db->bind(':id', $bookingId);
@@ -121,6 +143,7 @@ class Booking extends Model {
 
             $this->db->commit();
             return true;
+
         } catch (PDOException $e) {
             $this->db->rollBack();
             error_log("Submit Payment Error: " . $e->getMessage());
@@ -132,62 +155,39 @@ class Booking extends Model {
     // ADMIN DASHBOARD METHODS
     // =================================================================
 
-    /**
-     * Menghitung total revenue dari semua booking yang sudah confirmed/completed
-     * @return float Total revenue amount
-     */
-    public function sumTotalRevenue() {
+    public function sumTotalRevenue(): float {
         try {
-            // Menghitung total dari booking yang sudah confirmed/completed
             $this->db->query("SELECT SUM(total_price) as total FROM {$this->table} WHERE booking_status IN ('confirmed', 'completed', 'checked_in')");
             $result = $this->db->single();
-            return $result ? (float)$result['total'] : 0;
+            return $result ? (float)$result['total'] : 0.0;
         } catch (PDOException $e) {
-            error_log("Booking SumTotalRevenue Error: " . $e->getMessage());
-            return 0;
+            return 0.0;
         }
     }
 
-    /**
-     * Menghitung jumlah booking berdasarkan status
-     * @param string $status Booking status to count
-     * @return int Number of bookings with specified status
-     */
-    public function countByStatus($status) {
+    public function countByStatus(string $status): int {
         try {
             $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE booking_status = :status");
             $this->db->bind(':status', $status);
             $result = $this->db->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
-            error_log("Booking CountByStatus Error: " . $e->getMessage());
             return 0;
         }
     }
 
-    /**
-     * Menghitung jumlah refund berdasarkan status
-     * @param string $status Refund status to count
-     * @return int Number of refunds with specified status
-     */
-    public function countRefundsByStatus($status) {
+    public function countRefundsByStatus(string $status): int {
         try {
             $this->db->query("SELECT COUNT(*) as total FROM refunds WHERE refund_status = :status");
             $this->db->bind(':status', $status);
             $result = $this->db->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
-            error_log("Booking CountRefundsByStatus Error: " . $e->getMessage());
             return 0;
         }
     }
 
-    /**
-     * Mendapatkan booking terbaru untuk dashboard
-     * @param int $limit Number of recent bookings to retrieve
-     * @return array List of recent bookings with customer and hotel information
-     */
-    public function getRecentBookings($limit = 5) {
+    public function getRecentBookings(int $limit = 5): array {
         try {
             $this->db->query("SELECT b.*, u.name as customer_name, h.name as hotel_name 
                               FROM {$this->table} b
@@ -197,7 +197,6 @@ class Booking extends Model {
             $this->db->bind(':limit', $limit);
             return $this->db->resultSet();
         } catch (PDOException $e) {
-            error_log("Booking GetRecentBookings Error: " . $e->getMessage());
             return [];
         }
     }
@@ -206,12 +205,7 @@ class Booking extends Model {
     // OWNER DASHBOARD METHODS
     // =================================================================
 
-    /**
-     * Menghitung booking aktif untuk hotel owner tertentu
-     * @param int $ownerId Owner user ID
-     * @return int Number of active bookings for this owner
-     */
-    public function countActiveByOwner($ownerId) {
+    public function countActiveByOwner(int $ownerId): int {
         $query = "SELECT COUNT(b.id) as total 
                   FROM {$this->table} b
                   JOIN hotels h ON b.hotel_id = h.id
@@ -224,17 +218,11 @@ class Booking extends Model {
             $result = $this->db->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
-            error_log("Booking CountActiveByOwner Error: " . $e->getMessage());
             return 0;
         }
     }
 
-    /**
-     * Menghitung check-in hari ini untuk hotel owner
-     * @param int $ownerId Owner user ID
-     * @return int Number of check-ins scheduled for today
-     */
-    public function countCheckinTodayByOwner($ownerId) {
+    public function countCheckinTodayByOwner(int $ownerId): int {
         $today = date('Y-m-d');
         $query = "SELECT COUNT(b.id) as total 
                   FROM {$this->table} b
@@ -250,19 +238,11 @@ class Booking extends Model {
             $result = $this->db->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
-            error_log("Booking CountCheckinTodayByOwner Error: " . $e->getMessage());
             return 0;
         }
     }
 
-    /**
-     * Menghitung revenue untuk owner berdasarkan bulan dan tahun
-     * @param int $ownerId Owner user ID
-     * @param int $month Month (1-12)
-     * @param int $year Year (e.g., 2025)
-     * @return float Total revenue for specified month/year
-     */
-    public function calculateRevenueByOwner($ownerId, $month, $year) {
+    public function calculateRevenueByOwner(int $ownerId, int $month, int $year): float {
         $query = "SELECT SUM(b.total_price) as total 
                   FROM {$this->table} b
                   JOIN hotels h ON b.hotel_id = h.id
@@ -277,20 +257,13 @@ class Booking extends Model {
             $this->db->bind(':month', $month);
             $this->db->bind(':year', $year);
             $result = $this->db->single();
-            return $result ? (float)$result['total'] : 0;
+            return $result ? (float)$result['total'] : 0.0;
         } catch (PDOException $e) {
-            error_log("Booking CalculateRevenueByOwner Error: " . $e->getMessage());
-            return 0;
+            return 0.0;
         }
     }
 
-    /**
-     * Mendapatkan statistik mingguan untuk owner (7 hari terakhir)
-     * @param int $ownerId Owner user ID
-     * @return array Weekly booking statistics with dates, counts, and revenue
-     */
-    public function getWeeklyStatsByOwner($ownerId) {
-        // Mengambil data booking 7 hari terakhir untuk chart
+    public function getWeeklyStatsByOwner(int $ownerId): array {
         $query = "SELECT DATE(b.created_at) as date, COUNT(*) as count, SUM(b.total_price) as revenue
                   FROM {$this->table} b
                   JOIN hotels h ON b.hotel_id = h.id
@@ -304,7 +277,6 @@ class Booking extends Model {
             $this->db->bind(':owner_id', $ownerId);
             return $this->db->resultSet();
         } catch (PDOException $e) {
-            error_log("Booking GetWeeklyStatsByOwner Error: " . $e->getMessage());
             return [];
         }
     }
@@ -314,42 +286,47 @@ class Booking extends Model {
     // =================================================================
 
     /**
-     * Mendapatkan booking customer berdasarkan status
-     * @param int $customerId Customer user ID
-     * @param array $statusArray Array of booking statuses to filter (e.g., ['confirmed', 'completed'])
-     * @return array List of customer bookings with hotel and room information
+     * Mengambil data booking customer (Perbaikan Binding Parameter)
+     * * @param int $customerId
+     * @param array $statusArray
+     * @return array
      */
-    public function getByCustomer($customerId, $statusArray) {
-        // Security: Validate and sanitize status array to prevent SQL injection
+    public function getByCustomer(int $customerId, array $statusArray): array {
         $validStatuses = ['pending_payment', 'pending_verification', 'confirmed', 'checked_in', 'completed', 'cancelled', 'refunded'];
-        $statusArray = array_filter($statusArray, function($status) use ($validStatuses) {
-            return in_array($status, $validStatuses);
-        });
+        $statusArray = array_filter($statusArray, fn($s) => in_array($s, $validStatuses));
         
         if (empty($statusArray)) {
-            return []; // Return empty if no valid statuses
+            return [];
         }
         
-        // Create placeholders for prepared statement
-        $placeholders = implode(',', array_fill(0, count($statusArray), '?'));
+        // Generate Named Placeholders untuk binding yang aman (:status_0, :status_1, ...)
+        $placeholders = [];
+        $params = [':customer_id' => $customerId];
+        
+        foreach ($statusArray as $index => $status) {
+            $key = ":status_{$index}";
+            $placeholders[] = $key;
+            $params[$key] = $status;
+        }
+        
+        $inClause = implode(',', $placeholders);
         
         $query = "SELECT b.*, h.name as hotel_name, h.city, r.room_type 
                   FROM {$this->table} b
                   JOIN hotels h ON b.hotel_id = h.id
                   JOIN rooms r ON b.room_id = r.id
-                  WHERE b.customer_id = ? 
-                  AND b.booking_status IN ($placeholders)
+                  WHERE b.customer_id = :customer_id 
+                  AND b.booking_status IN ($inClause)
                   ORDER BY b.created_at DESC";
 
         try {
             $this->db->query($query);
-            // Bind customer ID first
-            $this->db->bind(1, $customerId);
-            // Bind each status value
-            $position = 2;
-            foreach ($statusArray as $status) {
-                $this->db->bind($position++, $status);
+            
+            // Bind parameter dinamis
+            foreach ($params as $key => $value) {
+                $this->db->bind($key, $value);
             }
+            
             return $this->db->resultSet();
         } catch (PDOException $e) {
             error_log("Get Customer Bookings Error: " . $e->getMessage());
