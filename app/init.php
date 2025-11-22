@@ -75,6 +75,7 @@ if (file_exists(__DIR__ . '/../.env')) {
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
         $value = trim($value);
+        if (empty($name)) continue;
         // Remove surrounding quotes if present
         if ((substr($value, 0, 1) === '"' && substr($value, -1) === '"') ||
             (substr($value, 0, 1) === "'" && substr($value, -1) === "'")) {
