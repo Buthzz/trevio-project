@@ -25,7 +25,10 @@
     </script>
 </head>
 <body class="min-h-screen bg-[#F5F7FA] font-sans text-base text-[#111827]">
-    <?php include '../layouts/header.php'; ?>
+    <?php
+    // Header global memastikan navigasi konsisten di halaman auth.
+    require __DIR__ . '/../layouts/header.php';
+    ?>
 
     <main class="flex items-center justify-center px-6 py-6 min-h-[calc(100vh-10px)]">
         <div class="bg-white rounded-[24px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)] overflow-hidden max-w-[840px] max-h-[520px] w-full md:w-auto mx-auto flex flex-col md:flex-row">
@@ -130,6 +133,9 @@
             </section>
         </div>
     </main>
-    <?php include '../layouts/footer.php'; ?>
+    <?php
+    // Footer global menutup halaman login.
+    require __DIR__ . '/../layouts/footer.php';
+    ?>
 </body>
 </html>

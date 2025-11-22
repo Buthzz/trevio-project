@@ -25,10 +25,16 @@
     </script>
 </head>
 <body class="min-h-screen bg-[#F5F7FA] font-sans text-base text-[#111827]">
-    <?php include '../layouts/header.php'; ?>
+    <?php
+    // Header global agar tone branding konsisten di halaman registrasi.
+    require __DIR__ . '/../layouts/header.php';
+    ?>
 
-    <main class="flex items-center justify-center px-6 py-6 min-h-[calc(100vh-10px)]">
-        <div class="bg-white rounded-[24px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)] overflow-hidden max-w-[840px] max-h-[520px] w-full md:w-auto mx-auto flex flex-col md:flex-row">
+    <!-- Kontainer utama: mobile sengaja dibiarkan memanjang supaya tombol tidak kepotong -->
+    <main class="flex items-start md:items-center justify-center px-4 py-6 md:px-6 md:py-10 md:min-h-[calc(100vh-10px)]">
+        <!-- Card register + slider disatukan agar tetap sinkron dengan desain marketing -->
+        <div class="bg-white rounded-[24px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)] max-w-[840px] w-full md:w-auto mx-auto flex flex-col md:flex-row md:max-h-[520px] md:overflow-hidden">
+            <!-- Kolom kiri: form registrasi dan CTA -->
             <section class="md:w-[54%] px-5 md:px-7 py-6 order-2 md:order-1">
                 <div class="mb-4">
                     <h1 class="text-[28px] font-semibold mb-1">Buat Akun Baru</h1>
@@ -140,6 +146,7 @@
                 </p>
             </section>
 
+            <!-- Kolom kanan: hero slider storytelling -->
             <section id="auth-hero" class="md:w-[55%] relative min-h-[280px] md:min-h-[440px] order-1 md:order-2">
                 <div id="auth-hero-bg" class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&h=1000&fit=crop');"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
@@ -177,9 +184,13 @@
             </section>
         </div>
     </main>
-    <?php include '../layouts/footer.php'; ?>
+    <?php
+    // Footer global menutup halaman registrasi.
+    require __DIR__ . '/../layouts/footer.php';
+    ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Skenario konten slider hero auth.
             const slides = [
                 {
                     title: 'Mulai Perjalanan Anda',
@@ -198,6 +209,7 @@
                 }
             ];
 
+            // Ambil referensi elemen utama slider.
             const heroSection = document.querySelector('#auth-hero');
             const heroBackground = document.querySelector('#auth-hero-bg');
             const heroTitle = document.querySelector('#auth-hero-title');
@@ -209,12 +221,16 @@
                 return;
             }
 
+            // Kelas indikator aktif/nonaktif untuk dot slider.
             const activeClass = 'bg-white';
             const inactiveClass = 'bg-white/40';
             const dots = dotsContainer.querySelectorAll('[data-dot-index]');
+            // Posisi slide saat ini.
             let currentIndex = 0;
+            // Timer otomatis untuk rotasi slide.
             let rotationTimer = null;
 
+            // Tandai dot mana yang aktif sesuai slide.
             const setActiveDot = function (index) {
                 dots.forEach(function (dot, dotIndex) {
                     dot.classList.toggle(activeClass, dotIndex === index);
@@ -222,6 +238,7 @@
                 });
             };
 
+            // Terapkan data slide ke elemen hero.
             const applySlide = function (index) {
                 const slide = slides[index];
                 heroTitle.textContent = slide.title;
@@ -230,11 +247,13 @@
                 setActiveDot(index);
             };
 
+            // Geser slide berdasarkan arah tertentu.
             const rotateSlide = function (step) {
                 currentIndex = (currentIndex + step + slides.length) % slides.length;
                 applySlide(currentIndex);
             };
 
+            // Mulai interval autoplay agar hero tetap dinamis.
             const startRotation = function () {
                 if (rotationTimer) {
                     clearInterval(rotationTimer);
@@ -245,6 +264,7 @@
             };
 
             if (prevButton) {
+                // Navigasi ke slide sebelumnya dan reset timer.
                 prevButton.addEventListener('click', function () {
                     rotateSlide(-1);
                     startRotation();
@@ -252,6 +272,7 @@
             }
 
             if (nextButton) {
+                // Navigasi ke slide selanjutnya dan reset timer.
                 nextButton.addEventListener('click', function () {
                     rotateSlide(1);
                     startRotation();

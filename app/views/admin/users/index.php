@@ -1,9 +1,13 @@
 <?php
+// Judul halaman untuk modul manajemen user.
 $pageTitle = 'Admin Users - Trevio';
+// Link referensi ke dashboard untuk elemen logo/header.
+$homeLink  = '../dashboard.php';
+// Sertakan header global agar gaya konsisten.
 include __DIR__ . '/../../layouts/header.php';
 ?>
 
-<div class="flex h-screen bg-slate-50">
+<div class="flex min-h-[calc(100vh-var(--header-height,4rem))] bg-slate-50">
     <!-- Sidebar Toggle Button (Mobile) -->
     <button id="sidebarToggle" class="fixed top-4 left-4 z-50 lg:hidden rounded-lg bg-accent p-2 text-white shadow-lg hover:bg-accentLight transition" onclick="toggleSidebar()">
         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -26,43 +30,44 @@ include __DIR__ . '/../../layouts/header.php';
             </button>
         </div>
 
-        <nav class="space-y-2">
-            <a href="/admin/dashboard" 
-               class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4"></path>
-                </svg>
-                Dashboard
-            </a>
-            <a href="/admin/hotels" 
-               class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
-                </svg>
-                Hotels
-            </a>
-            <a href="/admin/payments" 
-               class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                </svg>
-                Payments
-            </a>
-            <a href="/admin/refunds" 
-               class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path>
-                </svg>
-                Refunds
-            </a>
-            <a href="/admin/users" 
-               class="flex items-center gap-3 rounded-lg bg-accent/10 px-4 py-3 text-accent font-semibold transition">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-2a6 6 0 0112 0v2zm6-11a4 4 0 110 5.292M21 21h-8v-2a6 6 0 018-5.73"></path>
-                </svg>
-                Users
-            </a>
-        </nav>
+        <div class="p-6">
+            <nav class="space-y-2">
+                <a href="../dashboard.php" 
+                   class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4"></path>
+                    </svg>
+                    Dashboard
+                </a>
+                     <a href="../hotels/index.php" 
+                   class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Hotels
+                </a>
+                     <a href="../payments/index.php" 
+                   class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                    </svg>
+                    Payments
+                </a>
+                     <a href="../refunds/index.php" 
+                   class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path>
+                    </svg>
+                    Refunds
+                </a>
+                     <a href="index.php" 
+                   class="flex items-center gap-3 rounded-lg bg-accent/10 px-4 py-3 text-accent font-semibold transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-2a6 6 0 0112 0v2zm6-11a4 4 0 110 5.292M21 21h-8v-2a6 6 0 018-5.73"></path>
+                    </svg>
+                    Users
+                </a>
+            </nav>
         </div>
     </aside>
 
@@ -167,21 +172,23 @@ include __DIR__ . '/../../layouts/header.php';
             </div>
 
             <!-- Users Table -->
-            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <table class="w-full">
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="min-w-[1024px] w-full table-auto">
                     <thead>
                         <tr class="border-b border-slate-200 bg-slate-50">
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">User</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Email</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Role</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Join Date</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Last Active</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Actions</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">User</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Email</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Role</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Status</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Join Date</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Last Active</th>
+                            <th class="px-6 py-4 text-center text-sm font-semibold text-slate-900 whitespace-nowrap">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">
                         <?php 
+                        // Dataset dummy pengguna sebagai pengganti data database.
                         $users = [
                             ['id' => 1, 'name' => 'John Doe', 'email' => 'john@example.com', 'role' => 'Customer', 'status' => 'active', 'joinDate' => '2023-06-15', 'lastActive' => '5 mins ago'],
                             ['id' => 2, 'name' => 'Jane Smith', 'email' => 'jane@example.com', 'role' => 'Hotel Owner', 'status' => 'active', 'joinDate' => '2023-07-20', 'lastActive' => '2 hours ago'],
@@ -192,18 +199,33 @@ include __DIR__ . '/../../layouts/header.php';
                             ['id' => 7, 'name' => 'Rudi Hartono', 'email' => 'rudi@example.com', 'role' => 'Hotel Owner', 'status' => 'active', 'joinDate' => '2023-10-15', 'lastActive' => '12 mins ago'],
                             ['id' => 8, 'name' => 'Maya Indah', 'email' => 'maya@example.com', 'role' => 'Customer', 'status' => 'active', 'joinDate' => '2023-11-22', 'lastActive' => '45 mins ago'],
                         ];
-                        foreach ($users as $user): 
+                        // Variasi warna avatar supaya list lebih hidup.
+                        $avatarPalettes = [
+                            ['bg' => 'bg-blue-100', 'icon' => 'text-blue-600'],
+                            ['bg' => 'bg-purple-100', 'icon' => 'text-purple-600'],
+                            ['bg' => 'bg-teal-100', 'icon' => 'text-teal-600'],
+                            ['bg' => 'bg-amber-100', 'icon' => 'text-amber-600'],
+                        ];
+                        foreach ($users as $index => $user): 
+                            // Pilih kombinasi warna avatar berdasarkan indeks baris.
+                            $palette = $avatarPalettes[$index % count($avatarPalettes)];
                         ?>
                         <tr class="hover:bg-slate-50 transition">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="h-10 w-10 rounded-full bg-gradient-to-br from-purple-400 to-purple-600"></div>
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full <?= htmlspecialchars($palette['bg']) ?> shadow-inner">
+                                        <svg class="h-5 w-5 <?= htmlspecialchars($palette['icon']) ?>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A4 4 0 0112 15a4 4 0 016.879 2.804"></path>
+                                        </svg>
+                                    </div>
                                     <span class="font-semibold text-slate-900"><?= htmlspecialchars($user['name']) ?></span>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars($user['email']) ?></td>
                             <td class="px-6 py-4">
                                 <?php 
+                                // Mapping role pengguna ke warna badge masing-masing.
                                 $roleColors = [
                                     'Customer' => 'bg-blue-100 text-blue-700',
                                     'Hotel Owner' => 'bg-purple-100 text-purple-700',
@@ -217,6 +239,7 @@ include __DIR__ . '/../../layouts/header.php';
                             </td>
                             <td class="px-6 py-4">
                                 <?php 
+                                // Mapping status akun ke warna badge status.
                                 $statusColors = [
                                     'active' => 'bg-green-100 text-green-700',
                                     'inactive' => 'bg-yellow-100 text-yellow-700',
@@ -230,8 +253,8 @@ include __DIR__ . '/../../layouts/header.php';
                             </td>
                             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars($user['joinDate']) ?></td>
                             <td class="px-6 py-4 text-slate-600"><?= htmlspecialchars($user['lastActive']) ?></td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center justify-center gap-2">
                                     <button class="rounded-lg bg-blue-100 p-2 text-blue-600 hover:bg-blue-200 transition" title="View">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -258,7 +281,8 @@ include __DIR__ . '/../../layouts/header.php';
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
-                </table>
+                    </table>
+                </div>
             </div>
 
             <!-- Pagination -->
@@ -278,29 +302,29 @@ include __DIR__ . '/../../layouts/header.php';
 </div>
 
 <script>
-    // Sidebar Toggle Functionality
+    // Referensi elemen yang dibutuhkan untuk mengendalikan sidebar.
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
     const adminSidebar = document.getElementById('adminSidebar');
-    const sidebarCloseBtn = document.querySelector('[data-sidebar-close]');
-    const mainContent = document.querySelector('[data-main-content]');
 
     function toggleSidebar() {
+        // Buka/tutup sidebar dan overlay saat tombol utama ditekan.
         adminSidebar.classList.toggle('-translate-x-full');
         sidebarOverlay.classList.toggle('hidden');
     }
 
     function closeSidebar() {
+        // Pastikan sidebar tertutup dan overlay disembunyikan.
         adminSidebar.classList.add('-translate-x-full');
         sidebarOverlay.classList.add('hidden');
     }
 
-    // Close sidebar when navigating
+    // Tutup sidebar secara otomatis ketika user menekan salah satu link menu.
     document.querySelectorAll('#adminSidebar a').forEach(link => {
         link.addEventListener('click', closeSidebar);
     });
 
-    // Handle window resize
+    // Saat ukuran layar melebar, tampilkan sidebar permanen dan sembunyikan overlay.
     window.addEventListener('resize', () => {
         if (window.innerWidth >= 1024) {
             document.getElementById('adminSidebar').classList.remove('-translate-x-full');
