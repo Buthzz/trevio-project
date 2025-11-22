@@ -15,31 +15,41 @@ class User extends Model {
 
     /**
      * Mencari user berdasarkan ID
-     * * @param int $id
-     * @return array|false
+     * @param int $id User ID
+     * @return array|false User data or false if not found
      */
     public function find($id) {
-        $this->db->query("SELECT * FROM {$this->table} WHERE id = :id");
-        $this->db->bind(':id', $id);
-        return $this->db->single();
+        try {
+            $this->db->query("SELECT * FROM {$this->table} WHERE id = :id");
+            $this->db->bind(':id', $id);
+            return $this->db->single();
+        } catch (PDOException $e) {
+            error_log("User Find Error: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
      * Mencari user berdasarkan Email
      * Digunakan saat Login & Register check
-     * * @param string $email
-     * @return array|false
+     * @param string $email Email address to search for
+     * @return array|false User data or false if not found
      */
     public function findByEmail($email) {
-        $this->db->query("SELECT * FROM {$this->table} WHERE email = :email");
-        $this->db->bind(':email', $email);
-        return $this->db->single();
+        try {
+            $this->db->query("SELECT * FROM {$this->table} WHERE email = :email");
+            $this->db->bind(':email', $email);
+            return $this->db->single();
+        } catch (PDOException $e) {
+            error_log("User FindByEmail Error: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
      * Membuat user baru (Register / Google Login)
      * Menangani field nullable secara otomatis
-     * * @param array $data Array asosiatif field database
+     * @param array $data Array asosiatif field database
      * @return int|false ID user yang baru dibuat atau false jika gagal
      */
     public function create($data) {
@@ -66,6 +76,11 @@ class User extends Model {
                 $params[] = $field;
                 $values[] = ":{$field}";
             }
+        }
+
+        if (empty($params)) {
+            error_log("User Create Error: No valid fields provided");
+            return false;
         }
 
         $columns = implode(", ", $params);
@@ -97,11 +112,16 @@ class User extends Model {
     /**
      * Mengupdate data user
      * Digunakan untuk update profil atau menyimpan Google ID pada akun lama
-     * * @param int $id
-     * @param array $data
-     * @return bool
+     * @param int $id User ID to update
+     * @param array $data Associative array of fields to update
+     * @return bool True if successful, false otherwise
      */
     public function update($id, $data) {
+        if (empty($data)) {
+            error_log("User Update Error: No data provided");
+            return false;
+        }
+
         $setPart = [];
         foreach ($data as $key => $value) {
             $setPart[] = "{$key} = :{$key}";
@@ -131,23 +151,33 @@ class User extends Model {
 
     /**
      * Menghitung total user untuk Admin Dashboard
-     * * @return int
+     * @return int Total number of users
      */
     public function countAll() {
-        $this->db->query("SELECT COUNT(*) as total FROM {$this->table}");
-        $result = $this->db->single();
-        return $result ? (int)$result['total'] : 0;
+        try {
+            $this->db->query("SELECT COUNT(*) as total FROM {$this->table}");
+            $result = $this->db->single();
+            return $result ? (int)$result['total'] : 0;
+        } catch (PDOException $e) {
+            error_log("User CountAll Error: " . $e->getMessage());
+            return 0;
+        }
     }
 
     /**
      * Menghitung user berdasarkan role (opsional untuk statistik detail)
-     * * @param string $role
-     * @return int
+     * @param string $role User role to count (customer, owner, admin)
+     * @return int Number of users with specified role
      */
     public function countByRole($role) {
-        $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE role = :role");
-        $this->db->bind(':role', $role);
-        $result = $this->db->single();
-        return $result ? (int)$result['total'] : 0;
+        try {
+            $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE role = :role");
+            $this->db->bind(':role', $role);
+            $result = $this->db->single();
+            return $result ? (int)$result['total'] : 0;
+        } catch (PDOException $e) {
+            error_log("User CountByRole Error: " . $e->getMessage());
+            return 0;
+        }
     }
 }
