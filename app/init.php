@@ -69,6 +69,11 @@ if (file_exists(__DIR__ . '/../.env')) {
         list($name, $value) = explode('=', $line, 2);
         $name = trim($name);
         $value = trim($value);
+        // Remove surrounding quotes if present
+        if ((substr($value, 0, 1) === '"' && substr($value, -1) === '"') ||
+            (substr($value, 0, 1) === "'" && substr($value, -1) === "'")) {
+            $value = substr($value, 1, -1);
+        }
         if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
             putenv(sprintf('%s=%s', $name, $value));
             $_ENV[$name] = $value;
