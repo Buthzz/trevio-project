@@ -1,4 +1,4 @@
-name: Auto Deploy
+name: Auto Deploy Robust
 
 on:
   push:
@@ -10,37 +10,91 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Server
+      - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          port: 22
+          port: 2024
           script: |
-            # LOGIC UNTUK PRODUCTION
+            # ===================================================
+            # 1. LOGIC UNTUK PRODUCTION (Branch: main)
+            # ===================================================
             if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-              echo "Deploying to PRODUCTION..."
-              cd /var/www/trevio-prod
+              echo "🚀 STARTING DEPLOYMENT TO PRODUCTION..."
               
-              # Cek apakah folder kosong (clone pertama kali) atau update
+              # Definisi Folder
+              TARGET_DIR="/var/www/trevio-prod"
+              BRANCH="main"
+              
+              # Buat folder jika belum ada
+              sudo mkdir -p $TARGET_DIR
+              sudo chown -R $USER:$USER $TARGET_DIR
+              
+              # Masuk ke folder
+              cd $TARGET_DIR
+              
+              # Tandai folder aman untuk Git
+              git config --global --add safe.directory $TARGET_DIR
+              
+              # Inisialisasi Git jika folder masih kosong
               if [ ! -d ".git" ]; then
-                git clone -b main https://github.com/Buthzz/trevio-project.git .
+                echo "📂 Cloning Repository for the first time..."
+                git clone -b $BRANCH git@github.com:${{ github.repository }}.git .
               else
-                git pull origin main
+                echo "🔄 Updating Repository..."
+                
+                # [KUNCI ANTI MACET 1] Abaikan perubahan permission file
+                git config core.filemode false
+                
+                # [KUNCI ANTI MACET 2] Jangan merge. Ambil data baru, lalu RESET HARD.
+                # Ini akan membuang semua perubahan manual/konflik di server.
+                git fetch origin $BRANCH
+                git reset --hard origin/$BRANCH
               fi
+              
+              # [STEP TERAKHIR] Fix Permission agar Nginx/PHP bisa baca tulis
+              echo "🔒 Fixing Permissions..."
+              sudo chown -R www-data:www-data $TARGET_DIR
+              sudo chmod -R 775 $TARGET_DIR
+              
+              echo "✅ PRODUCTION DEPLOYMENT SUCCESS!"
             fi
 
-            # LOGIC UNTUK DEVELOPMENT
+            # ===================================================
+            # 2. LOGIC UNTUK DEVELOPMENT (Branch: development)
+            # ===================================================
             if [ "${{ github.ref }}" = "refs/heads/development" ]; then
-              echo "Deploying to DEVELOPMENT..."
-              cd /var/www/trevio-dev
+              echo "🚧 STARTING DEPLOYMENT TO DEVELOPMENT..."
+              
+              TARGET_DIR="/var/www/trevio-dev"
+              BRANCH="development"
+              
+              sudo mkdir -p $TARGET_DIR
+              sudo chown -R $USER:$USER $TARGET_DIR
+              
+              cd $TARGET_DIR
+              
+              git config --global --add safe.directory $TARGET_DIR
               
               if [ ! -d ".git" ]; then
-                git clone -b development https://github.com/Buthzz/trevio-project.git .
+                echo "📂 Cloning Repository for the first time..."
+                git clone -b $BRANCH git@github.com:${{ github.repository }}.git .
               else
-                git pull origin development
+                echo "🔄 Updating Repository..."
+                
+                # Abaikan chmod changes
+                git config core.filemode false
+                
+                # Hard Reset (Paksa update)
+                git fetch origin $BRANCH
+                git reset --hard origin/$BRANCH
               fi
+              
+              echo "🔒 Fixing Permissions..."
+              sudo chown -R www-data:www-data $TARGET_DIR
+              sudo chmod -R 775 $TARGET_DIR
+              
+              echo "✅ DEVELOPMENT DEPLOYMENT SUCCESS!"
             fi
-            
-            echo "Deployment Finished!"
