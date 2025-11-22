@@ -1,8 +1,50 @@
 <?php
+// Helper global agar fungsi routing tersedia di seluruh header.
+require_once __DIR__ . '/../../../helpers/functions.php';
+
+// Backend bisa mengisi variabel ini sebelum require header.
+$manualAuthOverrides = [];
+if (isset($isAuthenticated)) {
+    $manualAuthOverrides['isAuthenticated'] = (bool) $isAuthenticated;
+}
+if (isset($profileName)) {
+    $manualAuthOverrides['profileName'] = $profileName;
+}
+if (isset($profilePhoto)) {
+    $manualAuthOverrides['profilePhoto'] = $profilePhoto;
+}
+if (isset($profileLink)) {
+    $manualAuthOverrides['profileLink'] = $profileLink;
+}
+
+// Pakai helper agar header selalu memiliki context terbaru (override + sesi).
+$authContext    = trevio_get_auth_context($manualAuthOverrides);
+$isAuthenticated = $authContext['isAuthenticated'];
+$profileName    = $authContext['profileName'];
+$profilePhoto   = $authContext['profilePhoto'];
+$profileInitial = $authContext['profileInitial'];
+$profileLink    = $authContext['profileLink'];
+
+// Nama script aktif dipakai untuk menentukan base asset.
 $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+// Basis path asset bisa dioverride dari view, fallback ke lokasi script.
 $assetBase  = $assetBase ?? rtrim(dirname($scriptName), '/');
+// Pastikan base path tidak kosong supaya link CSS tetap valid.
 $assetBase  = ($assetBase === '' || $assetBase === '/') ? '.' : $assetBase;
+// Judul default ketika view tidak memberikan $pageTitle.
 $pageTitle  = $pageTitle ?? 'Trevio';
+
+if (preg_match('#^(.*)/app/#', $scriptName, $matches)) {
+    $projectBaseUrl = $matches[1];
+} else {
+    $projectBaseUrl = '';
+}
+
+// Default tautan navigasi utama yang bisa dioverride dari view.
+$homeLink = $homeLink ?? trevio_view_route('home/index.php');
+$logoUrl  = $logoUrl ?? trevio_view_route('../../public/images/trevio.svg');
+$loginUrl = trevio_view_route('auth/login.php');
+$registerUrl = trevio_view_route('auth/register.php');
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -44,26 +86,47 @@ $pageTitle  = $pageTitle ?? 'Trevio';
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-900">
 
+<!-- Header global + nav utama -->
 <header class="sticky top-0 z-40 bg-white border-b border-slate-200">
-    <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-        <a class="inline-flex items-center gap-3" href="/">
+    <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:gap-6 sm:px-6 sm:py-4">
+        <a class="inline-flex items-center gap-3" href="<?= htmlspecialchars($homeLink) ?>">
             <span class="sr-only">Beranda Trevio</span>
-            <img class="h-30 w-auto" src="../../../public/images/trevio.svg" alt="Logo Trevio">
+            <img class="h-12 w-auto sm:h-16 md:h-20" src="<?= htmlspecialchars($logoUrl) ?>" alt="Logo Trevio">
         </a>
 
-        <div class="hidden items-center gap-6 md:flex">
+        <div class="hidden items-center gap-3 sm:gap-4 md:flex">
             <button type="button"
-                    class="rounded-2xl bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-600">
-                IDR
+                    class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600 sm:px-4 sm:py-1.5 sm:text-xs">
+                <span class="relative inline-flex h-5 w-5 overflow-hidden rounded-full border border-slate-300 bg-white">
+                    <span class="absolute inset-x-0 top-0 h-1/2 bg-red-600"></span>
+                    <span class="absolute inset-x-0 bottom-0 h-1/2 bg-white"></span>
+                </span>
+                ID
             </button>
-            <a href="/login"
-               class="text-sm font-medium text-slate-700 hover:text-primary">
-                Masuk
-            </a>
-            <a href="/register"
-               class="inline-flex items-center rounded-full bg-accent px-6 py-2.5 text-sm font-semibold text-white shadow-lg hover:bg-accentLight">
-                Daftar
-            </a>
+            <?php // Jika sudah login, tampilkan tombol profil saja ?>
+            <?php if ($isAuthenticated): ?>
+                <a href="<?= htmlspecialchars($profileLink) ?>"
+                   class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-accent hover:text-accent">
+                    <?php if ($profilePhoto): ?>
+                        <img class="h-8 w-8 rounded-full object-cover" src="<?= htmlspecialchars($profilePhoto) ?>" alt="Foto profil">
+                    <?php else: ?>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-accent text-sm font-bold text-white">
+                            <?= htmlspecialchars($profileInitial) ?>
+                        </span>
+                    <?php endif; ?>
+                    <span><?= htmlspecialchars($profileName) ?></span>
+                </a>
+            <?php else: ?>
+                <?php // Jika belum login, tunjukkan tombol Masuk & Daftar ?>
+                <a href="<?= htmlspecialchars($loginUrl) ?>"
+                   class="text-sm font-medium text-slate-700 hover:text-primary">
+                    Masuk
+                </a>
+                <a href="<?= htmlspecialchars($registerUrl) ?>"
+                   class="inline-flex items-center rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white shadow-lg hover:bg-accentLight">
+                    Daftar
+                </a>
+            <?php endif; ?>
         </div>
 
         <button class="inline-flex items-center justify-center rounded-full border border-slate-200 p-2 text-slateSoft transition hover:border-accent hover:text-accent focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 md:hidden"
@@ -79,21 +142,40 @@ $pageTitle  = $pageTitle ?? 'Trevio';
     </div>
 
     <!-- Nav mobile: cuma IDR, Masuk, Daftar -->
-    <div class="mobile-nav hidden border-t border-slate-200 bg-white px-6 pb-6 pt-3 shadow-md md:hidden"
+    <div class="mobile-nav hidden border-t border-slate-200 bg-white px-4 pb-6 pt-3 shadow-md sm:px-6 md:hidden"
          data-mobile-panel>
         <div class="flex flex-col items-start gap-3">
             <button type="button"
-                    class="rounded-2xl bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-600">
-                IDR
+                    class="flex items-center gap-2 rounded-2xl bg-slate-100 px-4 py-1.5 text-xs font-semibold text-slate-600">
+                <span class="relative inline-flex h-5 w-5 overflow-hidden rounded-full border border-slate-300 bg-white">
+                    <span class="absolute inset-x-0 top-0 h-1/2 bg-red-600"></span>
+                    <span class="absolute inset-x-0 bottom-0 h-1/2 bg-white"></span>
+                </span>
+                Indonesia
             </button>
-            <a href="/login"
-               class="text-sm font-medium text-slate-700 hover:text-primary">
-                Masuk
-            </a>
-            <a href="/register"
-               class="inline-flex items-center rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-accentLight">
-                Daftar
-            </a>
+            <?php // Versi mobile meniru logika desktop ?>
+            <?php if ($isAuthenticated): ?>
+                <a href="<?= htmlspecialchars($profileLink) ?>"
+                   class="inline-flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700">
+                    <?php if ($profilePhoto): ?>
+                        <img class="h-9 w-9 rounded-full object-cover" src="<?= htmlspecialchars($profilePhoto) ?>" alt="Foto profil">
+                    <?php else: ?>
+                        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-base font-bold text-white">
+                            <?= htmlspecialchars($profileInitial) ?>
+                        </span>
+                    <?php endif; ?>
+                    <span><?= htmlspecialchars($profileName) ?></span>
+                </a>
+            <?php else: ?>
+                <a href="<?= htmlspecialchars($loginUrl) ?>"
+                   class="text-sm font-medium text-slate-700 hover:text-primary">
+                    Masuk
+                </a>
+                <a href="<?= htmlspecialchars($registerUrl) ?>"
+                   class="inline-flex items-center rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white shadow-md hover:bg-accentLight">
+                    Daftar
+                </a>
+            <?php endif; ?>
         </div>
     </div>
 </header>

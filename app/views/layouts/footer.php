@@ -1,25 +1,22 @@
 <?php
-
+// Footer tidak butuh inisialisasi, blok ini disiapkan untuk penyesuaian variabel jika diperlukan.
 ?>
 </main>
-<footer class="bg-slate-950 text-slate-200">
+<!-- Footer global: update link/contacts via variabel jika perlu -->
+<footer class="bg-slate-800 text-slate-200">
     <div class="mx-auto max-w-6xl px-6 py-10">
-        <div class="grid gap-8 md:grid-cols-4">
+        <div class="grid gap-8 md:grid-cols-5">
             <div class="space-y-4">
-                <a class="inline-flex items-center gap-2" href="/">
-                    <img class="h-20 w-auto" src="../../../public/images/trevio.svg" alt="Trevio logo">
+                <a class="inline-flex items-center gap-1" href="<?= htmlspecialchars($homeLink ?? '/') ?>">
+                    <img class="h-20 w-auto" src="<?= htmlspecialchars($logoUrl ?? '/../../../public/images/trevio.svg') ?>" alt="Trevio logo">
                 </a>
-                <p class="max-w-xs text-sm text-slate-400">Kami membantu kamu menemukan dan memesan penginapan terbaik: dari guesthouse yang cozy sampai hotel bintang lima dengan proses yang simpel dan aman.</p>
+                <p class="max-w-xs text-sm text-slate-200">Kami membantu kamu menemukan dan memesan penginapan terbaik: dari guesthouse yang cozy sampai hotel bintang lima dengan proses yang simpel dan aman.</p>
             </div>
 
-            <div class="space-y-3">
+            <div class="space-y-1">
                     <h3 class="text-sm font-semibold text-white">Jelajahi</h3>
                 <ul class="space-y-2 text-sm text-slate-400">
-                        <li><a class="hover:text-white" href="#">Destinasi Terpopuler</a></li>
-                        <li><a class="hover:text-white" href="#">Pilihan Musim Panas</a></li>
-                        <li><a class="hover:text-white" href="#">Liburan Musim Dingin</a></li>
-                        <li><a class="hover:text-white" href="#">Promo Akhir Pekan</a></li>
-                        <li><a class="hover:text-white" href="#">Penginapan Ramah Keluarga</a></li>
+                        <li><a class="hover:text-white" href="#">Hotel</a></li>
                 </ul>
             </div>
 
@@ -27,20 +24,12 @@
                     <h3 class="text-sm font-semibold text-white">Jenis Properti</h3>
                 <ul class="space-y-2 text-sm text-slate-400">
                         <li><a class="hover:text-white" href="#">Hotel</a></li>
-                        <li><a class="hover:text-white" href="#">Apartemen</a></li>
-                        <li><a class="hover:text-white" href="#">Villa</a></li>
-                        <li><a class="hover:text-white" href="#">Kabin</a></li>
-                        <li><a class="hover:text-white" href="#">Glamping</a></li>
-                        <li><a class="hover:text-white" href="#">Dome</a></li>
                 </ul>
             </div>
 
             <div class="space-y-3">
                     <h3 class="text-sm font-semibold text-white">Bantuan</h3>
                 <ul class="space-y-2 text-sm text-slate-400">
-                        <li><a class="hover:text-white" href="#">Pusat Bantuan</a></li>
-                        <li><a class="hover:text-white" href="#">Live Chat</a></li>
-                        <li><a class="hover:text-white" href="#">FAQ</a></li>
                         <li><a class="hover:text-white" href="#">Hubungi Kami</a></li>
                 </ul>
             </div>
@@ -49,7 +38,7 @@
                     <h3 class="text-sm font-semibold text-white">Hubungi Kami</h3>
                 <ul class="space-y-2 text-sm text-slate-400">
                         <li>+62 8810 8177 2005</li>
-                        <li>halo@trevio.com</li>
+                        <li>trevio@gmail.com</li>
                 </ul>
                 <div class="mt-3 flex gap-3 text-slate-300">
                     <a href="https://facebook.com" target="_blank" rel="noreferrer" class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-800 hover:text-white"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>

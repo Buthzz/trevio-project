@@ -117,12 +117,98 @@ body {
 	min-height: 150px;
 }
 
-@media (max-width: 1024px) {
-	.detail-gallery {
-		grid-template-columns: 1fr;
-	}
-	.detail-image--side {
-		display: none;
+.detail-hero {
+	position: relative;
+	min-height: 420px;
+	border-radius: 2rem;
+	overflow: hidden;
+	box-shadow: 0 25px 60px rgba(15, 23, 42, 0.35);
+	z-index: 1;
+}
+
+.detail-hero__slide {
+	position: absolute;
+	inset: 0;
+	background-size: cover;
+	background-position: center;
+	opacity: 0;
+	transform: scale(1.04);
+	transition: opacity 0.6s ease, transform 0.9s ease;
+}
+
+.detail-hero__slide::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(180deg, rgba(15, 23, 42, 0.05), rgba(15, 23, 42, 0.35));
+}
+
+.detail-hero__slide.is-active {
+	opacity: 1;
+	transform: scale(1);
+}
+
+.detail-hero__badge {
+	position: absolute;
+	top: 1.25rem;
+	left: 1.5rem;
+	padding: 0.4rem 1rem;
+	border-radius: 999px;
+	background: rgba(15, 23, 42, 0.55);
+	color: #f8fafc;
+	font-size: 0.75rem;
+	font-weight: 600;
+	backdrop-filter: blur(6px);
+}
+
+.detail-hero__indicator {
+	position: absolute;
+	left: 50%;
+	bottom: 1.5rem;
+	transform: translateX(-50%);
+	display: inline-flex;
+	gap: 0.5rem;
+	padding: 0.35rem 0.6rem;
+	background: rgba(15, 23, 42, 0.55);
+	border-radius: 999px;
+	backdrop-filter: blur(12px);
+	box-shadow: 0 15px 30px rgba(15, 23, 42, 0.35);
+}
+
+.detail-hero__dot {
+	border: none;
+	background: transparent;
+	color: #e2e8f0;
+	padding: 0.4rem 0.8rem;
+	border-radius: 999px;
+	text-align: left;
+	cursor: pointer;
+	transition: background 0.2s ease, color 0.2s ease;
+}
+
+.detail-hero__dot span {
+	display: block;
+	font-size: 0.85rem;
+	font-weight: 700;
+}
+
+.detail-hero__dot small {
+	display: block;
+	font-size: 0.65rem;
+	text-transform: capitalize;
+}
+
+.detail-hero__dot.is-active {
+	background: #ffffff;
+	color: #0f172a;
+}
+
+@media (max-width: 640px) {
+	.detail-hero__indicator {
+		flex-direction: column;
+		align-items: stretch;
+		padding: 0.5rem;
+		transform: translateX(-50%);
 	}
 }
 

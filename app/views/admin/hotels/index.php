@@ -1,9 +1,14 @@
 <?php
+// Tentukan judul halaman agar header menampilkan konteks modul hotel.
 $pageTitle = 'Admin Hotels - Trevio';
+// Set tautan kembali ke dashboard utama admin untuk tombol logo.
+$homeLink  = '../dashboard.php';
+// Muat header global supaya gaya dan navigasi konsisten.
 include __DIR__ . '/../../layouts/header.php';
 ?>
 
-<div class="flex h-screen bg-slate-50">
+<!-- Daftar hotel untuk tim admin -->
+<div class="flex min-h-[calc(100vh-var(--header-height,4rem))] bg-slate-50">
     <!-- Sidebar Toggle Button (Mobile) -->
     <button id="sidebarToggle" class="fixed top-4 left-4 z-50 lg:hidden rounded-lg bg-accent p-2 text-white shadow-lg hover:bg-accentLight transition" onclick="toggleSidebar()">
         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,6 +20,7 @@ include __DIR__ . '/../../layouts/header.php';
     <div id="sidebarOverlay" class="fixed inset-0 z-20 hidden bg-black/50 lg:hidden" onclick="closeSidebar()"></div>
 
     <!-- Sidebar -->
+    <!-- Sidebar modul admin -->
     <aside id="adminSidebar" class="fixed inset-y-0 left-0 z-30 w-64 border-r border-slate-200 bg-white overflow-y-auto transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:static lg:pt-0" style="top: var(--header-height, 4rem);">
         <!-- Sidebar Header with Close Button (Mobile) -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 lg:hidden">
@@ -28,35 +34,35 @@ include __DIR__ . '/../../layouts/header.php';
         <div class="p-6">
 
         <nav class="space-y-2">
-            <a href="/admin/dashboard" 
+            <a href="../dashboard.php" 
                class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4"></path>
                 </svg>
                 Dashboard
             </a>
-            <a href="/admin/hotels" 
+                <a href="index.php" 
                class="flex items-center gap-3 rounded-lg bg-accent/10 px-4 py-3 text-accent font-semibold transition">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
                 </svg>
                 Hotels
             </a>
-            <a href="/admin/payments" 
+                <a href="../payments/index.php" 
                class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                 </svg>
                 Payments
             </a>
-            <a href="/admin/refunds" 
+                <a href="../refunds/index.php" 
                class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path>
                 </svg>
                 Refunds
             </a>
-            <a href="/admin/users" 
+                <a href="../users/index.php" 
                class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-2a6 6 0 0112 0v2zm6-11a4 4 0 110 5.292M21 21h-8v-2a6 6 0 018-5.73"></path>
@@ -68,6 +74,7 @@ include __DIR__ . '/../../layouts/header.php';
     </aside>
 
     <!-- Main Content -->
+    <!-- Konten utama: filter + tabel hotel -->
     <main class="flex-1 overflow-auto">
         <div class="p-6 md:p-8">
             <!-- Page Header -->
@@ -100,22 +107,23 @@ include __DIR__ . '/../../layouts/header.php';
             </div>
 
             <!-- Hotels Table -->
-            <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <table class="w-full">
+            <div class="rounded-xl border border-slate-200 bg-white shadow-sm">
+                <div class="overflow-x-auto">
+                    <table class="min-w-[960px] w-full table-auto">
                     <thead>
                         <tr class="border-b border-slate-200 bg-slate-50">
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Hotel Name</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Owner</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Location</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Rooms</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Status</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Rating</th>
-                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900">Actions</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Hotel Name</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Owner</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Location</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Rooms</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Status</th>
+                            <th class="px-6 py-4 text-left text-sm font-semibold text-slate-900 whitespace-nowrap">Rating</th>
+                            <th class="px-6 py-4 text-center text-sm font-semibold text-slate-900 whitespace-nowrap">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-200">
                         <?php 
-                        // Sample data - ganti dengan data dari database
+                        // Data contoh sementara sebelum diganti query database.
                         $hotels = [
                             ['id' => 1, 'name' => 'Grand Hotel Jakarta', 'owner' => 'Budi Santoso', 'location' => 'Jakarta Pusat', 'rooms' => 45, 'status' => 'active', 'rating' => 4.8],
                             ['id' => 2, 'name' => 'Luxury Resort Bali', 'owner' => 'Made Wijaya', 'location' => 'Ubud, Bali', 'rooms' => 60, 'status' => 'active', 'rating' => 4.9],
@@ -123,12 +131,25 @@ include __DIR__ . '/../../layouts/header.php';
                             ['id' => 4, 'name' => 'Boutique Hotel Bandung', 'owner' => 'Ahmad Dahlan', 'location' => 'Bandung', 'rooms' => 25, 'status' => 'pending', 'rating' => 4.6],
                             ['id' => 5, 'name' => 'Beach Resort Lombok', 'owner' => 'Ni Ketut Sari', 'location' => 'Lombok', 'rooms' => 55, 'status' => 'inactive', 'rating' => 4.7],
                         ];
-                        foreach ($hotels as $hotel): 
+                        // Palet warna untuk avatar hotel agar visual variatif.
+                        $hotelPalettes = [
+                            ['bg' => 'bg-blue-100', 'icon' => 'text-blue-600'],
+                            ['bg' => 'bg-indigo-100', 'icon' => 'text-indigo-600'],
+                            ['bg' => 'bg-teal-100', 'icon' => 'text-teal-600'],
+                            ['bg' => 'bg-purple-100', 'icon' => 'text-purple-600'],
+                        ];
+                        foreach ($hotels as $index => $hotel): 
+                            // Pilih kombinasi warna berdasarkan indeks agar bergantian.
+                            $hotelPalette = $hotelPalettes[$index % count($hotelPalettes)];
                         ?>
                         <tr class="hover:bg-slate-50 transition">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="h-10 w-10 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600"></div>
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-lg <?= htmlspecialchars($hotelPalette['bg']) ?> shadow-inner">
+                                        <svg class="h-5 w-5 <?= htmlspecialchars($hotelPalette['icon']) ?>" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 21h18M5 10h14M10 21v-8m4 8v-8m-7 0l5-5 5 5"></path>
+                                        </svg>
+                                    </div>
                                     <span class="font-semibold text-slate-900"><?= htmlspecialchars($hotel['name']) ?></span>
                                 </div>
                             </td>
@@ -139,11 +160,13 @@ include __DIR__ . '/../../layouts/header.php';
                             </td>
                             <td class="px-6 py-4">
                                 <?php 
+                                // Petakan status hotel ke warna badge yang tepat.
                                 $statusColors = [
                                     'active' => 'bg-green-100 text-green-700',
                                     'pending' => 'bg-yellow-100 text-yellow-700',
                                     'inactive' => 'bg-red-100 text-red-700'
                                 ];
+                                // Gunakan kelas default abu jika status tidak dikenal.
                                 $statusClass = $statusColors[$hotel['status']] ?? 'bg-slate-100 text-slate-700';
                                 ?>
                                 <span class="inline-flex rounded-full px-3 py-1 text-sm font-medium <?= $statusClass ?>">
@@ -158,8 +181,8 @@ include __DIR__ . '/../../layouts/header.php';
                                     <span class="font-semibold text-slate-900"><?= $hotel['rating'] ?></span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-2">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center justify-center gap-2">
                                     <button class="rounded-lg bg-blue-100 p-2 text-blue-600 hover:bg-blue-200 transition" title="View">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -181,7 +204,8 @@ include __DIR__ . '/../../layouts/header.php';
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
-                </table>
+                    </table>
+                </div>
             </div>
 
             <!-- Pagination -->
@@ -201,6 +225,7 @@ include __DIR__ . '/../../layouts/header.php';
 
 <script>
     function toggleSidebar() {
+        // Tampilkan atau sembunyikan sidebar saat tombol hamburger ditekan.
         const sidebar = document.getElementById('adminSidebar');
         const overlay = document.getElementById('sidebarOverlay');
         sidebar.classList.toggle('-translate-x-full');
@@ -208,18 +233,19 @@ include __DIR__ . '/../../layouts/header.php';
     }
 
     function closeSidebar() {
+        // Pastikan sidebar tertutup, dipakai saat klik overlay atau navigasi.
         const sidebar = document.getElementById('adminSidebar');
         const overlay = document.getElementById('sidebarOverlay');
         sidebar.classList.add('-translate-x-full');
         overlay.classList.add('hidden');
     }
 
-    // Close sidebar when navigating
+    // Tutup sidebar otomatis saat user memilih menu navigasi.
     document.querySelectorAll('#adminSidebar a').forEach(link => {
         link.addEventListener('click', closeSidebar);
     });
 
-    // Handle window resize
+    // Sesuaikan perilaku saat window diperbesar agar sidebar tetap terlihat di desktop.
     window.addEventListener('resize', () => {
         if (window.innerWidth >= 1024) {
             document.getElementById('adminSidebar').classList.remove('-translate-x-full');

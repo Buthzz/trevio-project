@@ -1,9 +1,14 @@
 <?php
+// Judul halaman utama admin agar mudah dikenali di tab browser.
 $pageTitle = 'Admin Dashboard - Trevio';
+// Tautan home digunakan oleh header untuk kembali ke dashboard.
+$homeLink  = 'dashboard.php';
+// Sertakan header global demi keseragaman layout.
 include __DIR__ . '/../layouts/header.php';
 ?>
 
-<div class="flex h-screen bg-slate-50">
+<!-- Layout dashboard admin utama -->
+<div class="flex min-h-[calc(100vh-var(--header-height,4rem))] bg-slate-50">
     <!-- Sidebar Toggle Button (Mobile) -->
     <button id="sidebarToggle" class="fixed top-4 left-4 z-50 lg:hidden rounded-lg bg-accent p-2 text-white shadow-lg hover:bg-accentLight transition" onclick="toggleSidebar()">
         <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -15,6 +20,7 @@ include __DIR__ . '/../layouts/header.php';
     <div id="sidebarOverlay" class="fixed inset-0 z-20 hidden bg-black/50 lg:hidden" onclick="closeSidebar()"></div>
 
     <!-- Sidebar -->
+    <!-- Sidebar navigasi modul admin -->
     <aside id="adminSidebar" class="fixed inset-y-0 left-0 z-30 w-64 border-r border-slate-200 bg-white overflow-y-auto transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:static lg:pt-0" style="top: var(--header-height, 4rem);">
         <!-- Sidebar Header with Close Button (Mobile) -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 lg:hidden">
@@ -27,35 +33,35 @@ include __DIR__ . '/../layouts/header.php';
         </div>
         <div class="p-6">
         <nav class="space-y-2">
-            <a href="/admin/dashboard" 
+            <a href="dashboard.php" 
                class="flex items-center gap-3 rounded-lg bg-accent/10 px-4 py-3 text-accent font-semibold transition">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4"></path>
                 </svg>
                 Dashboard
             </a>
-            <a href="/admin/hotels" 
+                <a href="hotels/index.php" 
                class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
                 </svg>
                 Hotels
             </a>
-            <a href="/admin/payments" 
+                <a href="payments/index.php" 
                class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
                 </svg>
                 Payments
             </a>
-            <a href="/admin/refunds" 
+                <a href="refunds/index.php" 
                class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path>
                 </svg>
                 Refunds
             </a>
-            <a href="/admin/users" 
+                <a href="users/index.php" 
                class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-2a6 6 0 0112 0v2zm6-11a4 4 0 110 5.292M21 21h-8v-2a6 6 0 018-5.73"></path>
@@ -67,6 +73,7 @@ include __DIR__ . '/../layouts/header.php';
     </aside>
 
     <!-- Main Content -->
+    <!-- Area konten dinamis -->
     <main class="flex-1 overflow-auto">
         <div class="p-6 md:p-8">
             <!-- Page Header -->
@@ -198,6 +205,7 @@ include __DIR__ . '/../layouts/header.php';
 
 <script>
     function toggleSidebar() {
+        // Mengontrol buka/tutup sidebar ketika tombol hamburger ditekan.
         const sidebar = document.getElementById('adminSidebar');
         const overlay = document.getElementById('sidebarOverlay');
         sidebar.classList.toggle('-translate-x-full');
@@ -205,18 +213,19 @@ include __DIR__ . '/../layouts/header.php';
     }
 
     function closeSidebar() {
+        // Paksa sidebar menutup agar konten utama lebih leluasa.
         const sidebar = document.getElementById('adminSidebar');
         const overlay = document.getElementById('sidebarOverlay');
         sidebar.classList.add('-translate-x-full');
         overlay.classList.add('hidden');
     }
 
-    // Close sidebar when navigating
+    // Tutup sidebar saat user memilih link navigasi.
     document.querySelectorAll('#adminSidebar a').forEach(link => {
         link.addEventListener('click', closeSidebar);
     });
 
-    // Handle window resize
+    // Pastikan sidebar otomatis tampil di resolusi desktop.
     window.addEventListener('resize', () => {
         if (window.innerWidth >= 1024) {
             document.getElementById('adminSidebar').classList.remove('-translate-x-full');
