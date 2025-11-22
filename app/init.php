@@ -52,3 +52,66 @@ define('BASE_URL', $protocol . '://' . $host);
 if (file_exists(__DIR__ . '/../config/config.php')) {
     require_once __DIR__ . '/../config/config.php';
 }
+
+// Load environment variables from .env file
+// - Skips lines starting with #
+// - Does not override existing $_ENV/$_SERVER values
+// - Format: KEY=value (quotes not supported)
+// - Security: Do not commit secrets in .env to version control
+// Load environment variables from .env file
+// - Skips lines starting with #
+// - Does not override existing $_ENV/$_SERVER values
+// - Format: KEY=value (quotes not supported)
+// - Security: Do not commit secrets in .env to version control
+// Load environment variables from .env file
+// - Skips lines starting with #
+// - Does not override existing $_ENV/$_SERVER values
+// - Format: KEY=value (quotes not supported)
+// - Security: Do not commit secrets in .env to version control
+if (file_exists(__DIR__ . '/../.env')) {
+    $lines = @file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        // Optionally log error or handle gracefully
+        return;
+    }
+    foreach ($lines as $line) {
+        if (strpos(trim($line), '#') === 0) continue; // Skip comment
+        if (strpos($line, '=') === false) continue; // Skip lines without '='
+        list($name, $value) = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+        if (empty($name)) continue;
+        // Remove surrounding quotes if present
+        if ((substr($value, 0, 1) === '"' && substr($value, -1) === '"') ||
+            (substr($value, 0, 1) === "'" && substr($value, -1) === "'")) {
+            $value = substr($value, 1, -1);
+        }
+        if (empty($name)) continue;
+        // Remove surrounding quotes if present
+        if ((substr($value, 0, 1) === '"' && substr($value, -1) === '"') ||
+            (substr($value, 0, 1) === "'" && substr($value, -1) === "'")) {
+            $value = substr($value, 1, -1);
+        }
+        // Remove surrounding quotes if present
+        if ((substr($value, 0, 1) === '"' && substr($value, -1) === '"') ||
+            (substr($value, 0, 1) === "'" && substr($value, -1) === "'")) {
+            $value = substr($value, 1, -1);
+        }
+        // Remove surrounding quotes if present
+        if ((substr($value, 0, 1) === '"' && substr($value, -1) === '"') ||
+            (substr($value, 0, 1) === "'" && substr($value, -1) === "'")) {
+            $value = substr($value, 1, -1);
+        }
+        if (empty($name)) continue;
+        // Remove surrounding quotes if present
+        if ((substr($value, 0, 1) === '"' && substr($value, -1) === '"') ||
+            (substr($value, 0, 1) === "'" && substr($value, -1) === "'")) {
+            $value = substr($value, 1, -1);
+        }
+        if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+            putenv(sprintf('%s=%s', $name, $value));
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+}

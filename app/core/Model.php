@@ -10,20 +10,29 @@ class Model {
     protected $stmt;
 
     public function __construct() {
-        // Sesuaikan kredensial database Anda di sini
-        $host = 'localhost';
-        $dbname = 'trevio';
-        $user = 'root';
-        $pass = '';
+        // Mengambil kredensial dari environment variables (.env)
+        // Format: getenv('KEY') ?: 'default_value'
+        $host = getenv('DB_HOST') ?: 'localhost';
+        $port = getenv('DB_PORT') ?: '3306';
+        $dbname = getenv('DB_DATABASE') ?: 'trevio';
+        $user = getenv('DB_USERNAME') ?: 'root';
+        $pass = getenv('DB_PASSWORD') ?: '';
 
-        $dsn = "mysql:host=$host;dbname=$dbname;charset=utf8mb4";
+        // Masukkan port ke dalam DSN untuk spesifisitas koneksi
+        $dsn = "mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4";
 
         try {
             $this->db = new PDO($dsn, $user, $pass);
             $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
         } catch(PDOException $e) {
-            die("Database Connection Error: " . $e->getMessage());
+            // Tampilkan pesan error namun hindari menampilkan password di layar production
+            if (getenv('APP_ENV') === 'production') {
+                error_log("Database Connection Error: " . $e->getMessage());
+                die("Database Connection Error. Please contact support.");
+            } else {
+                die("Database Connection Error: " . $e->getMessage());
+            }
         }
     }
 
