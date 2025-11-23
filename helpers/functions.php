@@ -59,6 +59,7 @@ if (!function_exists('trevio_build_auth_context')) {
 			'profileName' => $_SESSION['user_name'] ?? 'Profil Kamu',
 			'profilePhoto' => $_SESSION['user_avatar'] ?? null,
 			'profileLink' => trevio_view_route('profile/index.php'),
+			'userRole' => $_SESSION['user_role'] ?? 'guest',
 		];
 
 		$context = array_merge($defaults, array_filter($overrides, static function ($value) {

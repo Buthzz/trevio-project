@@ -1,19 +1,66 @@
 
 <?php
+// [BACKEND NOTE]: Mulai session untuk menyimpan data booking sementara
+// Session digunakan untuk membawa data dari form -> confirm -> history
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Judul halaman form agar tab browser jelas.
 $pageTitle = 'Trevio | Form Pemesanan';
+
+// [BACKEND NOTE]: Ambil data hotel dari URL parameters (dikirim dari hotel/detail.php)
+// Parameter yang diterima: hotel_id, room_name, room_price
+$hotelId = isset($_GET['hotel_id']) ? intval($_GET['hotel_id']) : null;
+$roomName = isset($_GET['room_name']) ? $_GET['room_name'] : null;
+$roomPrice = isset($_GET['room_price']) ? $_GET['room_price'] : null;
+
+// [BACKEND NOTE]: Jika ada hotel_id, load data hotel dari dummy array
+// Untuk production: query ke database untuk ambil data hotel
+$hotelName = 'Aurora Peaks Resort'; // Default
+$hotelCity = 'Tokyo'; // Default
+
+if ($hotelId) {
+    // Dummy hotel data - sesuaikan dengan data di hotel/detail.php
+    $hotelsDummy = [
+        101 => ['name' => 'Padma Hotel Bandung', 'city' => 'Bandung'],
+        102 => ['name' => 'The Langham Jakarta', 'city' => 'Jakarta'],
+        103 => ['name' => 'Amanjiwo Resort', 'city' => 'Yogyakarta'],
+        104 => ['name' => 'The Apurva Kempinski', 'city' => 'Bali'],
+    ];
+    
+    if (isset($hotelsDummy[$hotelId])) {
+        $hotelName = $hotelsDummy[$hotelId]['name'];
+        $hotelCity = $hotelsDummy[$hotelId]['city'];
+    }
+}
+
+// [BACKEND NOTE]: Extract harga numerik dari room_price (format: "Rp 2.100.000 / malam")
+// Untuk production: simpan harga sebagai integer di database
+$pricePerNight = 520000; // Default
+if ($roomPrice) {
+    // Extract angka dari format "Rp 2.100.000 / malam"
+    preg_match('/[\d.]+/', str_replace(',', '', $roomPrice), $matches);
+    if (!empty($matches[0])) {
+        $pricePerNight = intval(str_replace('.', '', $matches[0]));
+    }
+}
+
 // Data default reservasi agar komponen samping memiliki nilai awal.
-$reservation = $reservation ?? [
-    'hotel' => 'Aurora Peaks Resort',
-    'room' => 'Premier Onsen Suite',
+$reservation = [
+    'hotel' => $hotelName,
+    'hotel_id' => $hotelId,
+    'hotel_city' => $hotelCity,
+    'room' => $roomName ?: 'Premier Onsen Suite',
     'check_in' => '2025-12-18',
     'check_out' => '2025-12-21',
     'nights' => 3,
     'guests' => '2 dewasa',
-    'price_per_night' => 520000,
+    'price_per_night' => $pricePerNight,
     'tax' => 0.1,
     'service' => 0.05,
 ];
+
 // Hitung total tarif dasar dari harga per malam x durasi.
 $totalBase = $reservation['price_per_night'] * $reservation['nights'];
 // Hitung nominal pajak berdasarkan tarif yang ditentukan.
@@ -22,6 +69,58 @@ $totalTax = $totalBase * $reservation['tax'];
 $totalService = $totalBase * $reservation['service'];
 // Total keseluruhan ditampilkan pada ringkasan harga.
 $totalAmount = $totalBase + $totalTax + $totalService;
+
+// [BACKEND NOTE]: Tangani POST request dari form saat tombol "Bayar Sekarang" diklik
+// Data form akan disimpan ke session $_SESSION['trevio_booking_current']
+// Kemudian redirect ke halaman konfirmasi pembayaran
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['confirm_booking'])) {
+    // [BACKEND NOTE]: Ambil data tamu dari form
+    // Untuk production: validasi semua input dan sanitize data
+    $guestName = $_POST['guest_name'] ?? 'Guest';
+    $guestEmail = $_POST['guest_email'] ?? '';
+    $guestPhone = $_POST['guest_phone'] ?? '';
+    $guestNationality = $_POST['guest_nationality'] ?? 'Indonesia';
+    $specialRequest = $_POST['special_request'] ?? '';
+    
+    // [BACKEND NOTE]: Generate booking code dan invoice code yang unik
+    // Format: TRV-YYMMDD-XXX (XXX = random 3 digit)
+    // Untuk production: gunakan auto-increment ID dari database
+    $bookingCode = 'TRV-' . date('ymd') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+    $invoiceCode = 'INV-' . date('Ymd') . '-' . str_pad(rand(1, 999), 3, '0', STR_PAD_LEFT);
+    
+    // [BACKEND NOTE]: Simpan data booking lengkap ke session
+    // Session ini akan dibaca oleh halaman confirm.php
+    $_SESSION['trevio_booking_current'] = [
+        'booking_code' => $bookingCode,
+        'invoice_code' => $invoiceCode,
+        'hotel_id' => $reservation['hotel_id'],
+        'hotel_name' => $reservation['hotel'],
+        'hotel_city' => $reservation['hotel_city'],
+        'room_name' => $reservation['room'],
+        'check_in' => $reservation['check_in'],
+        'check_out' => $reservation['check_out'],
+        'nights' => $reservation['nights'],
+        'guests' => $reservation['guests'],
+        'price_per_night' => $reservation['price_per_night'],
+        'total_base' => $totalBase,
+        'total_tax' => $totalTax,
+        'total_service' => $totalService,
+        'total_amount' => $totalAmount,
+        'guest_name' => $guestName,
+        'guest_email' => $guestEmail,
+        'guest_phone' => $guestPhone,
+        'guest_nationality' => $guestNationality,
+        'special_request' => $specialRequest,
+        'status' => 'Menunggu Pembayaran',
+        'created_at' => date('Y-m-d H:i:s'),
+    ];
+    
+    // [BACKEND NOTE]: Redirect ke halaman konfirmasi
+    // Untuk production: proses payment gateway integration di sini
+    header('Location: confirm.php?invoice=' . urlencode($invoiceCode));
+    exit;
+}
+
 // Sertakan header global agar tampilan konsisten.
 require __DIR__ . '/../layouts/header.php';
 ?>
@@ -41,41 +140,43 @@ require __DIR__ . '/../layouts/header.php';
         </div>
         <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
             <!-- Kolom kiri: step-by-step pengisian data tamu -->
-            <div class="space-y-8">
+            <!-- [BACKEND NOTE]: Form wrapper untuk mengirim data booking via POST -->
+            <form method="POST" action="" class="space-y-8">
+                <input type="hidden" name="confirm_booking" value="1">
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div class="flex items-center gap-3 text-sm font-semibold text-primary">
                         <span class="step-badge">1</span>
                         Data Tamu
                     </div>
-                    <form class="mt-6 grid gap-4 sm:grid-cols-2">
+                    <div class="mt-6 grid gap-4 sm:grid-cols-2">
                         <label class="form-group">
                             <span>Nama Lengkap</span>
-                            <input class="input-control" type="text" placeholder="Nama sesuai KTP / Paspor" />
+                            <input class="input-control" name="guest_name" type="text" placeholder="Nama sesuai KTP / Paspor" required />
                         </label>
                         <label class="form-group">
                             <span>Email</span>
-                            <input class="input-control" type="email" placeholder="nama@email.com" />
+                            <input class="input-control" name="guest_email" type="email" placeholder="nama@email.com" required />
                         </label>
                         <label class="form-group">
                             <span>No. Telepon</span>
-                            <input class="input-control" type="tel" placeholder="08xxxxxxxxxx" />
+                            <input class="input-control" name="guest_phone" type="tel" placeholder="08xxxxxxxxxx" required />
                         </label>
                         <label class="form-group">
                             <span>Kebangsaan</span>
-                            <input class="input-control" type="text" placeholder="Indonesia" />
+                            <input class="input-control" name="guest_nationality" type="text" placeholder="Indonesia" value="Indonesia" />
                         </label>
                         <label class="form-group sm:col-span-2">
                             <span>Permintaan Khusus</span>
-                            <textarea class="input-control h-28" placeholder="Contoh: high floor, late check-in"></textarea>
+                           <textarea class="input-control h-28" name="special_request" placeholder="Contoh: high floor, late check-in"></textarea>
                         </label>
-                    </form>
+                    </div>
                 </div>
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div class="flex items-center gap-3 text-sm font-semibold text-primary">
                         <span class="step-badge">2</span>
                         Rincian Pembayaran
                     </div>
-                    <form class="mt-6 grid gap-4">
+                    <div class="mt-6 grid gap-4">
                         <div class="grid gap-4 md:grid-cols-2">
                             <label class="form-group">
                                 <span>Metode Pembayaran</span>
@@ -124,7 +225,7 @@ require __DIR__ . '/../layouts/header.php';
                         <div class="rounded-2xl bg-slate-50 p-4 text-xs text-slate-500">
                             Pembayaran diproses oleh Trevio Secure Pay dengan enkripsi 256-bit. Detail kartu tidak disimpan di server kami.
                         </div>
-                    </form>
+                    </div>
                 </div>
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div class="flex items-center gap-3 text-sm font-semibold text-primary">
@@ -133,11 +234,13 @@ require __DIR__ . '/../layouts/header.php';
                     </div>
                     <div class="mt-6 space-y-4 text-sm text-slate-600">
                         <p>Pastikan seluruh data sudah benar. Setelah menekan tombol "Bayar Sekarang", e-ticket akan terkirim ke email dan WhatsApp Anda.</p>
-                        <button class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:bg-accentLight" type="button" data-confirm-button>Bayar Sekarang</button>
+                        <!-- [BACKEND NOTE]: Tombol submit untuk kirim data ke server -->
+                        <button class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:bg-accentLight" type="submit">Bayar Sekarang</button>
                         <button class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" type="button" data-save-button>Simpan untuk nanti</button>
                     </div>
                 </div>
-            </div>
+                </div>
+            </form>
             <!-- Kolom kanan: ringkasan pesanan + add-on -->
             <aside class="space-y-6">
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -200,26 +303,11 @@ require __DIR__ . '/../layouts/header.php';
     </div>
 </section>
 <script>
+// [BACKEND NOTE]: JavaScript untuk handle tombol "Simpan untuk nanti"
+// Form submit untuk "Bayar Sekarang" sudah ditangani oleh POST handler di PHP
 document.addEventListener('DOMContentLoaded', function () {
-    // Tombol utama untuk mengeksekusi simulasi pembayaran.
-    const confirmButton = document.querySelector('[data-confirm-button]');
     // Tombol untuk menyimpan data reservasi sementara.
     const saveButton = document.querySelector('[data-save-button]');
-
-    if (confirmButton) {
-        // Tampilkan notifikasi sukses ketika pengguna menekan bayar.
-        confirmButton.addEventListener('click', function () {
-            Swal.fire({
-                title: 'Berhasil!',
-                text: 'Reservasi kamu sudah dikonfirmasi. Detail booking terkirim ke email.',
-                icon: 'success',
-                confirmButtonText: 'Lihat Konfirmasi'
-            }).then(function () {
-                // TODO backend: arahkan ke route konfirmasi resmi setelah endpoint siap
-                window.location.href = 'confirm.php';
-            });
-        });
-    }
 
     if (saveButton) {
         // Beri feedback ketika reservasi hanya disimpan ke riwayat.

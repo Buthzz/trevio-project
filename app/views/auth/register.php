@@ -28,6 +28,40 @@
     <?php
     // Header global agar tone branding konsisten di halaman registrasi.
     require __DIR__ . '/../layouts/header.php';
+
+    // Logic Register Dummy
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $fullName = $_POST['full_name'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $userType = $_POST['user_type'] ?? 'guest';
+
+        // Validasi sederhana (Dummy)
+        if (!empty($fullName) && !empty($email)) {
+            // Simulasi user baru berhasil dibuat
+            $newUser = [
+                'id' => rand(1000, 9999),
+                'name' => $fullName,
+                'email' => $email,
+                'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($fullName) . '&background=random',
+                'role' => $userType
+            ];
+
+            // Auto login setelah register
+            if (session_status() === PHP_SESSION_NONE) session_start();
+            $_SESSION['user_id'] = $newUser['id'];
+            $_SESSION['user_name'] = $newUser['name'];
+            $_SESSION['user_email'] = $newUser['email'];
+            $_SESSION['user_avatar'] = $newUser['avatar'];
+            $_SESSION['user_role'] = $newUser['role'];
+            $_SESSION['is_logged_in'] = true;
+            $_SESSION['login_provider'] = 'email';
+
+            // Redirect ke home dengan pesan sukses
+            $redirectUrl = (function_exists('trevio_view_route') ? trevio_view_route('home/index.php') : '../home/index.php') . '?login_success=register';
+            echo "<script>window.location.href = '$redirectUrl';</script>";
+            exit;
+        }
+    }
     ?>
 
     <!-- Kontainer utama: mobile sengaja dibiarkan memanjang supaya tombol tidak kepotong -->

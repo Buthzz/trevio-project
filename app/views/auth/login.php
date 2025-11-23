@@ -28,6 +28,39 @@
     <?php
     // Header global memastikan navigasi konsisten di halaman auth.
     require __DIR__ . '/../layouts/header.php';
+
+    // Logic Login Dummy
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
+
+        // Validasi sederhana (Dummy)
+        if (!empty($email) && !empty($password)) {
+            // Simulasi data user dari database
+            $dummyUser = [
+                'id' => 101,
+                'name' => 'Trevio Member',
+                'email' => $email,
+                'avatar' => null, // Bisa diisi URL gambar jika ada
+                'role' => 'guest'
+            ];
+
+            // Set session
+            if (session_status() === PHP_SESSION_NONE) session_start();
+            $_SESSION['user_id'] = $dummyUser['id'];
+            $_SESSION['user_name'] = $dummyUser['name'];
+            $_SESSION['user_email'] = $dummyUser['email'];
+            $_SESSION['user_avatar'] = $dummyUser['avatar'];
+            $_SESSION['user_role'] = $dummyUser['role'];
+            $_SESSION['is_logged_in'] = true;
+            $_SESSION['login_provider'] = 'email';
+
+            // Redirect ke home dengan pesan sukses
+            $redirectUrl = (function_exists('trevio_view_route') ? trevio_view_route('home/index.php') : '../home/index.php') . '?login_success=email';
+            echo "<script>window.location.href = '$redirectUrl';</script>";
+            exit;
+        }
+    }
     ?>
 
     <main class="flex items-center justify-center px-6 py-6 min-h-[calc(100vh-10px)]">
@@ -115,7 +148,7 @@
                 </div>
 
                 <div class="mb-5 flex flex-wrap justify-center gap-3">
-                    <button type="button" class="w-full md:w-auto flex items-center justify-center gap-2 px-6 md:px-16 py-2.5 border border-[#D1D5DB] rounded-lg hover:bg-gray-100 transition-colors">
+                    <a href="google-callback.php?login_type=google" class="w-full md:w-auto flex items-center justify-center gap-2 px-6 md:px-16 py-2.5 border border-[#D1D5DB] rounded-lg hover:bg-gray-100 transition-colors">
                         <svg class="w-5 h-5" viewBox="0 0 24 24">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
                             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
@@ -123,7 +156,7 @@
                             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
                         </svg>
                         <span class="text-sm font-medium text-[#374151]">Google</span>
-                    </button>
+                    </a>
                 </div>
 
                 <p class="text-center text-xs text-[#6B7280]">

@@ -1,19 +1,79 @@
 <?php
+// [BACKEND NOTE]: Mulai session untuk ambil data booking dari form.php
+// Data booking disimpan di $_SESSION['trevio_booking_current']
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// [BACKEND NOTE]: Cek apakah ada data booking di session
+// Jika tidak ada, redirect ke home page (user harus isi form dulu)
+if (!isset($_SESSION['trevio_booking_current'])) {
+    // TODO Backend: Ganti dengan redirect ke booking/form.php atau home
+    // header('Location: ../home/index.php');
+    // exit;
+    
+    // Fallback data dummy untuk testing
+    $_SESSION['trevio_booking_current'] = [
+        'booking_code' => 'TRV-' . date('ymd') . '-001',
+        'invoice_code' => 'INV-' . date('Ymd') . '-001',
+        'hotel_name' => 'Aurora Peaks Resort',
+        'hotel_city' => 'Tokyo',
+        'guest_name' => 'Amelia Pratama',
+        'total_amount' => 7820000,
+        'status' => 'Selesai',
+    ];
+}
+
+// [BACKEND NOTE]: Ambil data booking dari session
+$booking = $_SESSION['trevio_booking_current'];
+
 // Judul halaman memastikan konteks konfirmasi terbaca jelas di tab browser.
 $pageTitle = 'Trevio | Konfirmasi Pembayaran';
-// Gunakan invoice dari query string, jika kosong buat default berbasis tanggal hari ini.
-$invoiceCode = $_GET['invoice'] ?? 'INV-' . date('Ymd') . '-001';
-// Nama hotel utama yang sedang dikonfirmasi pembayarannya.
-$hotelName = $_GET['hotel'] ?? 'Aurora Peaks Resort';
-// Nama tamu utama yang menerima konfirmasi.
-$guestName = $_GET['guest'] ?? 'Amelia Pratama';
-// Total pembayaran yang ditampilkan pada ringkasan invoice.
-$totalAmount = $_GET['total'] ?? 'IDR 7.820.000';
+
+// Gunakan data dari session untuk tampilan
+$invoiceCode = $booking['invoice_code'];
+$hotelName = $booking['hotel_name'];
+$guestName = $booking['guest_name'];
+$totalAmount = 'IDR ' . number_format($booking['total_amount'], 0, ',', '.');
+
+// [BACKEND NOTE]: Simpan booking ke history session untuk ditampilkan di history.php
+// Untuk production: simpan ke database table bookings
+if (!isset($_SESSION['trevio_booking_history'])) {
+    $_SESSION['trevio_booking_history'] = [];
+}
+
+// Tambahkan booking saat ini ke history (jika belum ada)
+$bookingExists = false;
+foreach ($_SESSION['trevio_booking_history'] as $item) {
+    if ($item['code'] === $booking['booking_code']) {
+        $bookingExists = true;
+        break;
+    }
+}
+
+if (!$bookingExists) {
+    $_SESSION['trevio_booking_history'][] = [
+        'code' => $booking['booking_code'],
+        'invoice' => $booking['invoice_code'],
+        'hotel' => $booking['hotel_name'],
+        'city' => $booking['hotel_city'] ?? 'Jakarta',
+        'date' => date('d M Y', strtotime($booking['check_in'] ?? 'now')),
+        'check_in' => $booking['check_in'] ?? date('Y-m-d'),
+        'check_out' => $booking['check_out'] ?? date('Y-m-d', strtotime('+3 days')),
+        'nights' => $booking['nights'] ?? 3,
+        'status' => $booking['status'],
+        'total' => $totalAmount,
+        'guest_name' => $guestName,
+        'created_at' => $booking['created_at'] ?? date('Y-m-d H:i:s'),
+        'link' => 'detail.php?code=' . urlencode($booking['booking_code']) . '&hotel=' . urlencode($booking['hotel_name']) . '&status=' . urlencode($booking['status'])
+    ];
+}
+
 // Daftar tahapan proses pembayaran untuk progress list.
 $timeline = [
-	['label' => 'Pemesanan dibuat', 'time' => '10:21', 'status' => 'Selesai'],
-	['label' => 'Pembayaran diterima', 'time' => '10:23', 'status' => 'Selesai'],
-	['label' => 'Voucher dikirim', 'time' => '10:24', 'status' => 'Selesai'],
+	['label' => 'Pemesanan dibuat', 'time' => date('H:i', strtotime($booking['created_at'] ?? 'now')), 'status' => 'Selesai'],
+	['label' => 'Pembayaran diterima', 'time' => date('H:i', strtotime('+2 minutes', strtotime($booking['created_at'] ?? 'now'))), 'status' => 'Selesai'],
+	['label' => 'Voucher dikirim', 'time' => date('H:i', strtotime('+3 minutes', strtotime($booking['created_at'] ?? 'now'))), 'status' => 'Selesai'],
 ];
 
 // Sertakan header umum agar layout dan asset konsisten.
