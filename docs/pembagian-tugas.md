@@ -60,7 +60,7 @@ libraries/
 ---
 
 ### **2️⃣ Fajar (Backend + Database + DevOps)**
-**Folder:** `app/controllers/admin/` + `database/` + `docs/`
+**Folder:** `database/` + `docs/`
 
 ```
 
@@ -81,7 +81,7 @@ docs/
 ---
 
 ### **3️⃣ Syadat (QA + User Flow + Backend Ringan)**
-**Folder:** `app/controllers/owner/` + `tests/` + `docs/`
+**Folder:** `app/controllers/owner/` + `tests/` + `docs/` + `app/controllers/admin/`
 
 ```
 app/controllers/owner/

@@ -89,6 +89,28 @@ class Booking extends Model {
     }
 
     /**
+     * Mencari booking berdasarkan ID
+     * * @param int $id Booking ID
+     * @return array|false Data booking atau false
+     */
+    public function find(int $id): array|false {
+        $query = "SELECT b.*, h.name as hotel_name, r.room_type 
+                  FROM {$this->table} b
+                  JOIN hotels h ON b.hotel_id = h.id
+                  JOIN rooms r ON b.room_id = r.id
+                  WHERE b.id = :id";
+        
+        try {
+            $this->db->query($query);
+            $this->db->bind(':id', $id);
+            return $this->db->single();
+        } catch (PDOException $e) {
+            error_log("Booking Find Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Submit Pembayaran dengan Transaksi Atomik
      * Memisahkan info bank dan akun untuk data yang lebih rapi.
      * * @param int $bookingId
