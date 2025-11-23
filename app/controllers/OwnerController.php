@@ -15,7 +15,9 @@ class OwnerController extends Controller {
         // 2. Cek apakah role user adalah 'owner'
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'owner') {
             // Jika bukan owner, lempar ke halaman login atau dashboard user biasa
-            header('Location: ' . BASE_URL . '/auth/login');
+            // Use relative path atau cek jika BASE_URL sudah defined
+            $baseUrl = defined('BASE_URL') ? BASE_URL : '';
+            header('Location: ' . $baseUrl . '/auth/login');
             exit;
         }
 

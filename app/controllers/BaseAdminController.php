@@ -24,7 +24,8 @@ abstract class BaseAdminController extends Controller {
     protected function requireAdminLogin(): void {
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
             $_SESSION['flash_error'] = "Access denied. Admin privileges required.";
-            header('Location: ' . BASE_URL . '/auth/login');
+            $baseUrl = defined('BASE_URL') ? BASE_URL : '';
+            header('Location: ' . $baseUrl . '/auth/login');
             exit;
         }
     }
@@ -112,7 +113,8 @@ abstract class BaseAdminController extends Controller {
      */
     protected function redirectWithMessage(string $url, string $message, string $type = 'info'): void {
         $_SESSION["flash_{$type}"] = $message;
-        header('Location: ' . BASE_URL . $url);
+        $baseUrl = defined('BASE_URL') ? BASE_URL : '';
+        header('Location: ' . $baseUrl . $url);
         exit;
     }
     

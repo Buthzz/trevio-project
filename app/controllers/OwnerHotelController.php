@@ -11,7 +11,8 @@ class HotelController extends Controller {
     public function __construct() {
         // Cek Sesi Login & Role
         if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'owner') {
-            header('Location: ' . BASE_URL . '/auth/login');
+            $baseUrl = defined('BASE_URL') ? BASE_URL : '';
+            header('Location: ' . $baseUrl . '/auth/login');
             exit;
         }
         $this->hotelModel = new Hotel();
