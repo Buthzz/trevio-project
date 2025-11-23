@@ -5,6 +5,11 @@
  * Core settings for the Trevio application
  */
 
+// Prevent duplicate loading
+if (defined('APP_NAME')) {
+    return;
+}
+
 // Load environment variables from .env file
 if (file_exists(__DIR__ . '/../.env')) {
     $lines = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
@@ -49,7 +54,7 @@ $scriptDir = rtrim($scriptDir, '/');
 define('BASE_URL', $protocol . '://' . $host . $scriptDir);
 
 // Directory Paths
-define('ROOT_PATH', dirname(__DIR__, 2));
+define('ROOT_PATH', dirname(__DIR__)); // Only go up 1 level to project root
 define('APP_PATH', ROOT_PATH . '/app');
 define('PUBLIC_PATH', ROOT_PATH . '/public');
 define('UPLOAD_PATH', PUBLIC_PATH . '/uploads');
@@ -79,7 +84,8 @@ $uploadDirs = [
 
 foreach ($uploadDirs as $dir) {
     if (!file_exists($dir)) {
-        mkdir($dir, 0755, true);
+        // Suppress warnings if parent directory not writable
+        @mkdir($dir, 0755, true);
     }
 }
 
