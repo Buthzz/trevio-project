@@ -12,7 +12,8 @@ class DashboardController extends Controller {
     public function __construct() {
         if (!isset($_SESSION['user_id'])) {
             $_SESSION['flash_error'] = "Silakan login terlebih dahulu.";
-            header('Location: ' . BASE_URL . '/auth/login');
+            $baseUrl = defined('BASE_URL') ? BASE_URL : '';
+            header('Location: ' . $baseUrl . '/auth/login');
             exit;
         }
     }
