@@ -44,124 +44,277 @@ class BookingController extends Controller {
 
     public function store() {
         $this->requireLogin();
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL);
+            exit;
+        }
         
         // CSRF Check
-        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) die("CSRF Error");
+        $this->validateCsrf();
 
         $roomId = filter_input(INPUT_POST, 'room_id', FILTER_VALIDATE_INT);
         $numRooms = filter_input(INPUT_POST, 'num_rooms', FILTER_VALIDATE_INT);
         
-        // Validation: Negative values & max duration
-        if ($numRooms <= 0) $this->redirectBack($roomId, "Jumlah kamar tidak valid.");
-        
-        $checkIn = $_POST['check_in'];
-        $checkOut = $_POST['check_out'];
-        
-        if (strtotime($checkIn) < strtotime(date('Y-m-d'))) $this->redirectBack($roomId, "Tanggal check-in invalid.");
-        if (strtotime($checkOut) <= strtotime($checkIn)) $this->redirectBack($roomId, "Check-out harus setelah check-in.");
-
-        // --- CRITICAL: ATOMIC TRANSACTION START ---
-        try {
-            $this->bookingModel->db->beginTransaction();
-
-            // SELECT FOR UPDATE (Lock the room row)
-            // Assuming roomModel has a method or we access DB directly
-            // Logic moved here for atomicity:
-            $this->bookingModel->db->query("SELECT available_slots, price_per_night, hotel_id FROM rooms WHERE id = :id FOR UPDATE");
-            $this->bookingModel->db->bind(':id', $roomId);
-            $room = $this->bookingModel->db->single();
-
-            if (!$room || $room['available_slots'] < $numRooms) {
-                throw new Exception("Slot kamar tidak mencukupi.");
-            }
-
-            // Calculate Price
-            $numNights = (new \DateTime($checkIn))->diff(new \DateTime($checkOut))->days;
-            $subtotal = $room['price_per_night'] * $numNights * $numRooms;
-            $totalPrice = $subtotal * 1.15; // Tax 10% + Service 5%
-
-            // Unique Booking Code
-            do {
-                $code = 'BK' . date('Ymd') . rand(10000, 99999);
-                $exists = $this->bookingModel->findByCode($code);
-            } while ($exists);
-
-            $bookingData = [
-                'booking_code' => $code,
-                'customer_id' => $_SESSION['user_id'],
-                'hotel_id' => $room['hotel_id'],
-                'room_id' => $roomId,
-                'check_in_date' => $checkIn,
-                'check_out_date' => $checkOut,
-                'num_nights' => $numNights,
-                'num_rooms' => $numRooms,
-                'price_per_night' => $room['price_per_night'],
-                'subtotal' => $subtotal,
-                'tax_amount' => $subtotal * 0.10,
-                'service_charge' => $subtotal * 0.05,
-                'total_price' => $totalPrice,
-                'guest_name' => strip_tags($_POST['guest_name']),
-                'guest_email' => filter_input(INPUT_POST, 'guest_email', FILTER_VALIDATE_EMAIL) ?: $_SESSION['user_email'],
-                'guest_phone' => strip_tags($_POST['guest_phone']),
-                'booking_status' => 'pending_payment'
-            ];
-
-            // Insert Booking
-            $this->bookingModel->create($bookingData);
-
-            // Commit Transaction
-            $this->bookingModel->db->commit();
-
-            $_SESSION['flash_success'] = "Booking berhasil!";
-            header('Location: ' . BASE_URL . '/booking/detail/' . $code);
-            exit;
-
-        } catch (Exception $e) {
-            $this->bookingModel->db->rollBack();
-            $this->redirectBack($roomId, $e->getMessage());
+        // Validation: Required fields
+        if (!$roomId || !$numRooms) {
+            $this->redirectBack($roomId ?: 0, "Data tidak lengkap.");
         }
-        // --- TRANSACTION END ---
+        
+        // Validation: Negative values & max rooms
+        if ($numRooms <= 0 || $numRooms > 10) {
+            $this->redirectBack($roomId, "Jumlah kamar tidak valid (max 10).");
+        }
+        
+        // Validate dates
+        $checkIn = filter_input(INPUT_POST, 'check_in', FILTER_SANITIZE_STRING);
+        $checkOut = filter_input(INPUT_POST, 'check_out', FILTER_SANITIZE_STRING);
+        
+        if (!$checkIn || !$checkOut) {
+            $this->redirectBack($roomId, "Tanggal tidak valid.");
+        }
+        
+        // Validate date format (YYYY-MM-DD)
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkIn) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkOut)) {
+            $this->redirectBack($roomId, "Format tanggal tidak valid.");
+        }
+        
+        $checkInTime = strtotime($checkIn);
+        $checkOutTime = strtotime($checkOut);
+        $today = strtotime(date('Y-m-d'));
+        
+        if ($checkInTime < $today) {
+            $this->redirectBack($roomId, "Tanggal check-in tidak boleh di masa lalu.");
+        }
+        
+        if ($checkOutTime <= $checkInTime) {
+            $this->redirectBack($roomId, "Check-out harus setelah check-in.");
+        }
+        
+        // Max booking duration (e.g., 30 days)
+        $maxDays = 30;
+        $numNights = (new \DateTime($checkIn))->diff(new \DateTime($checkOut))->days;
+        if ($numNights > $maxDays) {
+            $this->redirectBack($roomId, "Maksimal booking {$maxDays} hari.");
+        }
+
+        // Validate guest info
+        $guestName = strip_tags(trim($_POST['guest_name'] ?? ''));
+        $guestEmail = filter_input(INPUT_POST, 'guest_email', FILTER_VALIDATE_EMAIL);
+        $guestPhone = strip_tags(trim($_POST['guest_phone'] ?? ''));
+        
+        if (empty($guestName) || strlen($guestName) < 3) {
+            $this->redirectBack($roomId, "Nama tamu tidak valid (min 3 karakter).");
+        }
+        
+        if (!$guestEmail) {
+            $guestEmail = $_SESSION['user_email'] ?? '';
+        }
+        
+        if (empty($guestPhone) || !preg_match('/^[0-9+\-\s()]+$/', $guestPhone)) {
+            $this->redirectBack($roomId, "Nomor telepon tidak valid.");
+        }
+
+        // --- CRITICAL: Get room data and check availability ---
+        $room = $this->roomModel->find($roomId);
+        
+        if (!$room) {
+            $this->redirectBack($roomId, "Kamar tidak ditemukan.");
+        }
+        
+        if ($room['available_slots'] < $numRooms) {
+            $this->redirectBack($roomId, "Slot kamar tidak mencukupi. Tersedia: {$room['available_slots']}");
+        }
+
+        // Calculate Price (use absolute values to prevent negative prices)
+        $pricePerNight = abs((float)$room['price_per_night']);
+        $subtotal = $pricePerNight * $numNights * $numRooms;
+        $taxAmount = $subtotal * 0.10;
+        $serviceCharge = $subtotal * 0.05;
+        $totalPrice = $subtotal + $taxAmount + $serviceCharge;
+
+        // Unique Booking Code (with retry limit to prevent infinite loop)
+        $maxRetries = 10;
+        $retryCount = 0;
+        do {
+            $code = 'BK' . date('Ymd') . str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
+            $exists = $this->bookingModel->findByCode($code);
+            $retryCount++;
+            if ($retryCount > $maxRetries) {
+                $this->redirectBack($roomId, "Terjadi kesalahan sistem. Silakan coba lagi.");
+            }
+        } while ($exists);
+
+        $bookingData = [
+            'booking_code' => $code,
+            'customer_id' => (int)$_SESSION['user_id'],
+            'hotel_id' => (int)$room['hotel_id'],
+            'room_id' => $roomId,
+            'check_in_date' => $checkIn,
+            'check_out_date' => $checkOut,
+            'num_nights' => $numNights,
+            'num_rooms' => $numRooms,
+            'price_per_night' => $pricePerNight,
+            'subtotal' => $subtotal,
+            'tax_amount' => $taxAmount,
+            'service_charge' => $serviceCharge,
+            'total_price' => $totalPrice,
+            'guest_name' => $guestName,
+            'guest_email' => $guestEmail,
+            'guest_phone' => $guestPhone,
+            'booking_status' => 'pending_payment'
+        ];
+
+        // Insert Booking (transaction handled in model if needed)
+        $bookingId = $this->bookingModel->create($bookingData);
+        
+        if (!$bookingId) {
+            $this->redirectBack($roomId, "Gagal membuat booking. Silakan coba lagi.");
+        }
+
+        $_SESSION['flash_success'] = "Booking berhasil! Silakan upload bukti pembayaran.";
+        header('Location: ' . BASE_URL . '/booking/detail/' . $code);
+        exit;
     }
 
     public function uploadPayment() {
         $this->requireLogin();
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
-
-        // Constants check
-        $maxSize = defined('MAX_FILE_SIZE') ? MAX_FILE_SIZE : 2 * 1024 * 1024; // Default 2MB
-
-        if (!isset($_FILES['payment_proof']) || $_FILES['payment_proof']['error'] != 0) {
-            $_SESSION['flash_error'] = "File error atau kosong.";
-            header('Location: ' . BASE_URL . '/dashboard'); exit;
+        
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
         }
 
-        if ($_FILES['payment_proof']['size'] > $maxSize) {
-            $_SESSION['flash_error'] = "Ukuran file terlalu besar (Max 2MB).";
-            header('Location: ' . BASE_URL . '/dashboard'); exit;
+        $this->validateCsrf();
+
+        // Validate booking_id
+        $bookingId = filter_input(INPUT_POST, 'booking_id', FILTER_VALIDATE_INT);
+        if (!$bookingId) {
+            $_SESSION['flash_error'] = "Booking ID tidak valid.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
         }
 
-        $allowedMimes = ['image/jpeg', 'image/png', 'application/pdf'];
+        // Verify booking belongs to user
+        $booking = $this->bookingModel->find($bookingId);
+        if (!$booking || $booking['customer_id'] != $_SESSION['user_id']) {
+            $_SESSION['flash_error'] = "Booking tidak ditemukan atau bukan milik Anda.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        // Check booking status (only pending_payment can upload)
+        if ($booking['booking_status'] !== 'pending_payment') {
+            $_SESSION['flash_error'] = "Booking ini tidak memerlukan upload pembayaran.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        // Validate file upload
+        if (!isset($_FILES['payment_proof']) || $_FILES['payment_proof']['error'] !== UPLOAD_ERR_OK) {
+            $_SESSION['flash_error'] = "File tidak ditemukan atau terjadi error saat upload.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        $file = $_FILES['payment_proof'];
+
+        // Validate file size (max 5MB)
+        $maxSize = 5 * 1024 * 1024; // 5MB
+        if ($file['size'] > $maxSize) {
+            $_SESSION['flash_error'] = "Ukuran file terlalu besar (Max 5MB).";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        // Validate MIME type
+        $allowedMimes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
-        $mime = finfo_file($finfo, $_FILES['payment_proof']['tmp_name']);
+        $mime = finfo_file($finfo, $file['tmp_name']);
         finfo_close($finfo);
 
         if (!in_array($mime, $allowedMimes)) {
-            $_SESSION['flash_error'] = "Format file tidak valid.";
-            header('Location: ' . BASE_URL . '/dashboard'); exit;
+            $_SESSION['flash_error'] = "Format file tidak valid. Hanya JPG, PNG, atau PDF yang diperbolehkan.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
         }
 
-        $fileName = time() . '_' . bin2hex(random_bytes(8)) . '.' . pathinfo($_FILES['payment_proof']['name'], PATHINFO_EXTENSION);
-        $target = "uploads/payments/" . $fileName;
-
-        if (move_uploaded_file($_FILES['payment_proof']['tmp_name'], $target)) {
-            $this->bookingModel->submitPayment($_POST['booking_id'], $fileName, strip_tags($_POST['bank_name']), strip_tags($_POST['account_name']));
-            $_SESSION['flash_success'] = "Bukti terupload.";
+        // Additional validation for images
+        if (in_array($mime, ['image/jpeg', 'image/png', 'image/jpg'])) {
+            $imageInfo = getimagesize($file['tmp_name']);
+            if ($imageInfo === false) {
+                $_SESSION['flash_error'] = "File bukan gambar yang valid.";
+                header('Location: ' . BASE_URL . '/dashboard');
+                exit;
+            }
         }
 
-        // Use specific redirect, not REFERER
+        // Validate bank details
+        $bankName = strip_tags(trim($_POST['bank_name'] ?? ''));
+        $accountName = strip_tags(trim($_POST['account_name'] ?? ''));
+        $accountNumber = strip_tags(trim($_POST['account_number'] ?? ''));
+        
+        if (empty($bankName) || strlen($bankName) < 2) {
+            $_SESSION['flash_error'] = "Nama bank tidak valid.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+        
+        if (empty($accountName) || strlen($accountName) < 3) {
+            $_SESSION['flash_error'] = "Nama pemilik rekening tidak valid.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        // Create upload directory if not exists
+        $targetDir = __DIR__ . "/../../public/uploads/payments/";
+        if (!file_exists($targetDir)) {
+            mkdir($targetDir, 0755, true);
+        }
+
+        // Generate secure filename
+        $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
+        $extension = strtolower(preg_replace('/[^a-z0-9]/', '', $extension));
+        $fileName = 'payment_' . $bookingId . '_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
+        $targetPath = $targetDir . $fileName;
+
+        // Move uploaded file
+        if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
+            $_SESSION['flash_error'] = "Gagal menyimpan file. Silakan coba lagi.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        // Submit payment to database
+        $success = $this->bookingModel->submitPayment(
+            $bookingId, 
+            $fileName, 
+            $bankName, 
+            $accountName,
+            $accountNumber
+        );
+
+        if ($success) {
+            $_SESSION['flash_success'] = "Bukti pembayaran berhasil diupload. Menunggu verifikasi admin.";
+        } else {
+            // Rollback: delete uploaded file
+            if (file_exists($targetPath)) {
+                unlink($targetPath);
+            }
+            $_SESSION['flash_error'] = "Gagal menyimpan data pembayaran. Silakan coba lagi.";
+        }
+
         header('Location: ' . BASE_URL . '/dashboard');
         exit;
+    }
+
+    // --- Helper Methods ---
+
+    private function validateCsrf() {
+        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            die("CSRF Validation Failed. Please refresh the page and try again.");
+        }
+        // Regenerate token to prevent replay attacks
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
     }
 
     private function requireLogin() {
@@ -177,12 +330,55 @@ class BookingController extends Controller {
         exit;
     }
     
-    // Fix missing method error in original review
     public function detail($code) {
-         $booking = $this->bookingModel->findByCode($code);
-         if (!$booking || ($booking['customer_id'] !== $_SESSION['user_id'] && $_SESSION['user_role'] !== 'admin')) {
-             header('Location: ' . BASE_URL . '/dashboard'); exit;
-         }
-         $this->view('booking/detail', ['booking' => $booking]);
+        $this->requireLogin();
+        
+        // Sanitize booking code
+        $code = strip_tags(trim($code));
+        
+        if (empty($code)) {
+            $_SESSION['flash_error'] = "Kode booking tidak valid.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+        
+        $booking = $this->bookingModel->findByCode($code);
+        
+        if (!$booking) {
+            $_SESSION['flash_error'] = "Booking tidak ditemukan.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+        
+        // Security: Only allow customer, owner of hotel, or admin to view
+        $isOwner = false;
+        if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'owner') {
+            $hotel = $this->hotelModel->find($booking['hotel_id']);
+            $isOwner = ($hotel && $hotel['owner_id'] == $_SESSION['user_id']);
+        }
+        
+        $isAuthorized = (
+            $booking['customer_id'] == $_SESSION['user_id'] ||
+            $isOwner ||
+            (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin')
+        );
+        
+        if (!$isAuthorized) {
+            $_SESSION['flash_error'] = "Anda tidak memiliki akses ke booking ini.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+        
+        // Generate CSRF token for payment upload form
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        
+        $this->view('booking/detail', [
+            'title' => 'Detail Booking',
+            'booking' => $booking,
+            'csrf_token' => $_SESSION['csrf_token'],
+            'user' => $_SESSION
+        ]);
     }
 }

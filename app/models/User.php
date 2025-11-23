@@ -185,4 +185,111 @@ class User extends Model {
             return 0;
         }
     }
+
+    /**
+     * Get all users with optional filters
+     * @param string|null $role
+     * @param string|null $status
+     * @return array
+     */
+    public function getAll($role = null, $status = null) {
+        $query = "SELECT id, name, email, phone, role, is_active, is_verified, auth_provider, created_at 
+                  FROM {$this->table} WHERE 1=1";
+        
+        if ($role) {
+            $query .= " AND role = :role";
+        }
+        
+        if ($status !== null) {
+            $query .= " AND is_active = :status";
+        }
+        
+        $query .= " ORDER BY created_at DESC";
+        
+        try {
+            $this->db->query($query);
+            
+            if ($role) {
+                $this->db->bind(':role', $role);
+            }
+            
+            if ($status !== null) {
+                $this->db->bind(':status', $status);
+            }
+            
+            return $this->db->resultSet();
+        } catch (PDOException $e) {
+            error_log("User getAll Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Count users by status
+     * @param int $status
+     * @return int
+     */
+    public function countByStatus($status) {
+        try {
+            $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE is_active = :status");
+            $this->db->bind(':status', $status);
+            $result = $this->db->single();
+            return $result ? (int)$result['total'] : 0;
+        } catch (PDOException $e) {
+            error_log("User countByStatus Error: " . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Update user status (activate/deactivate)
+     * @param int $userId
+     * @param int $status
+     * @return bool
+     */
+    public function updateStatus($userId, $status) {
+        try {
+            $this->db->query("UPDATE {$this->table} SET is_active = :status WHERE id = :id");
+            $this->db->bind(':status', $status);
+            $this->db->bind(':id', $userId);
+            return $this->db->execute();
+        } catch (PDOException $e) {
+            error_log("User updateStatus Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Update user role
+     * @param int $userId
+     * @param string $role
+     * @return bool
+     */
+    public function updateRole($userId, $role) {
+        try {
+            $this->db->query("UPDATE {$this->table} SET role = :role WHERE id = :id");
+            $this->db->bind(':role', $role);
+            $this->db->bind(':id', $userId);
+            return $this->db->execute();
+        } catch (PDOException $e) {
+            error_log("User updateRole Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Delete user permanently
+     * @param int $userId
+     * @return bool
+     */
+    public function delete($userId) {
+        try {
+            $this->db->query("DELETE FROM {$this->table} WHERE id = :id");
+            $this->db->bind(':id', $userId);
+            return $this->db->execute();
+        } catch (PDOException $e) {
+            error_log("User delete Error: " . $e->getMessage());
+            return false;
+        }
+    }
 }
