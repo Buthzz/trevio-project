@@ -31,6 +31,11 @@ class Database {
         $this->dbname = getenv('DB_DATABASE') ?: 'trevio';
         $this->charset = getenv('DB_CHARSET') ?: 'utf8mb4';
         
+        // Debug logging (remove after fixing)
+        if (getenv('APP_DEBUG') === 'true') {
+            error_log("DB Connection Attempt - Host: {$this->host}, User: {$this->user}, DB: {$this->dbname}");
+        }
+        
         // Set DSN (Data Source Name)
         $dsn = "mysql:host={$this->host};dbname={$this->dbname};charset={$this->charset}";
         
