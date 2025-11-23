@@ -2,21 +2,15 @@
 
 namespace App\Controllers;
 
-use App\Core\Controller;
 use App\Models\Refund;
 use App\Models\Booking;
 
-class AdminRefundController extends Controller {
+class AdminRefundController extends BaseAdminController {
     private $refundModel;
     private $bookingModel;
 
     public function __construct() {
-        // Ensure only admin can access
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
-        }
-        
+        parent::__construct();
         $this->refundModel = new Refund();
         $this->bookingModel = new Booking();
     }
@@ -25,7 +19,7 @@ class AdminRefundController extends Controller {
      * Display list of all refunds
      */
     public function index() {
-        $status = $_GET['status'] ?? null;
+        $status = $this->sanitizeGet('status', 'pending');
         
         $data = [
             'title' => 'Manage Refunds',
@@ -186,14 +180,6 @@ class AdminRefundController extends Controller {
     }
 
     // --- Helpers ---
-
-    private function validateCsrf() {
-        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            die("CSRF Validation Failed");
-        }
-        // Regenerate token
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
 
     private function uploadReceipt($file) {
         $targetDir = "../public/uploads/refunds/";

@@ -29,7 +29,10 @@ class BookingController extends Controller {
         }
 
         // Generate CSRF Token if not exists
-        if (empty($_SESSION['csrf_token'])) $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            $_SESSION['csrf_token_time'] = time();
+        }
 
         $data = [
             'title' => 'Booking Hotel',
@@ -61,13 +64,14 @@ class BookingController extends Controller {
         }
         
         // Validation: Negative values & max rooms
-        if ($numRooms <= 0 || $numRooms > 10) {
-            $this->redirectBack($roomId, "Jumlah kamar tidak valid (max 10).");
+        $maxRooms = defined('BOOKING_MAX_ROOMS') ? BOOKING_MAX_ROOMS : 10;
+        if ($numRooms <= 0 || $numRooms > $maxRooms) {
+            $this->redirectBack($roomId, "Jumlah kamar tidak valid (max {$maxRooms}).");
         }
         
         // Validate dates
-        $checkIn = filter_input(INPUT_POST, 'check_in', FILTER_SANITIZE_STRING);
-        $checkOut = filter_input(INPUT_POST, 'check_out', FILTER_SANITIZE_STRING);
+        $checkIn = htmlspecialchars(strip_tags($_POST['check_in'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $checkOut = htmlspecialchars(strip_tags($_POST['check_out'] ?? ''), ENT_QUOTES, 'UTF-8');
         
         if (!$checkIn || !$checkOut) {
             $this->redirectBack($roomId, "Tanggal tidak valid.");
@@ -309,22 +313,44 @@ class BookingController extends Controller {
 
     // --- Helper Methods ---
 
-    private function validateCsrf() {
-        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    private function validateCsrf(): void {
+        // Check token exists
+        if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token'])) {
+            http_response_code(403);
+            die("CSRF token missing. Please refresh the page and try again.");
+        }
+        
+        // Validate token match
+        if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+            http_response_code(403);
             die("CSRF Validation Failed. Please refresh the page and try again.");
         }
+        
+        // Check token expiration
+        if (isset($_SESSION['csrf_token_time'])) {
+            $tokenAge = time() - $_SESSION['csrf_token_time'];
+            $expiry = defined('CSRF_TOKEN_EXPIRE') ? CSRF_TOKEN_EXPIRE : 3600;
+            
+            if ($tokenAge > $expiry) {
+                http_response_code(403);
+                die("CSRF token expired. Please refresh the page and try again.");
+            }
+        }
+        
         // Regenerate token to prevent replay attacks
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token_time'] = time();
     }
 
-    private function requireLogin() {
+    private function requireLogin(): void {
         if (!isset($_SESSION['user_id'])) {
+            $_SESSION['flash_error'] = "Silakan login terlebih dahulu.";
             header('Location: ' . BASE_URL . '/auth/login');
             exit;
         }
     }
 
-    private function redirectBack($roomId, $msg) {
+    private function redirectBack(int $roomId, string $msg): void {
         $_SESSION['flash_error'] = $msg;
         header("Location: " . BASE_URL . "/booking/create?room_id=$roomId");
         exit;
@@ -372,6 +398,7 @@ class BookingController extends Controller {
         // Generate CSRF token for payment upload form
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            $_SESSION['csrf_token_time'] = time();
         }
         
         $this->view('booking/detail', [

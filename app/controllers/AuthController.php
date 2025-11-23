@@ -121,7 +121,14 @@ class AuthController extends Controller {
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
 
-        header('Location: ' . BASE_URL . '/dashboard');
+        // Redirect based on role
+        if ($user['role'] === 'admin') {
+            header('Location: ' . BASE_URL . '/admin/dashboard');
+        } elseif ($user['role'] === 'owner') {
+            header('Location: ' . BASE_URL . '/owner');
+        } else {
+            header('Location: ' . BASE_URL . '/dashboard');
+        }
         exit;
     }
 

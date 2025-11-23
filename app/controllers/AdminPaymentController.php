@@ -2,21 +2,15 @@
 
 namespace App\Controllers;
 
-use App\Core\Controller;
 use App\Models\Payment;
 use App\Models\Booking;
 
-class AdminPaymentController extends Controller {
+class AdminPaymentController extends BaseAdminController {
     private $paymentModel;
     private $bookingModel;
 
     public function __construct() {
-        // Ensure only admin can access
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
-        }
-        
+        parent::__construct();
         $this->paymentModel = new Payment();
         $this->bookingModel = new Booking();
     }
@@ -25,7 +19,7 @@ class AdminPaymentController extends Controller {
      * Display list of all payments
      */
     public function index() {
-        $status = $_GET['status'] ?? null;
+        $status = $this->sanitizeGet('status', 'pending');
         
         $data = [
             'title' => 'Manage Payments',
@@ -169,13 +163,4 @@ class AdminPaymentController extends Controller {
         exit;
     }
 
-    // --- Helpers ---
-
-    private function validateCsrf() {
-        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            die("CSRF Validation Failed");
-        }
-        // Regenerate token to prevent replay attacks
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
 }

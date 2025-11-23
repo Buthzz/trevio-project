@@ -2,19 +2,13 @@
 
 namespace App\Controllers;
 
-use App\Core\Controller;
 use App\Models\User;
 
-class AdminUserController extends Controller {
+class AdminUserController extends BaseAdminController {
     private $userModel;
 
     public function __construct() {
-        // Ensure only admin can access
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
-        }
-        
+        parent::__construct();
         $this->userModel = new User();
     }
 
@@ -22,8 +16,8 @@ class AdminUserController extends Controller {
      * Display list of all users
      */
     public function index() {
-        $role = $_GET['role'] ?? null;
-        $status = $_GET['status'] ?? null;
+        $role = $this->sanitizeGet('role', 'all');
+        $status = isset($_GET['status']) ? htmlspecialchars($_GET['status'], ENT_QUOTES, 'UTF-8') : null;
         
         $data = [
             'title' => 'Manage Users',
@@ -225,13 +219,4 @@ class AdminUserController extends Controller {
         exit;
     }
 
-    // --- Helpers ---
-
-    private function validateCsrf() {
-        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            die("CSRF Validation Failed");
-        }
-        // Regenerate token
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
 }
