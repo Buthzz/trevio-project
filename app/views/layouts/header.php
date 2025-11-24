@@ -137,12 +137,6 @@ $registerUrl = trevio_view_route('auth/register.php');
                     <span class="absolute inset-x-0 bottom-0 h-1/2 bg-white"></span>
                 </span>
                 ID
-                    class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600 sm:px-4 sm:py-1.5 sm:text-xs">
-                <span class="relative inline-flex h-5 w-5 overflow-hidden rounded-full border border-slate-300 bg-white">
-                    <span class="absolute inset-x-0 top-0 h-1/2 bg-red-600"></span>
-                    <span class="absolute inset-x-0 bottom-0 h-1/2 bg-white"></span>
-                </span>
-                ID
             </button>
             <?php // Jika sudah login, tampilkan tombol profil saja ?>
             <?php if ($isAuthenticated): ?>
