@@ -38,9 +38,9 @@ class User extends Model {
      */
     public function find(int $id) {
         try {
-            $this->db->query("SELECT * FROM {$this->table} WHERE id = :id");
-            $this->db->bind(':id', $id);
-            return $this->db->single();
+            $this->query("SELECT * FROM {$this->table} WHERE id = :id");
+            $this->bind(':id', $id);
+            return $this->single();
         } catch (PDOException $e) {
             error_log("User Find Error: " . $e->getMessage());
             return false;
@@ -55,9 +55,9 @@ class User extends Model {
      */
     public function findByEmail(string $email) {
         try {
-            $this->db->query("SELECT * FROM {$this->table} WHERE email = :email");
-            $this->db->bind(':email', $email);
-            return $this->db->single();
+            $this->query("SELECT * FROM {$this->table} WHERE email = :email");
+            $this->bind(':email', $email);
+            return $this->single();
         } catch (PDOException $e) {
             error_log("User FindByEmail Error: " . $e->getMessage());
             printr($e);
@@ -101,14 +101,14 @@ class User extends Model {
         $query = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
 
         try {
-            $this->db->query($query);
+            $this->query($query);
 
             foreach ($data as $field => $value) {
-                $this->db->bind(":{$field}", $value);
+                $this->bind(":{$field}", $value);
             }
 
-            if ($this->db->execute()) {
-                return (int) $this->db->lastInsertId();
+            if ($this->execute()) {
+                return (int) $this->lastInsertId();
             }
             return false;
 
@@ -156,17 +156,17 @@ class User extends Model {
         $query = "UPDATE {$this->table} SET {$setString} WHERE id = :id";
 
         try {
-            $this->db->query($query);
+            $this->query($query);
             
             // Bind semua value data
             foreach ($filteredData as $key => $value) {
-                $this->db->bind(":{$key}", $value);
+                $this->bind(":{$key}", $value);
             }
             
             // Bind ID untuk WHERE clause
-            $this->db->bind(':id', $id);
+            $this->bind(':id', $id);
 
-            return $this->db->execute();
+            return $this->execute();
 
         } catch (PDOException $e) {
             error_log("User Update Error: " . $e->getMessage());
@@ -180,8 +180,8 @@ class User extends Model {
      */
     public function countAll(): int {
         try {
-            $this->db->query("SELECT COUNT(*) as total FROM {$this->table}");
-            $result = $this->db->single();
+            $this->query("SELECT COUNT(*) as total FROM {$this->table}");
+            $result = $this->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
             error_log("User CountAll Error: " . $e->getMessage());
@@ -196,9 +196,9 @@ class User extends Model {
      */
     public function countByRole(string $role): int {
         try {
-            $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE role = :role");
-            $this->db->bind(':role', $role);
-            $result = $this->db->single();
+            $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE role = :role");
+            $this->bind(':role', $role);
+            $result = $this->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
             error_log("User CountByRole Error: " . $e->getMessage());
@@ -227,17 +227,17 @@ class User extends Model {
         $query .= " ORDER BY created_at DESC";
         
         try {
-            $this->db->query($query);
+            $this->query($query);
             
             if ($role) {
-                $this->db->bind(':role', $role);
+                $this->bind(':role', $role);
             }
             
             if ($status !== null) {
-                $this->db->bind(':status', $status);
+                $this->bind(':status', $status);
             }
             
-            return $this->db->resultSet();
+            return $this->resultSet();
         } catch (PDOException $e) {
             error_log("User getAll Error: " . $e->getMessage());
             return [];
@@ -251,9 +251,9 @@ class User extends Model {
      */
     public function countByStatus($status) {
         try {
-            $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE is_active = :status");
-            $this->db->bind(':status', $status);
-            $result = $this->db->single();
+            $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE is_active = :status");
+            $this->bind(':status', $status);
+            $result = $this->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
             error_log("User countByStatus Error: " . $e->getMessage());
@@ -269,10 +269,10 @@ class User extends Model {
      */
     public function updateStatus($userId, $status) {
         try {
-            $this->db->query("UPDATE {$this->table} SET is_active = :status WHERE id = :id");
-            $this->db->bind(':status', $status);
-            $this->db->bind(':id', $userId);
-            return $this->db->execute();
+            $this->query("UPDATE {$this->table} SET is_active = :status WHERE id = :id");
+            $this->bind(':status', $status);
+            $this->bind(':id', $userId);
+            return $this->execute();
         } catch (PDOException $e) {
             error_log("User updateStatus Error: " . $e->getMessage());
             return false;
@@ -287,10 +287,10 @@ class User extends Model {
      */
     public function updateRole($userId, $role) {
         try {
-            $this->db->query("UPDATE {$this->table} SET role = :role WHERE id = :id");
-            $this->db->bind(':role', $role);
-            $this->db->bind(':id', $userId);
-            return $this->db->execute();
+            $this->query("UPDATE {$this->table} SET role = :role WHERE id = :id");
+            $this->bind(':role', $role);
+            $this->bind(':id', $userId);
+            return $this->execute();
         } catch (PDOException $e) {
             error_log("User updateRole Error: " . $e->getMessage());
             return false;
@@ -304,9 +304,9 @@ class User extends Model {
      */
     public function delete($userId) {
         try {
-            $this->db->query("DELETE FROM {$this->table} WHERE id = :id");
-            $this->db->bind(':id', $userId);
-            return $this->db->execute();
+            $this->query("DELETE FROM {$this->table} WHERE id = :id");
+            $this->bind(':id', $userId);
+            return $this->execute();
         } catch (PDOException $e) {
             error_log("User delete Error: " . $e->getMessage());
             return false;
