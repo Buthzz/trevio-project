@@ -141,7 +141,7 @@ $registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_r
                     $dashboardLink = trevio_view_route('owner/dashboard.php');
                     $dashboardLabel = 'Dashboard Owner';
                 }
-                $logoutLink = trevio_view_route('auth/logout.php') . '?csrf_token=' . trevio_csrf_token();
+                $logoutLink = trevio_view_route('auth/logout') . '?csrf_token=' . trevio_csrf_token();
                 ?>
                 
                 <div class="relative" data-profile-dropdown>
