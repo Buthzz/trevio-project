@@ -85,10 +85,9 @@ class Hotel extends Model {
                   FROM {$this->table} h
                   WHERE h.is_active = 1 AND h.is_verified = 1
                   ORDER BY h.average_rating DESC, h.total_reviews DESC
-                  LIMIT :limit";
+                  LIMIT " . (int)$limit;
         
         $this->db->query($query);
-        $this->db->bind(':limit', $limit, PDO::PARAM_INT);
         return $this->db->resultSet();
     }
     
@@ -181,10 +180,9 @@ class Hotel extends Model {
                   WHERE is_active = 1 AND is_verified = 1
                   GROUP BY city
                   ORDER BY hotel_count DESC
-                  LIMIT :limit";
+                  LIMIT " . (int)$limit;
         
         $this->db->query($query);
-        $this->db->bind(':limit', $limit, PDO::PARAM_INT);
         $results = $this->db->resultSet();
         
         // Format for frontend
