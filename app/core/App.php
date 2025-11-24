@@ -14,6 +14,25 @@ class App {
 
         // 1. Deteksi Controller (Segmen URL pertama)
         if (isset($url[0])) {
+            // Special handling for error pages
+            if ($url[0] === 'errors' && isset($url[1])) {
+                $this->controller = 'ErrorController';
+                $this->method = 'error' . $url[1];
+                $this->params = [];
+                
+                $pathLower = '../app/controllers/ErrorController.php';
+                if (file_exists($pathLower)) {
+                    require_once $pathLower;
+                    $controllerClass = "\\App\\Controllers\\ErrorController";
+                    $this->controller = new $controllerClass;
+                    
+                    if (method_exists($this->controller, $this->method)) {
+                        call_user_func([$this->controller, $this->method]);
+                        return;
+                    }
+                }
+            }
+            
             $u_controller = ucfirst($url[0]) . 'Controller';
             
             // Cek keberadaan file di folder lowercase (app/controllers) DAN Capital (app/Controllers)

@@ -1,22 +1,54 @@
 <?php
-// Judul halaman detail untuk memudahkan identifikasi di tab browser.
-$pageTitle = 'Trevio | Detail Pemesanan';
-// Nama hotel berasal dari query string dengan nilai default saat preview.
-$hotelName = $_GET['hotel'] ?? 'Aurora Peaks Resort';
-// Kode booking ditampilkan besar sebagai identitas transaksi.
-$bookingCode = $_GET['code'] ?? 'TRV-' . date('ymd') . '-882';
-// Status terbaru pemesanan guna menandai tindakan lanjutan.
-$status = $_GET['status'] ?? 'Menunggu Pembayaran';
-// Jadwal check-in agar tamu tahu tanggal kedatangan.
-$checkIn = $_GET['check_in'] ?? '18 Des 2025';
-// Jadwal check-out agar kalkulasi malam menginap jelas.
-$checkOut = $_GET['check_out'] ?? '21 Des 2025';
-// Jumlah malam menginap untuk menampilkan durasi.
-$nights = $_GET['nights'] ?? 3;
-// Nama tamu utama untuk informasi kontak.
-$guestName = $_GET['guest'] ?? 'Amelia Pratama';
-// Tipe kamar yang dipesan agar detail fasilitas akurat.
-$roomType = $_GET['room'] ?? 'Premier Onsen Suite';
+require_once __DIR__ . '/../../../helpers/functions.php';
+trevio_start_session();
+
+// [SECURITY]: Cek apakah user sudah login
+if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
+    $loginUrl = trevio_view_route('auth/login.php') . '?return_url=' . urlencode($_SERVER['REQUEST_URI']);
+    header("Location: $loginUrl");
+    exit;
+}
+
+// Contoh: detail.php?code=TRV-251123-001
+$bookingCode = $_GET['code'] ?? null;
+
+// [BACKEND NOTE]: Cari booking di session history berdasarkan code
+// Untuk production: query ke database SELECT * FROM bookings WHERE code = ?
+$booking = null;
+if ($bookingCode && isset($_SESSION['trevio_booking_history'])) {
+    foreach ($_SESSION['trevio_booking_history'] as $item) {
+        if ($item['code'] === $bookingCode) {
+            $booking = $item;
+            break;
+        }
+    }
+}
+
+// [BACKEND NOTE]: Jika booking tidak ditemukan, gunakan data dummy atau redirect
+// Untuk production: redirect ke history.php jika tidak ditemukan
+if (!$booking) {
+    // Fallback ke data dummy untuk testing
+    $booking = [
+        'code' => $bookingCode ?: 'TRV-' . date('ymd') . '-882',
+        'hotel' => $_GET['hotel'] ?? 'Aurora Peaks Resort',
+        'city' => 'Tokyo',
+        'status' => $_GET['status'] ?? 'Menunggu Pembayaran',
+        'check_in' => $_GET['check_in'] ?? '18 Des 2025',
+        'check_out' => $_GET['check_out'] ?? '21 Des 2025',
+        'nights' => $_GET['nights'] ?? 3,
+        'guest_name' => $_GET['guest'] ?? 'Amelia Pratama',
+        'room_name' => $_GET['room'] ?? 'Premier Onsen Suite',
+    ];
+}
+
+// Ekstrak data untuk tampilan
+$hotelName = $booking['hotel'];
+$status = $booking['status'];
+$checkIn = $booking['check_in'];
+$checkOut = $booking['check_out'];
+$nights = $booking['nights'];
+$guestName = $booking['guest_name'];
+$roomType = $booking['room_name'] ?? $booking['room'] ?? 'Premier Onsen Suite';
 // Daftar aksi utama yang bisa dilakukan pengguna.
 $actions = [
 	['label' => 'Lanjutkan Pembayaran', 'href' => 'confirm.php?invoice=' . urlencode('INV-' . date('Ymd') . '-001'), 'variant' => 'primary'],

@@ -1,8 +1,19 @@
 <?php
-// Judul halaman riwayat agar tab browser mudah dikenali.
-$pageTitle = 'Trevio | Riwayat Booking';
-// Koleksi dummy riwayat booking untuk dirender pada kartu.
-$history = [
+require_once __DIR__ . '/../../../helpers/functions.php';
+trevio_start_session();
+
+// [SECURITY]: Cek apakah user sudah login
+if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
+    $loginUrl = trevio_view_route('auth/login.php') . '?return_url=' . urlencode($_SERVER['REQUEST_URI']);
+    header("Location: $loginUrl");
+    exit;
+}
+
+// Untuk production: query ke database SELECT * FROM bookings WHERE user_id = ?
+$sessionHistory = $_SESSION['trevio_booking_history'] ?? [];
+
+// Koleksi dummy riwayat booking untuk dirender pada kartu (fallback jika session kosong).
+$dummyHistory = [
 	[
 		'code' => 'TRV-0924-882',
 		'hotel' => 'The Langham Jakarta',
@@ -31,6 +42,10 @@ $history = [
 		'link' => 'detail.php?code=TRV-1105-778&hotel=GAIA+Hotel+Bandung&status=Menunggu+Pembayaran'
 	],
 ];
+
+// [BACKEND NOTE]: Merge session history dengan dummy data
+// Session history (booking baru) akan muncul di atas, kemudian dummy data
+$history = array_merge($sessionHistory, $dummyHistory);
 
 // Sertakan header global supaya navigasi konsisten.
 require __DIR__ . '/../layouts/header.php';

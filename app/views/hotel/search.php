@@ -1,6 +1,7 @@
 <?php
 // Helper routing untuk memastikan link antar view konsisten.
 require_once __DIR__ . '/../../../helpers/functions.php';
+trevio_start_session();
 
 // Judul halaman pencarian hotel.
 $pageTitle = 'Trevio | Cari & Filter Hotel';
@@ -21,42 +22,49 @@ $availableFilters = [
     'facility' => ['Kolam Renang', 'Spa', 'Parkir Gratis', 'Wi-Fi', 'Breakfast']
 ];
 // Data dummy hasil pencarian saat backend belum mengirim data.
+// [BACKEND NOTE]: Ini adalah struktur data yang diharapkan oleh view untuk menampilkan hasil pencarian.
+// Pastikan API atau Controller mengirimkan array dengan key: id, name, city, rating, reviews, price, image, highlights.
+// ID digunakan untuk routing ke detail page, bukan nama hotel.
 $searchResults = $searchResults ?? [
     [
+        'id' => 101,
+        'name' => 'Padma Hotel Bandung',
+        'city' => 'Bandung',
+        'rating' => 4.9,
+        'reviews' => 1250,
+        'price' => 'IDR 2.100.000',
+        'image' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+        'highlights' => ['Infinity Pool', 'Pemandangan Alam', 'Kids Club']
+    ],
+    [
+        'id' => 102,
         'name' => 'The Langham Jakarta',
         'city' => 'Jakarta',
-        'rating' => 4.9,
-        'reviews' => 412,
-        'price' => 'IDR 2.850.000',
-        'image' => 'https://images.unsplash.com/photo-1551776235-dde6d4829808?auto=format&fit=crop&w=1200&q=80',
-        'highlights' => ['Infinity pool', 'Sky bar', 'City view']
-    ],
-    [
-        'name' => 'Padma Resort Ubud',
-        'city' => 'Bali',
         'rating' => 4.8,
-        'reviews' => 289,
-        'price' => 'IDR 3.450.000',
-        'image' => 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-        'highlights' => ['Trekking', 'Wellness spa', 'Jungle view']
-    ],
-    [
-        'name' => 'GAIA Hotel Bandung',
-        'city' => 'Bandung',
-        'rating' => 4.7,
-        'reviews' => 198,
-        'price' => 'IDR 2.150.000',
-        'image' => 'https://images.unsplash.com/photo-1505691723518-36a5ac3be353?auto=format&fit=crop&w=1200&q=80',
-        'highlights' => ['Heated pool', 'Kids club', 'Scenic deck']
-    ],
-    [
-        'name' => 'Hotel Tentrem Yogyakarta',
-        'city' => 'Yogyakarta',
-        'rating' => 4.9,
-        'reviews' => 354,
-        'price' => 'IDR 1.980.000',
+        'reviews' => 890,
+        'price' => 'IDR 3.500.000',
         'image' => 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=80',
-        'highlights' => ['Spa', 'Cultural tour', 'Fine dining']
+        'highlights' => ['Sky Pool', 'Luxury Spa', 'City View']
+    ],
+    [
+        'id' => 103,
+        'name' => 'Amanjiwo Resort',
+        'city' => 'Yogyakarta',
+        'rating' => 5.0,
+        'reviews' => 450,
+        'price' => 'IDR 8.500.000',
+        'image' => 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80',
+        'highlights' => ['Private Pool', 'Dekat Borobudur', 'Cultural Tour']
+    ],
+    [
+        'id' => 104,
+        'name' => 'The Apurva Kempinski',
+        'city' => 'Bali',
+        'rating' => 4.9,
+        'reviews' => 2100,
+        'price' => 'IDR 4.200.000',
+        'image' => 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
+        'highlights' => ['Aquarium Restaurant', 'Beachfront', 'Luxury Chapel']
     ],
 ];
 
@@ -176,6 +184,19 @@ function trevio_sort_hotels(array $hotels, string $sortOption): array
     return $hotels;
 }
 
+// [BACKEND NOTE]: ===== FILTERING SUDAH AKTIF DAN BERFUNGSI =====
+// Filter di sidebar dan sorting sudah terhubung dan berfungsi penuh
+// Tidak perlu konfigurasi tambahan - semua sudah otomatis
+// 
+// Cara kerja:
+// 1. User memilih filter di sidebar (city, price, rating, facility)
+// 2. Form submit otomatis dan kirim parameter via GET
+// 3. Function trevio_filter_hotels() memproses semua filter
+// 4. Function trevio_sort_hotels() mengurutkan hasil
+// 5. Hasil final ditampilkan di $searchResults
+//
+// Untuk production: Ganti $searchResults dengan query ke database
+
 // Terapkan filter berdasarkan input pengguna.
 $filteredHotels = trevio_filter_hotels($searchResults, $filters);
 // Urutkan hasil sesuai preferensi sort.
@@ -202,7 +223,7 @@ require __DIR__ . '/../layouts/header.php';
                 <h1 class="text-3xl font-semibold text-primary">Temukan hotel terbaik sesuai preferensi kamu</h1>
                 <p class="text-sm text-slate-500">Gunakan filter fasilitas, rating, dan rentang harga untuk menemukan hotel yang paling cocok.</p>
             </div>
-            <form class="flex w-full flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:px-6" method="get" action="<?= htmlspecialchars(trevio_view_path('search.php')) ?>">
+            <form class="flex w-full flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:px-6" method="get" action="">
                 <div class="flex flex-1 items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4">
                     <svg class="h-5 w-5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="7"></circle>
@@ -224,7 +245,10 @@ require __DIR__ . '/../layouts/header.php';
             <aside class="space-y-6">
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h2 class="text-sm font-semibold text-primary">Filter</h2>
-                    <form class="mt-4 space-y-5" method="get" action="<?= htmlspecialchars(trevio_view_path('search.php')) ?>">
+                    <!-- [BACKEND NOTE]: Form filter SUDAH BERFUNGSI - tidak hanya tampilan -->
+                    <!-- Setiap perubahan filter akan submit form dan reload page dengan hasil filter -->
+                    <!-- Filter aktif: City, Price Range, Rating, Facilities -->
+                    <form class="mt-4 space-y-5" method="get" action="">
                         <input type="hidden" name="q" value="<?= htmlspecialchars($filters['query']) ?>" />
                         <input type="hidden" name="sort" value="<?= htmlspecialchars($filters['sort']) ?>" />
                         <div>
@@ -263,7 +287,7 @@ require __DIR__ . '/../layouts/header.php';
                             </div>
                         </fieldset>
                         <button class="inline-flex w-full items-center justify-center rounded-full bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-900" type="submit">Terapkan Filter</button>
-                        <button class="inline-flex w-full items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" type="reset">Atur Ulang</button>
+                        <a class="inline-flex w-full items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="search.php">Atur Ulang</a>
                     </form>
                 </div>
                 <div class="rounded-3xl border border-blue-200 bg-blue-50 p-6 text-sm text-blue-800">
@@ -274,16 +298,14 @@ require __DIR__ . '/../layouts/header.php';
                         <li>• Gunakan fitur simpan hotel favorit untuk dibooking nanti.</li>
                     </ul>
                 </div>
-                    /**
-                     * Halaman pencarian/filter hotel
-                     */
+                    <!-- /*** Halaman pencarian/filter hotel */ -->
             </aside>
             <div class="space-y-6">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <p class="text-sm text-slate-500">Ditemukan <span class="font-semibold text-primary"><?= $resultCount ?></span> hotel sesuai pencarian.</p>
                     <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm">
                         <span class="text-slate-500">Urutkan:</span>
-                        <form method="get" action="<?= htmlspecialchars(trevio_view_path('search.php')) ?>">
+                        <form method="get" action="">
                             <input type="hidden" name="q" value="<?= htmlspecialchars($filters['query']) ?>" />
                             <input type="hidden" name="city" value="<?= htmlspecialchars($filters['city']) ?>" />
                             <input type="hidden" name="price" value="<?= htmlspecialchars($filters['price']) ?>" />
@@ -307,37 +329,59 @@ require __DIR__ . '/../layouts/header.php';
                         </div>
                     <?php else: ?>
                     <?php foreach ($searchResults as $hotel): ?>
-                        <article class="flex flex-col gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg md:flex-row">
-                            <div class="h-48 w-full flex-shrink-0 overflow-hidden rounded-2xl bg-cover bg-center md:h-40 md:w-64" style="background-image: url('<?= htmlspecialchars($hotel['image']) ?>');"></div>
-                            <div class="flex flex-1 flex-col justify-between gap-4">
-                                <div class="flex flex-col gap-2">
-                                    <div class="flex flex-wrap items-center gap-3">
-                                        <h3 class="text-lg font-semibold text-primary"><?= htmlspecialchars($hotel['name']) ?></h3>
-                                        <span class="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">
-                                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
+                        <article class="group overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+                            <div class="flex flex-col md:flex-row">
+                                <!-- Hotel Image - Larger and more prominent -->
+                                <div class="relative h-64 w-full flex-shrink-0 overflow-hidden bg-slate-100 md:h-72 md:w-80">
+                                    <img class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" src="<?= htmlspecialchars($hotel['image']) ?>" alt="<?= htmlspecialchars($hotel['name']) ?>" loading="lazy" />
+                                    <div class="absolute top-4 left-4">
+                                        <span class="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1.5 text-sm font-semibold text-yellow-500 shadow-lg backdrop-blur-sm">
+                                            <svg class="h-4 w-4 fill-current" viewBox="0 0 24 24">
                                                 <path d="M12 .587l3.668 7.431 8.2 1.194-5.934 5.78 1.402 8.174L12 18.896l-7.336 3.87 1.402-8.174L.132 9.212l8.2-1.194z"></path>
                                             </svg>
                                             <?= htmlspecialchars(number_format($hotel['rating'], 1)) ?>
                                         </span>
-                                        <span class="text-xs text-slate-500"><?= htmlspecialchars($hotel['reviews']) ?> ulasan</span>
-                                    </div>
-                                    <p class="text-sm text-slate-500"><?= htmlspecialchars($hotel['city']) ?></p>
-                                    <div class="flex flex-wrap gap-2">
-                                        <?php foreach ($hotel['highlights'] as $highlight): ?>
-                                            <span class="badge-soft"><?= htmlspecialchars($highlight) ?></span>
-                                        <?php endforeach; ?>
                                     </div>
                                 </div>
-                                <div class="flex flex-col gap-3 text-sm text-slate-500 md:flex-row md:items-center md:justify-between">
-                                    <div>
-                                        <p class="text-xs uppercase tracking-wide text-slate-400">Harga per malam</p>
-                                        <p class="text-base font-semibold text-primary"><?= htmlspecialchars($hotel['price']) ?></p>
+                                
+                                <!-- Hotel Details -->
+                                <div class="flex flex-1 flex-col p-6">
+                                    <div class="flex-1 space-y-3">
+                                        <!-- Title and Location -->
+                                        <div>
+                                            <h3 class="text-xl font-bold text-gray-900"><?= htmlspecialchars($hotel['name']) ?></h3>
+                                            <p class="mt-1 text-sm text-slate-500"><?= htmlspecialchars($hotel['city']) ?></p>
+                                            <div class="mt-1 flex items-center gap-2 text-xs text-slate-400">
+                                                <span><?= htmlspecialchars($hotel['reviews']) ?> ulasan</span>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Facilities/Highlights -->
+                                        <div class="flex flex-wrap gap-2">
+                                            <?php foreach ($hotel['highlights'] as $highlight): ?>
+                                                <span class="rounded-lg bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700"><?= htmlspecialchars($highlight) ?></span>
+                                            <?php endforeach; ?>
+                                        </div>
                                     </div>
-                                    <div class="flex flex-wrap gap-3">
-                                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="<?= htmlspecialchars(trevio_view_path('../booking/history.php')) ?>">Riwayat</a>
-                                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="<?= htmlspecialchars(trevio_view_path('../booking/detail.php')) ?>?hotel=<?= urlencode($hotel['name']) ?>">Detail Booking</a>
-                                        <a class="inline-flex items-center justify-center rounded-full bg-slate-900 px-5 py-2 text-sm font-semibold text-white transition hover:bg-slate-700" href="<?= htmlspecialchars(trevio_view_path('detail.php')) ?>?hotel=<?= urlencode($hotel['name']) ?>">Lihat Detail Hotel</a>
-                                        <a class="inline-flex items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:bg-accentLight" href="<?= htmlspecialchars(trevio_view_path('../booking/form.php')) ?>?hotel=<?= urlencode($hotel['name']) ?>&city=<?= urlencode($hotel['city']) ?>">Booking Sekarang</a>
+                                    
+                                    <!-- Price and Actions -->
+                                    <div class="mt-6 flex flex-col gap-4 border-t border-slate-100 pt-4 md:flex-row md:items-end md:justify-between">
+                                        <div>
+                                            <p class="text-xs font-medium uppercase tracking-wider text-slate-400">Harga per Malam</p>
+                                            <p class="mt-1 text-1xl font-bold text-primary"><?= htmlspecialchars($hotel['price']) ?></p>
+                                        </div>
+                                        
+                                        <div class="flex flex-wrap gap-2">
+                                            <!-- Link ke detail page menggunakan hotel ID -->
+                                            <a class="inline-flex items-center justify-center rounded-full border-2 border-slate-900 bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:border-slate-700 hover:bg-slate-700" href="detail.php?id=<?= urlencode($hotel['id']) ?>">
+                                                Lihat Detail Hotel
+                                            </a>
+                                            
+                                            <!-- Link ke booking form dengan hotel_id -->
+                                            <a class="inline-flex items-center justify-center rounded-full border-2 border-accent bg-accent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:border-accentLight hover:bg-accentLight" href="../booking/form.php?hotel_id=<?= urlencode($hotel['id']) ?>">
+                                                Booking Sekarang
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -349,10 +393,10 @@ require __DIR__ . '/../layouts/header.php';
                     <h3 class="text-base font-semibold text-primary">Akses cepat ke halaman lain</h3>
                     <p class="mt-2">Gunakan tautan berikut untuk berpindah ke alur booking Trevio:</p>
                     <div class="mt-4 flex flex-wrap gap-3">
-                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="<?= htmlspecialchars(trevio_view_path('../booking/form.php')) ?>">Form Pemesanan</a>
-                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="<?= htmlspecialchars(trevio_view_path('../booking/confirm.php')) ?>">Konfirmasi Pembayaran</a>
-                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="<?= htmlspecialchars(trevio_view_path('../booking/history.php')) ?>">Riwayat Booking</a>
-                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="<?= htmlspecialchars(trevio_view_path('detail.php')) ?>">Detail Hotel Contoh</a>
+                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="../booking/form.php">Form Pemesanan</a>
+                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="../booking/confirm.php">Konfirmasi Pembayaran</a>
+                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="../booking/history.php">Riwayat Booking</a>
+                        <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" href="detail.php">Detail Hotel Contoh</a>
                     </div>
                 </div>
             </div>
