@@ -63,10 +63,10 @@ if (preg_match('#^(.*)/app/#', $scriptName, $matches)) {
 }
 
 // Default tautan navigasi utama yang bisa dioverride dari view.
-$homeLink = $homeLink ?? trevio_view_route('home/index.php');
-$logoUrl  = $logoUrl ?? trevio_view_route('../../public/images/trevio.svg');
-$loginUrl = trevio_view_route('auth/login.php');
-$registerUrl = trevio_view_route('auth/register.php');
+$homeLink = defined('BASE_URL') ? BASE_URL : trevio_view_route('.');
+$logoUrl  = defined('BASE_URL') ? BASE_URL . '/images/trevio.svg' : trevio_view_route('../../public/images/trevio.svg');
+$loginUrl = defined('BASE_URL') ? BASE_URL . '/auth/login' : trevio_view_route('auth/login');
+$registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_route('auth/register');
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -81,7 +81,7 @@ $registerUrl = trevio_view_route('auth/register.php');
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Tailwind via CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -101,10 +101,10 @@ $registerUrl = trevio_view_route('auth/register.php');
     </script>
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?= $assetBase ?>/css/custom.css">
+    <link rel="stylesheet" href="../../public/css/custom.css">
 
     <!-- SweetAlert (kalau mau dipakai di page) -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../../public/js/sweetalert2.min.js"></script>
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-900">
 
