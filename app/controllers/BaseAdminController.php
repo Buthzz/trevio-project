@@ -14,6 +14,10 @@ abstract class BaseAdminController extends Controller {
      * Constructor - Enforce admin authentication
      */
     public function __construct() {
+        // Ensure session is started
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
         $this->requireAdminLogin();
     }
     
@@ -22,7 +26,18 @@ abstract class BaseAdminController extends Controller {
      * @throws void Redirects to login if not authenticated as admin
      */
     protected function requireAdminLogin(): void {
-        if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'admin') {
+        // Check if user is logged in and has admin role
+        $isAdmin = isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin';
+        
+        if (!$isAdmin) {
+            // Debug logging (remove in production)
+            if (defined('APP_DEBUG') && APP_DEBUG) {
+                error_log("Admin access denied. Session: " . json_encode([
+                    'user_id' => $_SESSION['user_id'] ?? null,
+                    'user_role' => $_SESSION['user_role'] ?? null
+                ]));
+            }
+            
             $_SESSION['flash_error'] = "Access denied. Admin privileges required.";
             $baseUrl = defined('BASE_URL') ? BASE_URL : '';
             header('Location: ' . $baseUrl . '/auth/login');
