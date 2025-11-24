@@ -55,7 +55,7 @@ class AuthController extends Controller {
         // Check user exists
         if (!$user) {
             error_log("Login failed: User not found - Email: {$email}");
-            $this->redirectWithError('/auth/login', "User gak ada kontol");
+            $this->redirectWithError('/auth/login', "User tidak terdaftar");
         }
 
         // Check auth provider (only email/password login allowed here)
@@ -73,7 +73,7 @@ class AuthController extends Controller {
         // Verify password
         if (!password_verify($password, $user['password'])) {
             error_log("Login failed: Wrong password - User: {$email}");
-            $this->redirectWithError('/auth/login', "Password verify salah babi");
+            $this->redirectWithError('/auth/login', "Password salah");
         }
 
         // ✅ SUCCESS: Login user
