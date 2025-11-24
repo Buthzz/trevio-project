@@ -25,8 +25,8 @@ class Payment extends Model {
                   ORDER BY p.uploaded_at DESC";
         
         try {
-            $this->db->query($query);
-            return $this->db->resultSet();
+            $this->query($query);
+            return $this->resultSet();
         } catch (PDOException $e) {
             error_log("Payment getPendingPayments Error: " . $e->getMessage());
             return [];
@@ -53,11 +53,11 @@ class Payment extends Model {
         $query .= " ORDER BY p.uploaded_at DESC";
         
         try {
-            $this->db->query($query);
+            $this->query($query);
             if ($status) {
-                $this->db->bind(':status', $status);
+                $this->bind(':status', $status);
             }
-            return $this->db->resultSet();
+            return $this->resultSet();
         } catch (PDOException $e) {
             error_log("Payment getAll Error: " . $e->getMessage());
             return [];
@@ -81,9 +81,9 @@ class Payment extends Model {
                   WHERE p.id = :id";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':id', $id);
-            return $this->db->single();
+            $this->query($query);
+            $this->bind(':id', $id);
+            return $this->single();
         } catch (PDOException $e) {
             error_log("Payment find Error: " . $e->getMessage());
             return false;
@@ -99,9 +99,9 @@ class Payment extends Model {
         $query = "SELECT * FROM {$this->table} WHERE booking_id = :booking_id";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':booking_id', $bookingId);
-            return $this->db->single();
+            $this->query($query);
+            $this->bind(':booking_id', $bookingId);
+            return $this->single();
         } catch (PDOException $e) {
             error_log("Payment findByBookingId Error: " . $e->getMessage());
             return false;
@@ -117,7 +117,7 @@ class Payment extends Model {
      */
     public function verify($paymentId, $adminId, $notes = '') {
         try {
-            $this->db->beginTransaction();
+            $this->beginTransaction();
 
             // 1. Update payment status
             $query = "UPDATE {$this->table} 
@@ -127,11 +127,11 @@ class Payment extends Model {
                           verification_notes = :notes
                       WHERE id = :id";
             
-            $this->db->query($query);
-            $this->db->bind(':id', $paymentId);
-            $this->db->bind(':admin_id', $adminId);
-            $this->db->bind(':notes', $notes);
-            $this->db->execute();
+            $this->query($query);
+            $this->bind(':id', $paymentId);
+            $this->bind(':admin_id', $adminId);
+            $this->bind(':notes', $notes);
+            $this->execute();
 
             // 2. Get booking_id and num_rooms
             $payment = $this->findByPaymentId($paymentId);
@@ -140,35 +140,35 @@ class Payment extends Model {
             }
 
             // 3. Update booking status to 'confirmed'
-            $this->db->query("UPDATE bookings 
+            $this->query("UPDATE bookings 
                              SET booking_status = 'confirmed',
                                  confirmed_at = NOW()
                              WHERE id = :booking_id");
-            $this->db->bind(':booking_id', $payment['booking_id']);
-            $this->db->execute();
+            $this->bind(':booking_id', $payment['booking_id']);
+            $this->execute();
 
             // 4. Get booking details for room slot reduction
-            $this->db->query("SELECT room_id, num_rooms FROM bookings WHERE id = :booking_id");
-            $this->db->bind(':booking_id', $payment['booking_id']);
-            $booking = $this->db->single();
+            $this->query("SELECT room_id, num_rooms FROM bookings WHERE id = :booking_id");
+            $this->bind(':booking_id', $payment['booking_id']);
+            $booking = $this->single();
 
             // 5. Reduce room slots (ATOMIC)
-            $this->db->query("UPDATE rooms 
+            $this->query("UPDATE rooms 
                              SET available_slots = available_slots - :num_rooms
                              WHERE id = :room_id 
                              AND available_slots >= :num_rooms");
-            $this->db->bind(':room_id', $booking['room_id']);
-            $this->db->bind(':num_rooms', $booking['num_rooms']);
+            $this->bind(':room_id', $booking['room_id']);
+            $this->bind(':num_rooms', $booking['num_rooms']);
             
-            if (!$this->db->execute()) {
+            if (!$this->execute()) {
                 throw new \Exception("Failed to reduce room slots - insufficient availability");
             }
 
-            $this->db->commit();
+            $this->commit();
             return true;
 
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            $this->rollBack();
             error_log("Payment verify Error: " . $e->getMessage());
             return false;
         }
@@ -183,7 +183,7 @@ class Payment extends Model {
      */
     public function reject($paymentId, $adminId, $reason = '') {
         try {
-            $this->db->beginTransaction();
+            $this->beginTransaction();
 
             // 1. Update payment status
             $query = "UPDATE {$this->table} 
@@ -193,11 +193,11 @@ class Payment extends Model {
                           rejection_reason = :reason
                       WHERE id = :id";
             
-            $this->db->query($query);
-            $this->db->bind(':id', $paymentId);
-            $this->db->bind(':admin_id', $adminId);
-            $this->db->bind(':reason', $reason);
-            $this->db->execute();
+            $this->query($query);
+            $this->bind(':id', $paymentId);
+            $this->bind(':admin_id', $adminId);
+            $this->bind(':reason', $reason);
+            $this->execute();
 
             // 2. Get booking_id
             $payment = $this->findByPaymentId($paymentId);
@@ -206,17 +206,17 @@ class Payment extends Model {
             }
 
             // 3. Update booking status back to 'pending_payment'
-            $this->db->query("UPDATE bookings 
+            $this->query("UPDATE bookings 
                              SET booking_status = 'pending_payment'
                              WHERE id = :booking_id");
-            $this->db->bind(':booking_id', $payment['booking_id']);
-            $this->db->execute();
+            $this->bind(':booking_id', $payment['booking_id']);
+            $this->execute();
 
-            $this->db->commit();
+            $this->commit();
             return true;
 
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            $this->rollBack();
             error_log("Payment reject Error: " . $e->getMessage());
             return false;
         }
@@ -228,9 +228,9 @@ class Payment extends Model {
      * @return array|false
      */
     private function findByPaymentId($paymentId) {
-        $this->db->query("SELECT * FROM {$this->table} WHERE id = :id");
-        $this->db->bind(':id', $paymentId);
-        return $this->db->single();
+        $this->query("SELECT * FROM {$this->table} WHERE id = :id");
+        $this->bind(':id', $paymentId);
+        return $this->single();
     }
 
     /**
@@ -239,8 +239,8 @@ class Payment extends Model {
      */
     public function countPending() {
         try {
-            $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE payment_status = 'pending_verification'");
-            $result = $this->db->single();
+            $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE payment_status = 'pending_verification'");
+            $result = $this->single();
             return (int)($result['total'] ?? 0);
         } catch (PDOException $e) {
             error_log("Payment countPending Error: " . $e->getMessage());
@@ -259,8 +259,8 @@ class Payment extends Model {
                       JOIN bookings b ON p.booking_id = b.id
                       WHERE p.payment_status = 'verified'";
             
-            $this->db->query($query);
-            $result = $this->db->single();
+            $this->query($query);
+            $result = $this->single();
             return (float)($result['revenue'] ?? 0);
         } catch (PDOException $e) {
             error_log("Payment getTotalRevenue Error: " . $e->getMessage());

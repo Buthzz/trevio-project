@@ -21,18 +21,18 @@ class Refund extends Model {
                   (:booking_id, :payment_id, :customer_id, :refund_amount, :reason, :bank_name, :account_number, :account_name, 'requested')";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':booking_id', $data['booking_id']);
-            $this->db->bind(':payment_id', $data['payment_id']);
-            $this->db->bind(':customer_id', $data['customer_id']);
-            $this->db->bind(':refund_amount', $data['refund_amount']);
-            $this->db->bind(':reason', $data['reason']);
-            $this->db->bind(':bank_name', $data['bank_name']);
-            $this->db->bind(':account_number', $data['account_number']);
-            $this->db->bind(':account_name', $data['account_name']);
+            $this->query($query);
+            $this->bind(':booking_id', $data['booking_id']);
+            $this->bind(':payment_id', $data['payment_id']);
+            $this->bind(':customer_id', $data['customer_id']);
+            $this->bind(':refund_amount', $data['refund_amount']);
+            $this->bind(':reason', $data['reason']);
+            $this->bind(':bank_name', $data['bank_name']);
+            $this->bind(':account_number', $data['account_number']);
+            $this->bind(':account_name', $data['account_name']);
             
-            if ($this->db->execute()) {
-                return (int)$this->db->lastInsertId();
+            if ($this->execute()) {
+                return (int)$this->lastInsertId();
             }
             return false;
         } catch (PDOException $e) {
@@ -62,11 +62,11 @@ class Refund extends Model {
         $query .= " ORDER BY r.requested_at DESC";
         
         try {
-            $this->db->query($query);
+            $this->query($query);
             if ($status) {
-                $this->db->bind(':status', $status);
+                $this->bind(':status', $status);
             }
-            return $this->db->resultSet();
+            return $this->resultSet();
         } catch (PDOException $e) {
             error_log("Refund getAll Error: " . $e->getMessage());
             return [];
@@ -98,9 +98,9 @@ class Refund extends Model {
                   WHERE r.id = :id";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':id', $id);
-            return $this->db->single();
+            $this->query($query);
+            $this->bind(':id', $id);
+            return $this->single();
         } catch (PDOException $e) {
             error_log("Refund find Error: " . $e->getMessage());
             return false;
@@ -116,9 +116,9 @@ class Refund extends Model {
         $query = "SELECT * FROM {$this->table} WHERE booking_id = :booking_id";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':booking_id', $bookingId);
-            return $this->db->single();
+            $this->query($query);
+            $this->bind(':booking_id', $bookingId);
+            return $this->single();
         } catch (PDOException $e) {
             error_log("Refund findByBookingId Error: " . $e->getMessage());
             return false;
@@ -141,11 +141,11 @@ class Refund extends Model {
                   WHERE id = :id AND refund_status = 'requested'";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':id', $refundId);
-            $this->db->bind(':admin_id', $adminId);
-            $this->db->bind(':notes', $notes);
-            return $this->db->execute();
+            $this->query($query);
+            $this->bind(':id', $refundId);
+            $this->bind(':admin_id', $adminId);
+            $this->bind(':notes', $notes);
+            return $this->execute();
         } catch (PDOException $e) {
             error_log("Refund approve Error: " . $e->getMessage());
             return false;
@@ -161,7 +161,7 @@ class Refund extends Model {
      */
     public function reject($refundId, $adminId, $reason = '') {
         try {
-            $this->db->beginTransaction();
+            $this->beginTransaction();
 
             // Update refund status
             $query = "UPDATE {$this->table} 
@@ -171,16 +171,16 @@ class Refund extends Model {
                           rejection_reason = :reason
                       WHERE id = :id AND refund_status = 'requested'";
             
-            $this->db->query($query);
-            $this->db->bind(':id', $refundId);
-            $this->db->bind(':admin_id', $adminId);
-            $this->db->bind(':reason', $reason);
-            $this->db->execute();
+            $this->query($query);
+            $this->bind(':id', $refundId);
+            $this->bind(':admin_id', $adminId);
+            $this->bind(':reason', $reason);
+            $this->execute();
 
-            $this->db->commit();
+            $this->commit();
             return true;
         } catch (PDOException $e) {
-            $this->db->rollBack();
+            $this->rollBack();
             error_log("Refund reject Error: " . $e->getMessage());
             return false;
         }
@@ -195,7 +195,7 @@ class Refund extends Model {
      */
     public function complete($refundId, $receiptFile, $adminId) {
         try {
-            $this->db->beginTransaction();
+            $this->beginTransaction();
 
             // 1. Get refund details
             $refund = $this->find($refundId);
@@ -211,30 +211,30 @@ class Refund extends Model {
                           processed_by = :admin_id
                       WHERE id = :id";
             
-            $this->db->query($query);
-            $this->db->bind(':id', $refundId);
-            $this->db->bind(':receipt', $receiptFile);
-            $this->db->bind(':admin_id', $adminId);
-            $this->db->execute();
+            $this->query($query);
+            $this->bind(':id', $refundId);
+            $this->bind(':receipt', $receiptFile);
+            $this->bind(':admin_id', $adminId);
+            $this->execute();
 
             // 3. Update booking status to 'refunded'
-            $this->db->query("UPDATE bookings SET booking_status = 'refunded' WHERE id = :booking_id");
-            $this->db->bind(':booking_id', $refund['booking_id']);
-            $this->db->execute();
+            $this->query("UPDATE bookings SET booking_status = 'refunded' WHERE id = :booking_id");
+            $this->bind(':booking_id', $refund['booking_id']);
+            $this->execute();
 
             // 4. Restore room slots (ATOMIC)
-            $this->db->query("UPDATE rooms 
+            $this->query("UPDATE rooms 
                              SET available_slots = available_slots + :num_rooms
                              WHERE id = :room_id");
-            $this->db->bind(':room_id', $refund['room_id']);
-            $this->db->bind(':num_rooms', $refund['num_rooms']);
-            $this->db->execute();
+            $this->bind(':room_id', $refund['room_id']);
+            $this->bind(':num_rooms', $refund['num_rooms']);
+            $this->execute();
 
-            $this->db->commit();
+            $this->commit();
             return true;
 
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            $this->rollBack();
             error_log("Refund complete Error: " . $e->getMessage());
             return false;
         }
@@ -246,8 +246,8 @@ class Refund extends Model {
      */
     public function countPending() {
         try {
-            $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE refund_status = 'requested'");
-            $result = $this->db->single();
+            $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE refund_status = 'requested'");
+            $result = $this->single();
             return (int)($result['total'] ?? 0);
         } catch (PDOException $e) {
             error_log("Refund countPending Error: " . $e->getMessage());
@@ -269,9 +269,9 @@ class Refund extends Model {
                   ORDER BY r.requested_at DESC";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':customer_id', $customerId);
-            return $this->db->resultSet();
+            $this->query($query);
+            $this->bind(':customer_id', $customerId);
+            return $this->resultSet();
         } catch (PDOException $e) {
             error_log("Refund getByCustomer Error: " . $e->getMessage());
             return [];

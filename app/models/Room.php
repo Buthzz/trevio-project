@@ -17,15 +17,15 @@ class Room extends Model {
                   WHERE h.owner_id = :owner_id 
                   ORDER BY r.created_at DESC";
         
-        $this->db->query($query);
-        $this->db->bind(':owner_id', $ownerId);
-        return $this->db->resultSet();
+        $this->query($query);
+        $this->bind(':owner_id', $ownerId);
+        return $this->resultSet();
     }
 
     public function find($id) {
-        $this->db->query("SELECT * FROM {$this->table} WHERE id = :id");
-        $this->db->bind(':id', $id);
-        return $this->db->single();
+        $this->query("SELECT * FROM {$this->table} WHERE id = :id");
+        $this->bind(':id', $id);
+        return $this->single();
     }
 
     public function create($data) {
@@ -36,19 +36,19 @@ class Room extends Model {
                   (:hotel_id, :room_type, :description, :capacity, :price_per_night, :total_slots, :total_slots, :main_image, :facilities, 1)";
         
         try {
-            $this->db->query($query);
+            $this->query($query);
             // Bind parameter manual karena kita menggunakan total_slots dua kali
-            $this->db->bind(':hotel_id', $data['hotel_id']);
-            $this->db->bind(':room_type', $data['room_type']);
-            $this->db->bind(':description', $data['description']);
-            $this->db->bind(':capacity', $data['capacity']);
-            $this->db->bind(':price_per_night', $data['price_per_night']);
-            $this->db->bind(':total_slots', $data['total_slots']);
-            $this->db->bind(':main_image', $data['main_image']);
-            $this->db->bind(':facilities', $data['facilities']);
+            $this->bind(':hotel_id', $data['hotel_id']);
+            $this->bind(':room_type', $data['room_type']);
+            $this->bind(':description', $data['description']);
+            $this->bind(':capacity', $data['capacity']);
+            $this->bind(':price_per_night', $data['price_per_night']);
+            $this->bind(':total_slots', $data['total_slots']);
+            $this->bind(':main_image', $data['main_image']);
+            $this->bind(':facilities', $data['facilities']);
             
-            $this->db->execute();
-            return $this->db->lastInsertId();
+            $this->execute();
+            return $this->lastInsertId();
         } catch (PDOException $e) {
             error_log($e->getMessage());
             return false;
@@ -66,16 +66,16 @@ class Room extends Model {
                   WHERE id = :id";
 
         try {
-            $this->db->query($query);
-            $this->db->bind(':room_type', $data['room_type']);
-            $this->db->bind(':price', $data['price_per_night']);
-            $this->db->bind(':capacity', $data['capacity']);
-            $this->db->bind(':total_slots', $data['total_slots']);
-            $this->db->bind(':description', $data['description']);
-            $this->db->bind(':facilities', $data['facilities']);
-            $this->db->bind(':main_image', $data['main_image']);
-            $this->db->bind(':id', $id);
-            return $this->db->execute();
+            $this->query($query);
+            $this->bind(':room_type', $data['room_type']);
+            $this->bind(':price', $data['price_per_night']);
+            $this->bind(':capacity', $data['capacity']);
+            $this->bind(':total_slots', $data['total_slots']);
+            $this->bind(':description', $data['description']);
+            $this->bind(':facilities', $data['facilities']);
+            $this->bind(':main_image', $data['main_image']);
+            $this->bind(':id', $id);
+            return $this->execute();
         } catch (PDOException $e) {
             error_log($e->getMessage());
             return false;
@@ -84,8 +84,8 @@ class Room extends Model {
 
     public function delete($id) {
         // Pastikan hanya menghapus jika tidak ada booking aktif (opsional validation)
-        $this->db->query("DELETE FROM {$this->table} WHERE id = :id");
-        $this->db->bind(':id', $id);
-        return $this->db->execute();
+        $this->query("DELETE FROM {$this->table} WHERE id = :id");
+        $this->bind(':id', $id);
+        return $this->execute();
     }
 }
