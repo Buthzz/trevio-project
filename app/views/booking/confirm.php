@@ -1,19 +1,99 @@
 <?php
-// Judul halaman memastikan konteks konfirmasi terbaca jelas di tab browser.
-$pageTitle = 'Trevio | Konfirmasi Pembayaran';
-// Gunakan invoice dari query string, jika kosong buat default berbasis tanggal hari ini.
-$invoiceCode = $_GET['invoice'] ?? 'INV-' . date('Ymd') . '-001';
-// Nama hotel utama yang sedang dikonfirmasi pembayarannya.
-$hotelName = $_GET['hotel'] ?? 'Aurora Peaks Resort';
-// Nama tamu utama yang menerima konfirmasi.
-$guestName = $_GET['guest'] ?? 'Amelia Pratama';
-// Total pembayaran yang ditampilkan pada ringkasan invoice.
-$totalAmount = $_GET['total'] ?? 'IDR 7.820.000';
+require_once __DIR__ . '/../../../helpers/functions.php';
+trevio_start_session();
+
+// [SECURITY]: Cek apakah user sudah login
+if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
+    $loginUrl = trevio_view_route('auth/login.php') . '?return_url=' . urlencode($_SERVER['REQUEST_URI']);
+    header("Location: $loginUrl");
+    exit;
+}
+
+// [BACKEND NOTE]: Ambil data booking dari session
+// Data ini diset di booking/form.php sebelum redirect
+$booking = $_SESSION['trevio_booking_current'] ?? null;
+
+// Jika tidak ada data booking, redirect ke home atau history
+if (!$booking) {
+    // Fallback: Cek apakah ada invoice di URL, mungkin user refresh halaman
+    $invoiceCode = $_GET['invoice'] ?? '';
+    if ($invoiceCode) {
+        // Coba cari di history
+        $history = $_SESSION['trevio_booking_history'] ?? [];
+        foreach ($history as $item) {
+            if ($item['invoice'] === $invoiceCode) {
+                // Found in history, restore minimal data for display
+                $booking = [
+                    'booking_code' => $item['code'],
+                    'invoice_code' => $item['invoice'],
+                    'hotel_name' => $item['hotel'],
+                    'hotel_city' => $item['city'],
+                    'created_at' => $item['created_at'],
+                    'status' => $item['status'],
+                    'total_amount' => $item['total'],
+                    'guest_name' => $item['guest_name'] ?? $_SESSION['user_name'],
+                    'check_in' => $item['check_in'],
+                    'check_out' => $item['check_out'],
+                    'nights' => $item['nights']
+                ];
+                break;
+            }
+        }
+    }
+    
+    if (!$booking) {
+        // Jika masih tidak ketemu, redirect ke home
+        header('Location: ' . trevio_view_route('home/index.php'));
+        exit;
+    }
+}
+
+// Extract variables for easier usage in view
+$invoiceCode = $booking['invoice_code'];
+$bookingCode = $booking['booking_code'];
+$hotelName = $booking['hotel_name'];
+$guestName = $booking['guest_name'];
+$totalAmount = $booking['total_amount'];
+$createdAt = $booking['created_at'];
+
+// [BACKEND NOTE]: Simpan booking ke history session untuk ditampilkan di history.php
+// Untuk production: simpan ke database table bookings
+if (!isset($_SESSION['trevio_booking_history'])) {
+    $_SESSION['trevio_booking_history'] = [];
+}
+
+// Tambahkan booking saat ini ke history (jika belum ada)
+$bookingExists = false;
+foreach ($_SESSION['trevio_booking_history'] as $item) {
+    if ($item['code'] === $bookingCode) {
+        $bookingExists = true;
+        break;
+    }
+}
+
+if (!$bookingExists) {
+    $_SESSION['trevio_booking_history'][] = [
+        'code' => $bookingCode,
+        'invoice' => $invoiceCode,
+        'hotel' => $hotelName,
+        'city' => $booking['hotel_city'] ?? 'Jakarta',
+        'date' => date('d M Y', strtotime($createdAt)),
+        'check_in' => $booking['check_in'] ?? date('Y-m-d'),
+        'check_out' => $booking['check_out'] ?? date('Y-m-d', strtotime('+3 days')),
+        'nights' => $booking['nights'] ?? 3,
+        'status' => $booking['status'],
+        'total' => $totalAmount,
+        'guest_name' => $guestName,
+        'created_at' => $createdAt,
+        'link' => 'detail.php?code=' . urlencode($bookingCode)
+    ];
+}
+
 // Daftar tahapan proses pembayaran untuk progress list.
 $timeline = [
-	['label' => 'Pemesanan dibuat', 'time' => '10:21', 'status' => 'Selesai'],
-	['label' => 'Pembayaran diterima', 'time' => '10:23', 'status' => 'Selesai'],
-	['label' => 'Voucher dikirim', 'time' => '10:24', 'status' => 'Selesai'],
+	['label' => 'Pemesanan dibuat', 'time' => date('H:i', strtotime($createdAt)), 'status' => 'Selesai'],
+	['label' => 'Pembayaran diterima', 'time' => date('H:i', strtotime('+2 minutes', strtotime($createdAt))), 'status' => 'Selesai'],
+	['label' => 'Voucher dikirim', 'time' => date('H:i', strtotime('+3 minutes', strtotime($createdAt))), 'status' => 'Selesai'],
 ];
 
 // Sertakan header umum agar layout dan asset konsisten.
@@ -79,26 +159,24 @@ require __DIR__ . '/../layouts/header.php';
 				</div>
 			</div>
 
-			<aside class="space-y-4">
-				<!-- Bagian kanan bisa diisi rekomendasi itinerary atau upsell -->
-				<div class="rounded-3xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm">
-					<p class="text-base font-semibold text-primary">Langkah selanjutnya</p>
-					<ul class="mt-4 space-y-2 text-sm">
-						<li>• Simpan invoice ini sebagai bukti pembayaran.</li>
-						<li>• Tunjukkan e-voucher saat check-in di hotel.</li>
-						<li>• Hubungi support bila jadwal perlu diubah.</li>
-					</ul>
+			<!-- Sidebar CTA -->
+			<div class="space-y-4">
+				<div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+					<h3 class="font-semibold text-primary">Langkah Selanjutnya</h3>
+					<p class="mt-2 text-sm text-slate-500">Cek email kamu untuk e-voucher atau lihat detail pesanan di halaman history.</p>
+					<div class="mt-6 flex flex-col gap-3">
+						<a href="history.php" class="inline-flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700">
+							Lihat Riwayat Pesanan
+						</a>
+						<a href="../home/index.php" class="inline-flex w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+							Kembali ke Beranda
+						</a>
+					</div>
 				</div>
-				<div class="flex flex-col gap-3 text-sm font-semibold">
-					<a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-5 py-2 text-slate-600 transition hover:border-accent hover:text-accent" href="form.php">Kembali ke Form Pemesanan</a>
-					<a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-5 py-2 text-slate-600 transition hover:border-accent hover:text-accent" href="history.php">Lihat Riwayat Booking</a>
-					<a class="inline-flex items-center justify-center rounded-full bg-accent px-5 py-2 text-white transition hover:bg-accentLight" href="../hotel/search.php">Cari hotel lainnya</a>
-				</div>
-			</aside>
+			</div>
 		</div>
 	</div>
 </section>
 <?php
-// Tutup halaman dengan footer global.
 require __DIR__ . '/../layouts/footer.php';
 ?>

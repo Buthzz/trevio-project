@@ -1,3 +1,61 @@
+<?php
+require_once __DIR__ . '/../../../helpers/functions.php';
+trevio_start_session();
+
+// [SECURITY]: Redirect jika sudah login
+if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true) {
+    $homeUrl = trevio_view_route('home/index.php');
+    header("Location: $homeUrl");
+    exit;
+}
+
+// [BACKEND NOTE]: Handle registration logic
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // [SECURITY]: Verifikasi CSRF Token
+    if (!trevio_verify_csrf()) {
+        die('Akses ditolak: Token CSRF tidak valid. Silakan refresh halaman.');
+    }
+
+    $fullName = filter_input(INPUT_POST, 'full_name', FILTER_SANITIZE_SPECIAL_CHARS);
+    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
+    $password = $_POST['password'] ?? '';
+    $passwordConfirmation = $_POST['password_confirmation'] ?? '';
+    $userType = $_POST['user_type'] ?? 'guest';
+
+    // Validasi input
+    if (empty($fullName) || empty($email) || empty($password)) {
+        $error = 'Semua field wajib diisi.';
+    } elseif ($password !== $passwordConfirmation) {
+        $error = 'Konfirmasi password tidak cocok.';
+    } elseif ($email === 'user@gmail.com') {
+        // [BACKEND NOTE]: Simulasi cek email duplikat
+        $error = 'Email sudah terdaftar. Silakan gunakan email lain.';
+    } else {
+        // Simulasi simpan user baru
+        $newUser = [
+            'id' => rand(1000, 9999),
+            'name' => $fullName,
+            'email' => $email,
+            'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($fullName) . '&background=random',
+            'role' => $userType
+        ];
+
+        // Auto login setelah register
+        $_SESSION['user_id'] = $newUser['id'];
+        $_SESSION['user_name'] = $newUser['name'];
+        $_SESSION['user_email'] = $newUser['email'];
+        $_SESSION['user_avatar'] = $newUser['avatar'];
+        $_SESSION['user_role'] = $newUser['role'];
+        $_SESSION['is_logged_in'] = true;
+        $_SESSION['login_provider'] = 'email';
+
+        // Redirect ke home
+        $homeUrl = trevio_view_route('home/index.php') . '?login_success=register';
+        header("Location: $homeUrl");
+        exit;
+    }
+}
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -24,30 +82,36 @@
         };
     </script>
 </head>
-<body class="min-h-screen bg-[#F5F7FA] font-sans text-base text-[#111827]">
+<body class="bg-slate-50 font-sans text-slate-900 antialiased">
     <?php
-    // Header global agar tone branding konsisten di halaman registrasi.
+    // Header global
     require __DIR__ . '/../layouts/header.php';
     ?>
 
-    <!-- Kontainer utama: mobile sengaja dibiarkan memanjang supaya tombol tidak kepotong -->
     <main class="flex items-start md:items-center justify-center px-4 py-6 md:px-6 md:py-10 md:min-h-[calc(100vh-10px)]">
-        <!-- Card register + slider disatukan agar tetap sinkron dengan desain marketing -->
-        <div class="bg-white rounded-[24px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)] max-w-[840px] w-full md:w-auto mx-auto flex flex-col md:flex-row md:max-h-[520px] md:overflow-hidden">
+        <div class="bg-white rounded-[24px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)] max-w-[840px] w-full md:w-auto mx-auto flex flex-col md:flex-row md:overflow-hidden">
             <!-- Kolom kiri: form registrasi dan CTA -->
-            <section class="md:w-[54%] px-5 md:px-7 py-6 order-2 md:order-1">
-                <div class="mb-4">
-                    <h1 class="text-[28px] font-semibold mb-1">Buat Akun Baru</h1>
-                    <p class="text-xs text-[#6B7280]">Bergabunglah dengan komunitas traveller terbesar.</p>
+            <section class="md:w-[54%] p-6 md:p-10 flex flex-col justify-center order-2 md:order-none">
+                <div class="mb-6">
+                    <h1 class="text-2xl font-bold text-[#111827] mb-1">Buat Akun Baru 🚀</h1>
+                    <p class="text-sm text-[#6B7280]">Bergabunglah dengan Trevio dan mulai petualanganmu.</p>
                 </div>
 
                 <form method="post" action="#" class="space-y-3" autocomplete="off">
-                    <div>
-                        <label for="full_name" class="block text-sm font-semibold text-[#374151] mb-1.5">NAMA LENGKAP</label>
+                    <?= trevio_csrf_field() ?>
+                    
+                    <?php if (isset($error)): ?>
+                        <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-4">
+                            <?= htmlspecialchars($error) ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="form-group">
+                        <label for="full_name" class="block text-sm font-semibold text-[#374151] mb-1.5">FULL NAME</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
                                 <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                                     <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
                                 </svg>
                             </span>
@@ -57,7 +121,7 @@
                                 type="text"
                                 placeholder="John Doe"
                                 required
-                                    class="w-full pl-12 pr-4 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
+                                class="w-full pl-12 pr-4 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
                             >
                         </div>
                     </div>
@@ -77,7 +141,7 @@
                                 type="email"
                                 placeholder="nama@email.com"
                                 required
-                                    class="w-full pl-12 pr-4 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
+                                class="w-full pl-12 pr-4 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
                             >
                         </div>
                     </div>
@@ -98,7 +162,27 @@
                                 placeholder="Minimal 8 karakter"
                                 minlength="8"
                                 required
-                                    class="w-full pl-12 pr-4 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
+                                class="w-full pl-12 pr-4 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
+                            >
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password_confirmation" class="block text-sm font-semibold text-[#374151] mb-1.5">KONFIRMASI PASSWORD</label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                </svg>
+                            </span>
+                            <input
+                                id="password_confirmation"
+                                name="password_confirmation"     
+                                type="password"
+                                placeholder="Ulangi password"
+                                minlength="8"
+                                required
+                                class="w-full pl-12 pr-4 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
                             >
                         </div>
                     </div>

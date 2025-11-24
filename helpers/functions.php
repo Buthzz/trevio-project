@@ -50,15 +50,14 @@ if (!function_exists('trevio_view_route')) {
 if (!function_exists('trevio_build_auth_context')) {
 	function trevio_build_auth_context(array $overrides = []): array
 	{
-		if (session_status() === PHP_SESSION_NONE) {
-			session_start();
-		}
+        trevio_start_session();
 
 		$defaults = [
 			'isAuthenticated' => !empty($_SESSION['user_id'] ?? null),
 			'profileName' => $_SESSION['user_name'] ?? 'Profil Kamu',
 			'profilePhoto' => $_SESSION['user_avatar'] ?? null,
 			'profileLink' => trevio_view_route('profile/index.php'),
+			'userRole' => $_SESSION['user_role'] ?? 'guest',
 		];
 
 		$context = array_merge($defaults, array_filter($overrides, static function ($value) {
@@ -91,3 +90,60 @@ if (!function_exists('trevio_get_auth_context')) {
 	}
 }
 
+/**
+ * Memulai sesi dengan aman jika belum aktif.
+ */
+if (!function_exists('trevio_start_session')) {
+    function trevio_start_session(): void
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+    }
+}
+
+/**
+ * Menghasilkan CSRF token dan menyimpannya di sesi.
+ */
+if (!function_exists('trevio_csrf_token')) {
+    function trevio_csrf_token(): string
+    {
+        trevio_start_session();
+        if (empty($_SESSION['csrf_token'])) {
+            try {
+                $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+            } catch (Exception $e) {
+                $_SESSION['csrf_token'] = bin2hex(openssl_random_pseudo_bytes(32));
+            }
+        }
+        return $_SESSION['csrf_token'];
+    }
+}
+
+/**
+ * Membuat input hidden untuk CSRF token.
+ */
+if (!function_exists('trevio_csrf_field')) {
+    function trevio_csrf_field(): string
+    {
+        $token = trevio_csrf_token();
+        return '<input type="hidden" name="csrf_token" value="' . htmlspecialchars($token) . '">';
+    }
+}
+
+/**
+ * Verifikasi CSRF token dari request POST.
+ */
+if (!function_exists('trevio_verify_csrf')) {
+    function trevio_verify_csrf(): bool
+    {
+        trevio_start_session();
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            return true; // Tidak perlu cek untuk GET
+        }
+        if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token'])) {
+            return false;
+        }
+        return hash_equals($_SESSION['csrf_token'], $_POST['csrf_token']);
+    }
+}

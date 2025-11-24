@@ -1,101 +1,304 @@
 <?php
 // Gunakan helper routing agar link antar view konsisten.
 require_once __DIR__ . '/../../../helpers/functions.php';
+trevio_start_session();
 
-// Judul halaman detail hotel.
-$pageTitle = 'Trevio | Detail Hotel';
-// Data hotel contoh yang akan ditampilkan ketika belum ada data dari controller.
-$hotel = $hotel ?? [
-    'name' => 'Aurora Peaks Resort',
-    'location' => 'Sapporo, Jepang',
-    'rating' => 4.9,
-    'reviews' => 428,
-    'price' => 'JPY 32.000 / malam',
-    'description' => 'Resor premium dengan panorama pegunungan Hokkaido, lounge observasi, onsen pribadi, dan pengalaman kuliner musiman. Trevio menjamin dukungan concierge 24 jam untuk setiap tamu.',
-    'amenities' => ['Onsen pribadi', 'Sky lounge', 'Shuttle bandara', 'Spa terapi', 'Restoran Michelin', 'Wifi super cepat'],
-    'images' => [
-        'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1500&q=80',
-        'https://images.unsplash.com/photo-1519821983755-6f5bbfc62a86?auto=format&fit=crop&w=1200&q=80',
-        'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?auto=format&fit=crop&w=1200&q=80'
-    ]
+// Data dummy lengkap untuk semua hotel
+$hotelsDummy = [
+    101 => [
+        'id' => 101,
+        'name' => 'Padma Hotel Bandung',
+        'location' => 'Ciumbuleuit, Bandung',
+        'rating' => 4.9,
+        'reviews' => 1250,
+        'price' => 'Rp 2.100.000 / malam',
+        'description' => 'Hotel mewah dengan pemandangan lembah hijau yang menakjubkan. Nikmati udara sejuk Bandung dengan fasilitas kolam renang air hangat infinity dan layanan bintang lima.',
+        'amenities' => ['Infinity Pool Air Hangat', 'Kids Club', 'Fitness Center', 'Restoran Pemandangan Alam', 'Wifi Cepat', 'Adventure Park'],
+        'images' => [
+            'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+            'https://images.unsplash.com/photo-1573788708929-dbaf65667488?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3Dauto=format&fit=crop&w=1200&q=80', // Placeholder additional image
+            'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1200&q=80'  // Placeholder additional image
+        ],
+        'rooms' => [
+            [
+                'name' => 'Premier Room',
+                'size' => '38 m²',
+                'bed' => '1 King / 2 Twin',
+                'guests' => '2 dewasa',
+                'price' => 'Rp 2.100.000 / malam',
+                'inclusive' => ['Sarapan Buffet', 'Afternoon Tea', 'Akses Kolam Renang']
+            ],
+            [
+                'name' => 'Hillside Studio',
+                'size' => '45 m²',
+                'bed' => '1 King Bed',
+                'guests' => '2 dewasa + 1 anak',
+                'price' => 'Rp 3.500.000 / malam',
+                'inclusive' => ['Sarapan', 'Balkon Pribadi', 'Minibar Gratis']
+            ]
+        ]
+    ],
+    102 => [
+        'id' => 102,
+        'name' => 'The Langham Jakarta',
+        'location' => 'SCBD, Jakarta Selatan',
+        'rating' => 4.8,
+        'reviews' => 890,
+        'price' => 'Rp 3.500.000 / malam',
+        'description' => 'Epitome kemewahan Inggris di jantung Jakarta. Menawarkan pemandangan kota yang spektakuler, restoran kelas dunia, dan akses mudah ke pusat bisnis SCBD.',
+        'amenities' => ['Sky Pool', 'Chuan Spa', 'Tom\'s by Tom Aikens', 'Ballroom', 'Concierge 24 Jam', 'Akses Mall'],
+        'images' => [
+            'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=80',
+            'https://plus.unsplash.com/premium_photo-1683134297492-cce5fc6dae31?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=1200&q=80',
+            'https://exquisite-taste-magazine.com/wp-content/uploads/2021/12/tljkt-dining-toms-by-1680-945.jpg?auto=format&fit=crop&w=1200&q=80'
+        ],
+        'rooms' => [
+            [
+                'name' => 'Deluxe City View',
+                'size' => '45 m²',
+                'bed' => '1 King Bed',
+                'guests' => '2 dewasa',
+                'price' => 'Rp 3.500.000 / malam',
+                'inclusive' => ['Akses Gym', 'Wifi High Speed', 'Nespresso Machine']
+            ],
+            [
+                'name' => 'Executive Club',
+                'size' => '52 m²',
+                'bed' => '1 King Bed',
+                'guests' => '2 dewasa',
+                'price' => 'Rp 5.200.000 / malam',
+                'inclusive' => ['Akses Langham Club', 'Cocktail Hour', 'Meeting Room 2 Jam']
+            ]
+        ]
+    ],
+    103 => [
+        'id' => 103,
+        'name' => 'Amanjiwo Resort',
+        'location' => 'Magelang, Yogyakarta',
+        'rating' => 5.0,
+        'reviews' => 450,
+        'price' => 'Rp 8.500.000 / malam',
+        'description' => 'Resor yang terinspirasi oleh Candi Borobudur, menawarkan ketenangan spiritual dan pemandangan langsung ke situs warisan dunia UNESCO.',
+        'amenities' => ['Private Pool', 'Cultural Tour', 'Spa Tradisional', 'Library', 'Yoga Pavilion', 'Fine Dining'],
+        'images' => [
+            'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80',
+            'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+            'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80'
+        ],
+        'rooms' => [
+            [
+                'name' => 'Garden Suite',
+                'size' => '243 m²',
+                'bed' => '1 King Bed',
+                'guests' => '2 dewasa',
+                'price' => 'Rp 8.500.000 / malam',
+                'inclusive' => ['Antar Jemput Bandara', 'Sarapan A la Carte', 'Sesi Yoga']
+            ],
+            [
+                'name' => 'Borobudur Pool Suite',
+                'size' => '243 m²',
+                'bed' => '1 King Bed',
+                'guests' => '2 dewasa',
+                'price' => 'Rp 12.000.000 / malam',
+                'inclusive' => ['Private Pool', 'Pemandangan Borobudur', 'Butler Service']
+            ]
+        ]
+    ],
+    104 => [
+        'id' => 104,
+        'name' => 'The Apurva Kempinski',
+        'location' => 'Nusa Dua, Bali',
+        'rating' => 4.9,
+        'reviews' => 2100,
+        'price' => 'Rp 4.200.000 / malam',
+        'description' => 'Teater terbuka yang megah di tebing Nusa Dua. Menawarkan pengalaman Bali yang otentik dengan arsitektur spektakuler dan pemandangan Samudra Hindia.',
+        'amenities' => ['Koral Restaurant (Aquarium)', 'Pantai Pribadi', 'Spa Mewah', 'Chapel Pernikahan', 'Kolam Renang Luas', 'Kids Club'],
+        'images' => [
+            'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
+            'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1200&q=80',
+            'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80'
+        ],
+        'rooms' => [
+            [
+                'name' => 'Grand Deluxe Room',
+                'size' => '65 m²',
+                'bed' => '1 King / 2 Twin',
+                'guests' => '2 dewasa',
+                'price' => 'Rp 4.200.000 / malam',
+                'inclusive' => ['Sarapan Buffet', 'Akses Gym', 'Welcome Drink']
+            ],
+            [
+                'name' => 'Cliff Private Pool Junior Suite',
+                'size' => '100 m²',
+                'bed' => '1 King Bed',
+                'guests' => '2 dewasa',
+                'price' => 'Rp 7.800.000 / malam',
+                'inclusive' => ['Private Pool', 'Akses Cliff Lounge', 'Afternoon Tea']
+            ]
+        ]
+    ],
 ];
-// Data tipe kamar yang ditawarkan hotel.
-$rooms = $rooms ?? [
-    [
-        'name' => 'Premier Onsen Suite',
-        'size' => '78 m²',
-        'bed' => '1 King bed',
-        'guests' => '2 dewasa',
-        'price' => 'JPY 52.000 / malam',
-        'inclusive' => ['Sarapan untuk 2 tamu', 'Akses onsen privat', 'Layanan butler 24 jam']
-    ],
-    [
-        'name' => 'Skyline Panorama Room',
-        'size' => '54 m²',
-        'bed' => '1 King bed / 2 Twin',
-        'guests' => '2 dewasa + 1 anak',
-        'price' => 'JPY 38.500 / malam',
-        'inclusive' => ['Sarapan buffet', 'Akses lounge', 'Diskon spa 20%']
-    ],
-    [
-        'name' => 'Family Alpine Loft',
-        'size' => '90 m²',
-        'bed' => '2 King bed',
-        'guests' => '4 dewasa + 2 anak',
-        'price' => 'JPY 68.000 / malam',
-        'inclusive' => ['Sarapan keluarga', 'Kids club', 'Guide ski privat']
-    ],
-];
+
+// [BACKEND NOTE]: Logic untuk mengambil detail hotel berdasarkan ID dari URL
+// Parameter 'id' dikirim dari home page atau search page melalui query string
+// Contoh: hotel/detail.php?id=101
+// Jika ID tidak ditemukan atau tidak valid, gunakan default hotel ID 101
+$hotelId = isset($_GET['id']) ? intval($_GET['id']) : 101;
+
+// [BACKEND NOTE]: Cek apakah hotel dengan ID tersebut ada di array dummy
+// Jika tidak ada, redirect ke halaman 404 (untuk production, bisa redirect ke search page)
+if (!isset($hotelsDummy[$hotelId])) {
+    // TODO Backend: Ganti dengan redirect ke 404.php atau search.php
+    // header('Location: ../errors/404.php');
+    // exit;
+    // Sementara gunakan default hotel
+    $hotelId = 101;
+}
+
+// [BACKEND NOTE]: Ambil data hotel lengkap dari array dummy berdasarkan ID
+// Untuk production: query ke database SELECT * FROM hotels WHERE id = $hotelId
+$hotel = $hotelsDummy[$hotelId];
+
+// [BACKEND NOTE]: Ambil daftar room/kamar yang tersedia di hotel ini
+// Untuk production: query ke database SELECT * FROM rooms WHERE hotel_id = $hotelId
+$rooms = $hotel['rooms'] ?? [];
+
+// Judul halaman detail hotel untuk ditampilkan di browser tab.
+$pageTitle = 'Trevio | ' . $hotel['name'];
+
 // Ambil highlight singkat untuk ditampilkan di indikator slider galeri.
 $galleryHighlights = array_slice($hotel['amenities'], 0, count($hotel['images']));
+
+
 // Header khusus halaman hotel agar style tetap seragam.
 require __DIR__ . '/../layouts/header.php';
 ?>
+<style>
+    /* Fallback styling untuk hero detail supaya foto dummy tampil rapi */
+    .detail-hero {
+        position: relative;
+        height: 520px;
+        overflow: hidden;
+        border-bottom-left-radius: 32px;
+        border-bottom-right-radius: 32px;
+        background: #0f172a;
+    }
+    .detail-hero__slide {
+        position: absolute;
+        inset: 0;
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+        transition: opacity 0.6s ease;
+    }
+    .detail-hero__slide.is-active {
+        opacity: 1;
+    }
+    .detail-hero__badge {
+        position: absolute;
+        top: 24px;
+        left: 24px;
+        padding: 0.35rem 0.85rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #0f172a;
+        background: rgba(255,255,255,0.9);
+        border-radius: 999px;
+    }
+    .detail-hero__indicator {
+        position: absolute;
+        bottom: 24px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: calc(100% - 64px);
+    }
+    .detail-hero__dot {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.15rem;
+        padding: 0.5rem 0.75rem;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,0.4);
+        background: rgba(15,23,42,0.55);
+        color: rgba(255,255,255,0.8);
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+    }
+    .detail-hero__dot span {
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .detail-hero__dot.is-active {
+        background: rgba(255,255,255,0.95);
+        color: #0f172a;
+        border-color: transparent;
+    }
+    @media (max-width: 640px) {
+        .detail-hero {
+            height: 420px;
+            border-radius: 0 0 24px 24px;
+        }
+        .detail-hero__indicator {
+            bottom: 16px;
+            width: calc(100% - 32px);
+        }
+        .detail-hero__dot {
+            padding: 0.4rem 0.6rem;
+        }
+    }
+</style>
 <!-- Hero detail hotel + slider foto -->
-<section class="relative overflow-hidden">
-    <div class="detail-hero" data-detail-gallery>
-        <?php foreach ($hotel['images'] as $index => $image): ?>
-            <div class="detail-hero__slide <?= $index === 0 ? 'is-active' : '' ?>" data-gallery-slide="<?= $index ?>" style="background-image: url('<?= htmlspecialchars($image) ?>');">
-                <div class="detail-hero__badge">Foto <?= $index + 1 ?></div>
-            </div>
-        <?php endforeach; ?>
-        <div class="detail-hero__indicator" data-gallery-dots>
-            <?php foreach ($hotel['images'] as $index => $image): ?>
-                <?php $dotLabel = $galleryHighlights[$index] ?? 'Preview ' . ($index + 1); ?>
-                <button type="button" class="detail-hero__dot <?= $index === 0 ? 'is-active' : '' ?>" data-gallery-target="<?= $index ?>">
-                    <span><?= sprintf('%02d', $index + 1) ?></span>
-                    <small><?= htmlspecialchars($dotLabel) ?></small>
-                </button>
-            <?php endforeach; ?>
-        </div>
-    </div>
-    <div class="relative mx-auto flex max-w-6xl flex-col gap-6 px-6 pb-16 pt-64 text-white">
-        <nav class="text-xs text-white/70">
-            <a class="hover:text-white" href="<?= htmlspecialchars(trevio_view_route('home/index.php')) ?>">Beranda</a>
-            <span class="mx-1">/</span>
-            <a class="hover:text-white" href="<?= htmlspecialchars(trevio_view_route('hotel/search.php')) ?>">Hotel</a>
-            <span class="mx-1">/</span>
-            <span><?= htmlspecialchars($hotel['name']) ?></span>
-        </nav>
-        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-            <div class="space-y-2">
-                <h1 class="text-4xl font-semibold"><?= htmlspecialchars($hotel['name']) ?></h1>
-                <p class="text-sm text-white/80"><?= htmlspecialchars($hotel['location']) ?></p>
-                <div class="flex flex-wrap items-center gap-3 text-sm">
-                    <span class="inline-flex items-center gap-1 rounded-full bg-emerald-500/20 px-3 py-1 font-semibold text-emerald-200">
-                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 .587 15.668 8l8.2 1.193-5.934 5.781 1.402 8.174L12 18.896l-7.336 3.869 1.402-8.174L.132 9.193 8.332 8z"></path>
-                        </svg>
-                        <?= number_format($hotel['rating'], 1) ?>
-                    </span>
-                    <span class="text-white/80"><?= htmlspecialchars($hotel['reviews']) ?> ulasan</span>
-                    <span class="rounded-full bg-white/20 px-3 py-1 text-xs">Best pick Trevio</span>
+
+<!-- Hero foto dan info hotel, layout lebih modern dan responsif -->
+<section class="relative w-full bg-white">
+    <div class="mx-auto max-w-6xl px-4 pt-6 pb-0 grid grid-cols-1 md:grid-cols-5 gap-0 md:gap-8">
+        <!-- Foto slider -->
+        <div class="md:col-span-3 flex flex-col justify-center">
+            <div class="detail-hero" data-detail-gallery>
+                <?php foreach ($hotel['images'] as $index => $image): ?>
+                    <div class="detail-hero__slide <?= $index === 0 ? 'is-active' : '' ?>" data-gallery-slide="<?= $index ?>" style="background-image: url('<?= htmlspecialchars($image) ?>');">
+                        <div class="detail-hero__badge">Foto <?= $index + 1 ?></div>
+                    </div>
+                <?php endforeach; ?>
+                <div class="detail-hero__indicator" data-gallery-dots>
+                    <?php foreach ($hotel['images'] as $index => $image): ?>
+                        <?php $dotLabel = $galleryHighlights[$index] ?? 'Preview ' . ($index + 1); ?>
+                        <button type="button" class="detail-hero__dot <?= $index === 0 ? 'is-active' : '' ?>" data-gallery-target="<?= $index ?>">
+                            <span><?= sprintf('%02d', $index + 1) ?></span>
+                            <small><?= htmlspecialchars($dotLabel) ?></small>
+                        </button>
+                    <?php endforeach; ?>
                 </div>
             </div>
-            <div class="rounded-3xl border border-white/20 bg-white/10 px-6 py-4 text-right backdrop-blur">
-                <p class="text-xs uppercase tracking-wide text-white/70">Harga mulai</p>
-                <p class="text-lg font-semibold"><?= htmlspecialchars($hotel['price']) ?></p>
-                <a class="mt-2 inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-primary transition hover:bg-blue-100" href="#rooms">Cek ketersediaan</a>
+        </div>
+        <!-- Info utama hotel -->
+        <div class="md:col-span-2 flex flex-col justify-center items-start md:items-start pt-8 md:pt-0">
+            <nav class="mb-2 text-xs text-slate-400">
+                <a class="hover:text-primary" href="<?= htmlspecialchars(trevio_view_route('home/index.php')) ?>">Beranda</a>
+                <span class="mx-1">/</span>
+                <a class="hover:text-primary" href="<?= htmlspecialchars(trevio_view_route('hotel/search.php')) ?>">Hotel</a>
+                <span class="mx-1">/</span>
+                <span class="font-semibold text-primary"><?= htmlspecialchars($hotel['name']) ?></span>
+            </nav>
+            <h1 class="text-3xl md:text-4xl font-bold text-primary leading-tight mb-2"><?= htmlspecialchars($hotel['name']) ?></h1>
+            <p class="text-base text-slate-500 mb-3 flex items-center gap-2">
+                <svg class="h-5 w-5 text-emerald-500 inline-block" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 .587 15.668 8l8.2 1.193-5.934 5.781 1.402 8.174L12 18.896l-7.336 3.869 1.402-8.174L.132 9.193 8.332 8z"></path>
+                </svg>
+                <span class="font-semibold text-emerald-600"> <?= number_format($hotel['rating'], 1) ?> </span>
+                <span class="text-slate-400">/ <?= htmlspecialchars($hotel['reviews']) ?> ulasan</span>
+            </p>
+            <p class="text-sm text-slate-400 mb-4"><span class="font-medium">Lokasi:</span> <?= htmlspecialchars($hotel['location']) ?></p>
+            <div class="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4 mb-2 w-full">
+                <p class="text-xs uppercase tracking-wide text-slate-400 mb-1">Harga mulai</p>
+                <p class="text-xl font-bold text-primary"><?= htmlspecialchars($hotel['price']) ?></p>
+                <a class="mt-3 inline-flex items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white transition hover:bg-blue-600 w-full" href="#rooms">Cek ketersediaan</a>
             </div>
         </div>
     </div>
@@ -163,7 +366,16 @@ require __DIR__ . '/../layouts/header.php';
                                 <div class="text-right">
                                     <p class="text-xs uppercase tracking-wide text-slate-400">Harga per malam</p>
                                     <p class="text-base font-semibold text-primary"><?= htmlspecialchars($room['price']) ?></p>
-                                    <a class="mt-3 inline-flex items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:bg-accentLight" href="<?= htmlspecialchars(trevio_view_route('booking/form.php')) ?>">Pesan Sekarang</a>
+                                    <?php
+                                    // [BACKEND NOTE]: Link ke booking form dengan membawa data hotel dan room
+                                    // Parameter yang dikirim: hotel_id, room_name, room_price
+                                    // Data ini akan digunakan untuk pre-fill form pemesanan
+                                    $bookingUrl = trevio_view_route('booking/form.php') . 
+                                                  '?hotel_id=' . urlencode($hotel['id']) . 
+                                                  '&room_name=' . urlencode($room['name']) .
+                                                  '&room_price=' . urlencode($room['price']);
+                                    ?>
+                                    <a class="mt-3 inline-flex items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:bg-accentLight" href="<?= htmlspecialchars($bookingUrl) ?>">Pesan Sekarang</a>
                                 </div>
                             </div>
                         </article>
@@ -187,7 +399,7 @@ require __DIR__ . '/../layouts/header.php';
                             <path d="M12 2c3.5 0 6 2.5 6 7 0 6-6 13-6 13S6 15 6 9c0-4.5 2.5-7 6-7z"></path>
                             <circle cx="12" cy="9" r="2"></circle>
                         </svg>
-                        20 menit dari Bandara Sapporo • Shuttle gratis
+                        20 menit dari Bandara • Shuttle gratis
                     </li>
                     <li class="flex items-center gap-2">
                         <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -198,27 +410,18 @@ require __DIR__ . '/../layouts/header.php';
                         Pembatalan gratis hingga 48 jam sebelum check-in
                     </li>
                 </ul>
-                <button class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full border border-accent px-4 py-2 text-sm font-semibold text-accent transition hover:bg-accent hover:text-white" type="button">
-                    Chat dengan concierge
-                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m21 15-5-5"></path>
-                        <path d="M21 9v6h-6"></path>
-                        <path d="M9 21 4 16"></path>
-                        <path d="M9 21v-6H3"></path>
-                    </svg>
-                </button>
             </div>
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 class="text-base font-semibold text-primary">Lokasi</h3>
-                <p class="mt-2 text-sm text-slate-500">Minami-ku, Sapporo, Hokkaido, Jepang</p>
+                <p class="mt-2 text-sm text-slate-500"><?= htmlspecialchars($hotel['location']) ?></p>
                 <div class="mt-4 h-48 overflow-hidden rounded-2xl bg-slate-100">
-                    <iframe class="h-full w-full" src="https://maps.google.com/maps?q=Sapporo%20Japan&t=&z=13&ie=UTF8&iwloc=&output=embed" loading="lazy"></iframe>
+                    <iframe class="h-full w-full" src="https://maps.google.com/maps?q=<?= urlencode($hotel['location']) ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" loading="lazy"></iframe>
                 </div>
             </div>
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 class="text-base font-semibold text-primary">Kebijakan penting</h3>
                 <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-500">
-                    <li>Deposit keamanan sebesar 10.000 JPY dibutuhkan saat check-in.</li>
+                    <li>Deposit keamanan dibutuhkan saat check-in.</li>
                     <li>Tidak diperbolehkan merokok di kamar. Area merokok tersedia di lounge.</li>
                     <li>Hewan peliharaan diperbolehkan di kamar tertentu (hubungi concierge).</li>
                 </ul>

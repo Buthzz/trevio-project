@@ -1,27 +1,127 @@
-
 <?php
-// Judul halaman form agar tab browser jelas.
-$pageTitle = 'Trevio | Form Pemesanan';
+require_once __DIR__ . '/../../../helpers/functions.php';
+trevio_start_session();
+
+// [SECURITY]: Cek apakah user sudah login
+if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
+    // Redirect ke login jika belum login
+    $loginUrl = trevio_view_route('auth/login.php') . '?return_url=' . urlencode($_SERVER['REQUEST_URI']);
+    header("Location: $loginUrl");
+    exit;
+}
+
+// Ambil data dari URL
+$hotelId = isset($_GET['hotel_id']) ? intval($_GET['hotel_id']) : 0;
+$roomName = isset($_GET['room_name']) ? $_GET['room_name'] : '';
+$roomPrice = isset($_GET['room_price']) ? $_GET['room_price'] : '';
+
+// Dummy hotel data - sesuaikan dengan data di hotel/detail.php
+$hotelsDummy = [
+    101 => ['name' => 'Padma Hotel Bandung', 'city' => 'Bandung'],
+    102 => ['name' => 'The Langham Jakarta', 'city' => 'Jakarta'],
+    103 => ['name' => 'Amanjiwo Resort', 'city' => 'Yogyakarta'],
+    104 => ['name' => 'The Apurva Kempinski', 'city' => 'Bali'],
+];
+
+$hotelName = 'Hotel Tidak Dikenal';
+$hotelCity = 'Indonesia';
+
+if ($hotelId && isset($hotelsDummy[$hotelId])) {
+    $hotelName = $hotelsDummy[$hotelId]['name'];
+    $hotelCity = $hotelsDummy[$hotelId]['city'];
+}
+
+// [BACKEND NOTE]: Extract harga numerik dari room_price (format: "Rp 2.100.000 / malam")
+// Untuk production: simpan harga sebagai integer di database
+$pricePerNight = 520000; // Default fallback
+if ($roomPrice) {
+    // Extract angka dari format "Rp 2.100.000 / malam"
+    preg_match('/[\d.]+/', str_replace(',', '', $roomPrice), $matches);
+    if (!empty($matches[0])) {
+        $pricePerNight = intval(str_replace('.', '', $matches[0]));
+    }
+}
+
+// Handle Form Submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // [SECURITY]: Verifikasi CSRF Token
+    if (!trevio_verify_csrf()) {
+        die('Akses ditolak: Token CSRF tidak valid. Silakan refresh halaman.');
+    }
+
+    // Ambil data dari form
+    $guestName = filter_input(INPUT_POST, 'guest_name', FILTER_SANITIZE_SPECIAL_CHARS);
+    $guestEmail = filter_input(INPUT_POST, 'guest_email', FILTER_SANITIZE_EMAIL);
+    $guestPhone = filter_input(INPUT_POST, 'guest_phone', FILTER_SANITIZE_SPECIAL_CHARS);
+    $guestNationality = filter_input(INPUT_POST, 'guest_nationality', FILTER_SANITIZE_SPECIAL_CHARS);
+    $specialRequest = filter_input(INPUT_POST, 'special_request', FILTER_SANITIZE_SPECIAL_CHARS);
+    
+    // Generate kode booking dan invoice
+    // [SECURITY]: Gunakan random_bytes untuk keamanan yang lebih baik
+    $bookingCode = 'TRV-' . date('ymd') . '-' . bin2hex(random_bytes(2));
+    $invoiceCode = 'INV-' . date('Ymd') . '-' . bin2hex(random_bytes(2));
+
+    // Hitung total (simulasi)
+    $nights = 3; // Default 3 malam sesuai tampilan
+    $totalBase = $pricePerNight * $nights;
+    $totalTax = $totalBase * 0.10;
+    $totalService = $totalBase * 0.05;
+    $totalAmount = $totalBase + $totalTax + $totalService;
+
+    // [BACKEND NOTE]: Simpan data booking ke session untuk halaman konfirmasi
+    $_SESSION['trevio_booking_current'] = [
+        'booking_code' => $bookingCode,
+        'invoice_code' => $invoiceCode,
+        'hotel_id' => $hotelId,
+        'hotel_name' => $hotelName,
+        'hotel_city' => $hotelCity,
+        'room_name' => $roomName ?: 'Premier Onsen Suite',
+        'check_in' => date('Y-m-d', strtotime('+1 day')), // Simulasi besok
+        'check_out' => date('Y-m-d', strtotime('+4 days')), // Simulasi 3 malam
+        'nights' => $nights,
+        'guests' => '2 dewasa',
+        'price_per_night' => $pricePerNight,
+        'total_base' => $totalBase,
+        'total_tax' => $totalTax,
+        'total_service' => $totalService,
+        'total_amount' => 'Rp ' . number_format($totalAmount, 0, ',', '.'),
+        'guest_name' => $guestName,
+        'guest_email' => $guestEmail,
+        'guest_phone' => $guestPhone,
+        'guest_nationality' => $guestNationality,
+        'special_request' => $specialRequest,
+        'status' => 'Menunggu Pembayaran',
+        'created_at' => date('Y-m-d H:i:s'),
+    ];
+    
+    // [BACKEND NOTE]: Redirect ke halaman konfirmasi
+    // Untuk production: proses payment gateway integration di sini
+    header('Location: confirm.php?invoice=' . urlencode($invoiceCode));
+    exit;
+}
+
 // Data default reservasi agar komponen samping memiliki nilai awal.
-$reservation = $reservation ?? [
-    'hotel' => 'Aurora Peaks Resort',
-    'room' => 'Premier Onsen Suite',
-    'check_in' => '2025-12-18',
-    'check_out' => '2025-12-21',
+$reservation = [
+    'hotel' => $hotelName,
+    'hotel_id' => $hotelId,
+    'hotel_city' => $hotelCity,
+    'room' => $roomName ?: 'Premier Onsen Suite',
+    'check_in' => date('d M Y', strtotime('+1 day')),
+    'check_out' => date('d M Y', strtotime('+4 days')),
     'nights' => 3,
     'guests' => '2 dewasa',
-    'price_per_night' => 520000,
+    'price_per_night' => $pricePerNight,
     'tax' => 0.1,
     'service' => 0.05,
 ];
+
 // Hitung total tarif dasar dari harga per malam x durasi.
 $totalBase = $reservation['price_per_night'] * $reservation['nights'];
 // Hitung nominal pajak berdasarkan tarif yang ditentukan.
 $totalTax = $totalBase * $reservation['tax'];
-// Hitung biaya layanan tambahan.
 $totalService = $totalBase * $reservation['service'];
-// Total keseluruhan ditampilkan pada ringkasan harga.
-$totalAmount = $totalBase + $totalTax + $totalService;
+$grandTotal = $totalBase + $totalTax + $totalService;
+
 // Sertakan header global agar tampilan konsisten.
 require __DIR__ . '/../layouts/header.php';
 ?>
@@ -35,212 +135,141 @@ require __DIR__ . '/../layouts/header.php';
                 <p class="mt-2 text-sm text-slate-500">Pastikan informasi tamu dan metode pembayaran sudah benar sebelum melanjutkan.</p>
             </div>
             <div class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-xs font-semibold text-slate-500 shadow">
-                <span class="size-2 rounded-full bg-emerald-500"></span>
-                Terhubung aman dengan Trevio Secure Pay
+                <span class="h-2 w-2 rounded-full bg-amber-400"></span>
+                Sisa waktu: 14:59
             </div>
         </div>
-        <div class="grid gap-8 lg:grid-cols-[2fr,1fr]">
-            <!-- Kolom kiri: step-by-step pengisian data tamu -->
+
+        <div class="grid gap-12 lg:grid-cols-[1.5fr,1fr]">
+            <!-- Kolom Kiri: Form Input Data Tamu -->
             <div class="space-y-8">
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div class="flex items-center gap-3 text-sm font-semibold text-primary">
-                        <span class="step-badge">1</span>
-                        Data Tamu
+                <!-- Card 1: Informasi Tamu -->
+                <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                    <div class="mb-6 flex items-center gap-3 border-b border-slate-100 pb-4">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-semibold text-primary">Informasi Tamu</h2>
                     </div>
-                    <form class="mt-6 grid gap-4 sm:grid-cols-2">
-                        <label class="form-group">
-                            <span>Nama Lengkap</span>
-                            <input class="input-control" type="text" placeholder="Nama sesuai KTP / Paspor" />
-                        </label>
-                        <label class="form-group">
-                            <span>Email</span>
-                            <input class="input-control" type="email" placeholder="nama@email.com" />
-                        </label>
-                        <label class="form-group">
-                            <span>No. Telepon</span>
-                            <input class="input-control" type="tel" placeholder="08xxxxxxxxxx" />
-                        </label>
-                        <label class="form-group">
-                            <span>Kebangsaan</span>
-                            <input class="input-control" type="text" placeholder="Indonesia" />
-                        </label>
-                        <label class="form-group sm:col-span-2">
-                            <span>Permintaan Khusus</span>
-                            <textarea class="input-control h-28" placeholder="Contoh: high floor, late check-in"></textarea>
-                        </label>
-                    </form>
-                </div>
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div class="flex items-center gap-3 text-sm font-semibold text-primary">
-                        <span class="step-badge">2</span>
-                        Rincian Pembayaran
-                    </div>
-                    <form class="mt-6 grid gap-4">
-                        <div class="grid gap-4 md:grid-cols-2">
+                    
+                    <form method="POST" action="" class="space-y-6">
+                        <?= trevio_csrf_field() ?>
+                        
+                        <div class="grid gap-6 sm:grid-cols-2">
                             <label class="form-group">
-                                <span>Metode Pembayaran</span>
-                                <select class="input-control">
-                                    <option value="credit">Kartu Kredit / Debit</option>
-                                    <option value="bank">Transfer Bank</option>
-                                    <option value="ewallet">E-Wallet</option>
-                                </select>
+                                <span class="block text-sm font-medium text-slate-700 mb-1">Nama Lengkap</span>
+                                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" name="guest_name" type="text" placeholder="Nama sesuai KTP / Paspor" required value="<?= htmlspecialchars($_SESSION['user_name'] ?? '') ?>" />
                             </label>
                             <label class="form-group">
-                                <span>Kode Promo</span>
-                                <div class="flex gap-3">
-                                    <input class="input-control" type="text" placeholder="TREVIOHEMAT" />
-                                    <button class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" type="button">Terapkan</button>
-                                </div>
+                                <span class="block text-sm font-medium text-slate-700 mb-1">Email</span>
+                                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" name="guest_email" type="email" placeholder="nama@email.com" required value="<?= htmlspecialchars($_SESSION['user_email'] ?? '') ?>" />
+                            </label>
+                            <label class="form-group">
+                                <span class="block text-sm font-medium text-slate-700 mb-1">No. Telepon</span>
+                                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" name="guest_phone" type="tel" placeholder="08xxxxxxxxxx" required />
+                            </label>
+                            <label class="form-group">
+                                <span class="block text-sm font-medium text-slate-700 mb-1">Kebangsaan</span>
+                                <input class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" name="guest_nationality" type="text" placeholder="Indonesia" value="Indonesia" />
+                            </label>
+                            <label class="form-group sm:col-span-2">
+                                <span class="block text-sm font-medium text-slate-700 mb-1">Permintaan Khusus (Opsional)</span>
+                                <textarea class="w-full rounded-lg border border-slate-300 px-4 py-2 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" name="special_request" rows="3" placeholder="Contoh: Check-in lebih awal, bantal tambahan..."></textarea>
                             </label>
                         </div>
-                        <div class="grid gap-4 md:grid-cols-2">
-                            <label class="form-group">
-                                <span>Nama Pemegang Kartu</span>
-                                <input class="input-control" type="text" placeholder="Nama di kartu" />
-                            </label>
-                            <label class="form-group">
-                                <span>Nomor Kartu</span>
-                                <input class="input-control" type="text" placeholder="XXXX XXXX XXXX XXXX" />
-                            </label>
-                        </div>
-                        <div class="grid gap-4 md:grid-cols-[1fr,120px,120px]">
-                            <label class="form-group">
-                                <span>Alamat Penagihan</span>
-                                <input class="input-control" type="text" placeholder="Masukkan alamat" />
-                            </label>
-                            <label class="form-group">
-                                <span>Exp</span>
-                                <input class="input-control" type="text" placeholder="MM/YY" />
-                            </label>
-                            <label class="form-group">
-                                <span>CVV</span>
-                                <input class="input-control" type="password" placeholder="***" />
-                            </label>
-                        </div>
-                        <label class="flex items-center gap-3 text-sm text-slate-600">
-                            <input class="size-4 rounded border-slate-300 text-accent focus:ring-accent" type="checkbox" />
-                            Saya telah membaca dan menyetujui syarat & ketentuan Trevio.
-                        </label>
-                        <div class="rounded-2xl bg-slate-50 p-4 text-xs text-slate-500">
-                            Pembayaran diproses oleh Trevio Secure Pay dengan enkripsi 256-bit. Detail kartu tidak disimpan di server kami.
+
+                        <div class="pt-4">
+                            <button type="submit" class="w-full rounded-xl bg-primary px-6 py-3.5 text-center font-semibold text-white shadow-lg shadow-blue-900/20 transition hover:bg-blue-700 hover:shadow-blue-900/30 focus:outline-none focus:ring-4 focus:ring-blue-500/20">
+                                Lanjutkan ke Pembayaran
+                            </button>
+                            <p class="mt-3 text-center text-xs text-slate-400">
+                                Dengan melanjutkan, Anda menyetujui <a href="#" class="text-blue-600 hover:underline">Syarat & Ketentuan</a> Trevio.
+                            </p>
                         </div>
                     </form>
-                </div>
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <div class="flex items-center gap-3 text-sm font-semibold text-primary">
-                        <span class="step-badge">3</span>
-                        Konfirmasi
-                    </div>
-                    <div class="mt-6 space-y-4 text-sm text-slate-600">
-                        <p>Pastikan seluruh data sudah benar. Setelah menekan tombol "Bayar Sekarang", e-ticket akan terkirim ke email dan WhatsApp Anda.</p>
-                        <button class="inline-flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-semibold text-white transition hover:bg-accentLight" type="button" data-confirm-button>Bayar Sekarang</button>
-                        <button class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" type="button" data-save-button>Simpan untuk nanti</button>
-                    </div>
                 </div>
             </div>
-            <!-- Kolom kanan: ringkasan pesanan + add-on -->
-            <aside class="space-y-6">
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h2 class="text-base font-semibold text-primary">Ringkasan Pesanan</h2>
-                    <div class="mt-4 space-y-3 text-sm text-slate-600">
-                        <div class="flex items-center justify-between">
-                            <span>Hotel</span>
-                            <span class="font-semibold text-primary"><?= htmlspecialchars($reservation['hotel']) ?></span>
+
+            <!-- Kolom Kanan: Ringkasan Pesanan (Sticky) -->
+            <div class="relative">
+                <div class="sticky top-8 space-y-6">
+                    <div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                        <div class="bg-slate-50 px-6 py-4 border-b border-slate-100">
+                            <h3 class="font-semibold text-primary">Ringkasan Pesanan</h3>
                         </div>
-                        <div class="flex items-center justify-between">
-                            <span>Kamar</span>
-                            <span><?= htmlspecialchars($reservation['room']) ?></span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Check-in</span>
-                            <span><?= htmlspecialchars($reservation['check_in']) ?></span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Check-out</span>
-                            <span><?= htmlspecialchars($reservation['check_out']) ?></span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Durasi</span>
-                            <span><?= htmlspecialchars($reservation['nights']) ?> malam</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Tamu</span>
-                            <span><?= htmlspecialchars($reservation['guests']) ?></span>
+                        <div class="p-6 space-y-6">
+                            <!-- Hotel Info -->
+                            <div class="flex gap-4">
+                                <div class="h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl bg-slate-200">
+                                    <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80" alt="Hotel thumbnail" class="h-full w-full object-cover">
+                                </div>
+                                <div>
+                                    <h4 class="font-bold text-primary line-clamp-2"><?= htmlspecialchars($reservation['hotel']) ?></h4>
+                                    <p class="text-sm text-slate-500"><?= htmlspecialchars($reservation['hotel_city']) ?></p>
+                                    <div class="mt-1 flex items-center gap-1 text-xs text-amber-500">
+                                        <span>★★★★★</span>
+                                        <span class="text-slate-400">(4.9)</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Booking Details -->
+                            <div class="rounded-xl bg-slate-50 p-4 space-y-3 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Check-in</span>
+                                    <span class="font-medium text-slate-700"><?= $reservation['check_in'] ?></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Check-out</span>
+                                    <span class="font-medium text-slate-700"><?= $reservation['check_out'] ?></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Durasi</span>
+                                    <span class="font-medium text-slate-700"><?= $reservation['nights'] ?> Malam</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-slate-500">Tipe Kamar</span>
+                                    <span class="font-medium text-slate-700"><?= htmlspecialchars($reservation['room']) ?></span>
+                                </div>
+                            </div>
+
+                            <!-- Price Breakdown -->
+                            <div class="space-y-3 border-t border-slate-100 pt-4 text-sm">
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Harga Kamar (x<?= $reservation['nights'] ?>)</span>
+                                    <span>Rp <?= number_format($totalBase, 0, ',', '.') ?></span>
+                                </div>
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Pajak (10%)</span>
+                                    <span>Rp <?= number_format($totalTax, 0, ',', '.') ?></span>
+                                </div>
+                                <div class="flex justify-between text-slate-600">
+                                    <span>Layanan (5%)</span>
+                                    <span>Rp <?= number_format($totalService, 0, ',', '.') ?></span>
+                                </div>
+                                <div class="flex items-center justify-between border-t border-slate-100 pt-3 text-base font-bold text-primary">
+                                    <span>Total Akhir</span>
+                                    <span class="text-blue-600">Rp <?= number_format($grandTotal, 0, ',', '.') ?></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-6 rounded-2xl bg-slate-50 p-4 text-sm text-slate-600">
-                        <div class="flex items-center justify-between">
-                            <span><?= $reservation['nights'] ?> malam x IDR <?= number_format($reservation['price_per_night'], 0, ',', '.') ?></span>
-                            <span>IDR <?= number_format($totalBase, 0, ',', '.') ?></span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Pajak (<?= $reservation['tax'] * 100 ?>%)</span>
-                            <span>IDR <?= number_format($totalTax, 0, ',', '.') ?></span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <span>Layanan (<?= $reservation['service'] * 100 ?>%)</span>
-                            <span>IDR <?= number_format($totalService, 0, ',', '.') ?></span>
-                        </div>
-                        <div class="flex items-center justify-between border-t border-slate-200 pt-3 font-semibold text-primary">
-                            <span>Total</span>
-                            <span>IDR <?= number_format($totalAmount, 0, ',', '.') ?></span>
-                        </div>
-                    </div>
-                    <div class="mt-4 text-xs text-slate-500">
-                        Harga sudah termasuk pajak dan biaya layanan. Pembayaran fleksibel tersedia untuk metode kartu kredit tertentu.
-                    </div>
+                    
+                    <!-- Save for later button -->
+                    <button type="button" class="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50">
+                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        Simpan untuk nanti
+                    </button>
                 </div>
-                <div class="rounded-3xl border border-emerald-200 bg-emerald-50 p-6 text-sm text-emerald-700">
-                    <h3 class="text-sm font-semibold text-emerald-900">Perlindungan perjalanan Trevio</h3>
-                    <p class="mt-2">Tambah Travel Safe+ hanya IDR 180.000 untuk perlindungan pembatalan mendadak dan bantuan medis darurat.</p>
-                    <button class="mt-4 inline-flex items-center justify-center rounded-full border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100" type="button">Tambah perlindungan</button>
-                </div>
-            </aside>
+            </div>
         </div>
     </div>
 </section>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Tombol utama untuk mengeksekusi simulasi pembayaran.
-    const confirmButton = document.querySelector('[data-confirm-button]');
-    // Tombol untuk menyimpan data reservasi sementara.
-    const saveButton = document.querySelector('[data-save-button]');
-
-    if (confirmButton) {
-        // Tampilkan notifikasi sukses ketika pengguna menekan bayar.
-        confirmButton.addEventListener('click', function () {
-            Swal.fire({
-                title: 'Berhasil!',
-                text: 'Reservasi kamu sudah dikonfirmasi. Detail booking terkirim ke email.',
-                icon: 'success',
-                confirmButtonText: 'Lihat Konfirmasi'
-            }).then(function () {
-                // TODO backend: arahkan ke route konfirmasi resmi setelah endpoint siap
-                window.location.href = 'confirm.php';
-            });
-        });
-    }
-
-    if (saveButton) {
-        // Beri feedback ketika reservasi hanya disimpan ke riwayat.
-        saveButton.addEventListener('click', function () {
-            Swal.fire({
-                title: 'Disimpan',
-                text: 'Reservasi kamu tersimpan di riwayat booking.',
-                icon: 'info',
-                timer: 2000,
-                showConfirmButton: false
-            });
-
-            setTimeout(function () {
-                // TODO backend: ganti redirect sesuai route riwayat resmi
-                window.location.href = 'history.php?saved=1';
-            }, 2100);
-        });
-    }
-});
-</script>
 <?php
-// Footer global untuk menutup layout halaman.
 require __DIR__ . '/../layouts/footer.php';
 ?>
