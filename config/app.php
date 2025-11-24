@@ -6,9 +6,10 @@
  */
 
 // Prevent duplicate loading
-if (defined('APP_NAME')) {
+if (defined('TREVIO_CONFIG_LOADED')) {
     return;
 }
+define('TREVIO_CONFIG_LOADED', true);
 
 // Load environment variables from .env file
 if (file_exists(__DIR__ . '/../.env')) {
