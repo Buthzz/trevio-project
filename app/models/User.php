@@ -14,18 +14,26 @@ class User extends Model {
     protected $table = 'users';
 
     /**
-     * Daftar kolom yang diizinkan untuk Mass Assignment dan Update.
-     * Berfungsi sebagai whitelist untuk mencegah SQL Injection pada nama kolom.
+     * Daftar kolom yang diizinkan untuk Mass Assignment.
+     * Whitelist ini mencegah SQL Injection pada nama kolom.
      */
     protected $allowedFields = [
-        'name', 'email', 'password', 'phone', 'whatsapp_number',
-        'auth_provider', 'google_id', 'role', 'is_verified', 
-        'is_active', 'profile_image'
+        'name', 
+        'email', 
+        'password', 
+        'phone', 
+        'whatsapp_number',
+        'auth_provider', 
+        'google_id', 
+        'role', 
+        'is_verified', 
+        'is_active', 
+        'profile_image'
     ];
 
     /**
      * Mencari user berdasarkan ID.
-     * * @param int $id User ID
+     * @param int $id User ID
      * @return array|false User data atau false jika tidak ditemukan/error
      */
     public function find(int $id) {
@@ -42,7 +50,7 @@ class User extends Model {
     /**
      * Mencari user berdasarkan Email.
      * Digunakan saat Login & Register check.
-     * * @param string $email Email address
+     * @param string $email Email address
      * @return array|false User data atau false jika tidak ditemukan/error
      */
     public function findByEmail(string $email) {
@@ -57,9 +65,9 @@ class User extends Model {
     }
 
     /**
-     * Membuat user baru dengan keamanan Password Hashing.
-     * Hanya memproses kolom yang terdaftar di $allowedFields.
-     * * @param array $data Data user (key => value)
+     * Membuat user baru.
+     * Password akan di-hash otomatis di sini.
+     * @param array $data Data user (key => value)
      * @return int|false ID user baru atau false jika gagal
      */
     public function create(array $data) {
@@ -110,23 +118,35 @@ class User extends Model {
 
     /**
      * Mengupdate data user dengan aman.
-     * Mencegah SQL Injection dengan whitelist kolom.
-     * * @param int $id User ID
+     * FIX: Mencegah password kosong menimpa password lama.
+     * @param int $id User ID
      * @param array $data Data update (key => value)
      * @return bool Status keberhasilan
      */
     public function update(int $id, array $data): bool {
-        // 1. Filter data agar hanya kolom yang diizinkan yang diproses
+        // 1. FIX PENTING: Jika field password dikirim tapi kosong/spasi saja, 
+        // hapus dari array agar password lama di database TIDAK tertimpa hash kosong.
+        if (isset($data['password']) && empty(trim($data['password']))) {
+            unset($data['password']); 
+        }
+
+        // 2. Filter data agar hanya kolom yang diizinkan yang diproses
         $filteredData = array_intersect_key($data, array_flip($this->allowedFields));
 
         if (empty($filteredData)) {
-            error_log("User Update Error: No valid data provided or fields not allowed");
-            return false;
+            // Tidak ada data valid untuk diupdate
+            return false; 
         }
 
+        // 3. Hash Password baru (jika user benar-benar menginput password baru)
+        // Dilakukan terpisah dari loop query builder agar logic lebih bersih
+        if (isset($filteredData['password'])) {
+            $filteredData['password'] = password_hash($filteredData['password'], PASSWORD_BCRYPT);
+        }
+
+        // 4. Bangun Query Update Dinamis
         $setPart = [];
         foreach ($filteredData as $key => $value) {
-            // Nama kolom aman karena diambil dari hasil filter $allowedFields
             $setPart[] = "{$key} = :{$key}";
         }
         
@@ -136,14 +156,12 @@ class User extends Model {
         try {
             $this->db->query($query);
             
+            // Bind semua value data
             foreach ($filteredData as $key => $value) {
-                // Hash password otomatis jika field password diupdate
-                if ($key === 'password') {
-                    $value = password_hash($value, PASSWORD_BCRYPT);
-                }
                 $this->db->bind(":{$key}", $value);
             }
             
+            // Bind ID untuk WHERE clause
             $this->db->bind(':id', $id);
 
             return $this->db->execute();
@@ -156,7 +174,7 @@ class User extends Model {
 
     /**
      * Menghitung total user untuk Admin Dashboard.
-     * * @return int Total user
+     * @return int Total user
      */
     public function countAll(): int {
         try {
@@ -171,7 +189,7 @@ class User extends Model {
 
     /**
      * Menghitung user berdasarkan role.
-     * * @param string $role Role (customer, owner, admin)
+     * @param string $role Role (customer, owner, admin)
      * @return int Jumlah user
      */
     public function countByRole(string $role): int {

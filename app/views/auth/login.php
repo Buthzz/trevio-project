@@ -1,46 +1,55 @@
 <?php
+// [FIX ERROR]: Load Config & Helper jika belum ada
+// Ini memastikan BASE_URL selalu tersedia, bahkan jika file diakses langsung
+if (!defined('BASE_URL')) {
+    $configPath = __DIR__ . '/../../../config/app.php';
+    if (file_exists($configPath)) {
+        require_once $configPath;
+    } else {
+        // Fallback darurat jika config tidak ketemu
+        $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+        define('BASE_URL', $protocol . '://' . $_SERVER['HTTP_HOST'] . '/trevio-project/public');
+    }
+}
+
 require_once __DIR__ . '/../../../helpers/functions.php';
 trevio_start_session();
 
-// [NOTE]: Login logic handled by AuthController
-// Form submits to /auth/authenticate via POST
+// [SECURITY]: Redirect ke home jika user sudah login
+if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true) {
+    $homeUrl = (defined('BASE_URL') ? BASE_URL : '') . '/home';
+    header("Location: $homeUrl");
+    exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Trevio &mdash; Login Pengguna</title>
+    <title><?= $title ?? 'Login' ?> - Trevio</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-                    },
-                    colors: {
-                        trevio: '#0EA5E9',
-                        'trevio-dark': '#0284C7',
-                    },
-                },
-            },
+                    fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    colors: { trevio: '#0EA5E9', 'trevio-dark': '#0284C7' }
+                }
+            }
         };
     </script>
 </head>
 <body class="min-h-screen bg-[#F5F7FA] font-sans text-base text-[#111827]">
-    <?php
-    // Header global
-    require __DIR__ . '/../layouts/header.php';
-    ?>
+    <?php require __DIR__ . '/../layouts/header.php'; ?>
 
     <main class="flex items-start md:items-center justify-center px-4 py-6 md:px-6 md:py-10 md:min-h-[calc(100vh-10px)]">
         <div class="bg-white rounded-[24px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)] max-w-[840px] w-full md:w-auto mx-auto flex flex-col md:flex-row md:max-h-[520px] md:overflow-hidden">
             
-            <!-- Kolom kiri: Hero Image -->
             <section class="md:w-[46%] relative min-h-[280px] md:min-h-[440px] order-1 md:order-none">
                 <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=1000&fit=crop');"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent"></div>
@@ -55,40 +64,45 @@ trevio_start_session();
                 </div>
             </section>
 
-            <!-- Kolom kanan: Form Login -->
             <section class="md:w-[54%] p-6 md:p-10 flex flex-col justify-center order-2 md:order-none">
                 <div class="mb-6">
                     <h1 class="text-2xl font-bold text-[#111827] mb-1">Selamat Datang! 👋</h1>
                     <p class="text-sm text-[#6B7280]">Silakan masuk untuk melanjutkan.</p>
                 </div>
 
-                <form method="post" action="<?= BASE_URL ?>/auth/authenticate" class="space-y-4" autocomplete="off">
-                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
-                    
-                    <?php if (isset($_SESSION['flash_error'])): ?>
-                        <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-4">
-                            <?= htmlspecialchars($_SESSION['flash_error']) ?>
-                        </div>
-                        <?php unset($_SESSION['flash_error']); ?>
-                    <?php endif; ?>
+                <?php if (isset($_SESSION['flash_error'])): ?>
+                    <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm flex items-start gap-2 mb-4">
+                        <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><?= htmlspecialchars($_SESSION['flash_error']) ?></span>
+                    </div>
+                    <?php unset($_SESSION['flash_error']); ?>
+                <?php endif; ?>
 
+                <?php if (isset($_SESSION['flash_success'])): ?>
+                    <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm flex items-start gap-2 mb-4">
+                        <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span><?= htmlspecialchars($_SESSION['flash_success']) ?></span>
+                    </div>
+                    <?php unset($_SESSION['flash_success']); ?>
+                <?php endif; ?>
+
+                <form method="POST" action="<?= BASE_URL ?>/auth/authenticate" class="space-y-4" autocomplete="off">
+                    <?= trevio_csrf_field() ?>
+                    
                     <div class="form-group">
                         <label for="email" class="block text-sm font-semibold text-[#374151] mb-1.5">EMAIL ADDRESS</label>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                                    <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    <path d="M22 6L12 13L2 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z"/>
+                                    <path d="M22 6L12 13L2 6"/>
                                 </svg>
                             </span>
-                            <input
-                                id="email"
-                                name="email"
-                                type="email"
-                                placeholder="nama@email.com"
-                                required
-                                class="w-full pl-12 pr-4 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]"
-                            >
+                            <input id="email" name="email" type="email" placeholder="nama@email.com" required class="w-full pl-12 pr-4 py-2.5 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]">
                         </div>
                     </div>
 
@@ -98,63 +112,52 @@ trevio_start_session();
                         </div>
                         <div class="relative">
                             <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
-                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                                    <path d="M19 11H5C3.89543 11 3 11.8954 3 13V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V13C21 11.8954 20.1046 11 19 11Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-                                    <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 11H5C3.89543 11 3 11.8954 3 13V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V13C21 11.8954 20.1046 11 19 11Z"/>
+                                    <path d="M7 11V7C7 5.67392 7.52678 4.40215 8.46447 3.46447C9.40215 2.52678 10.6739 2 12 2C13.3261 2 14.5979 2.52678 15.5355 3.46447C16.4732 4.40215 17 5.67392 17 7V11"/>
                                 </svg>
                             </span>
-                            <input
-                                id="password"
-                                name="password"
-                                type="password"
-                                placeholder="••••••••"
-                                required
-                                class="w-full pl-12 pr-4 py-2 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]">
+                            <input id="password" name="password" type="password" placeholder="••••••••" required class="w-full pl-12 pr-4 py-2.5 border border-[#D1D5DB] rounded-lg focus:outline-none focus:ring-2 focus:ring-trevio focus:border-transparent transition-all placeholder:text-[#9CA3AF]">
                         </div>
                         <div class="mt-1.5 flex justify-end">
                             <a href="#" class="text-xs text-trevio hover:text-trevio-dark transition-colors">Lupa Password?</a>
                         </div>
                     </div>
 
-                    <button
-                        type="submit"
-                        class="w-full bg-trevio text-white px-4 py-2 rounded-lg hover:bg-trevio-dark transition-colors flex items-center justify-center gap-2"
-                    >
+                    <button type="submit" class="w-full bg-trevio text-white px-4 py-2.5 rounded-lg hover:bg-trevio-dark transition-all duration-200 flex items-center justify-center gap-2 font-medium shadow-sm hover:shadow-md">
                         <span>Masuk Sekarang</span>
-                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+                        <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12H19M19 12L12 5M19 12L12 19"/>
                         </svg>
                     </button>
                 </form>
 
-                <div class="flex items-center gap-3 mb-4 text-xs text-[#9CA3AF]">
+                <div class="flex items-center gap-3 my-5 text-xs text-[#9CA3AF]">
                     <span class="flex-1 h-px bg-[#E5E7EB]"></span>
                     <span>Atau lanjutkan dengan</span>
                     <span class="flex-1 h-px bg-[#E5E7EB]"></span>
                 </div>
 
-                <div class="mb-5 flex flex-wrap justify-center gap-3">
-                    <a href="<?= BASE_URL ?>/auth/google" class="w-full md:w-auto flex items-center justify-center gap-2 px-6 md:px-16 py-2.5 border border-[#D1D5DB] rounded-lg hover:bg-gray-100 transition-colors">
+                <div class="mb-5">
+                    <a href="<?= defined('BASE_URL') ? BASE_URL . '/auth/google' : '#' ?>" class="w-full flex items-center justify-center gap-3 px-6 py-2.5 border border-[#D1D5DB] rounded-lg hover:bg-gray-50 transition-colors">
                         <svg class="w-5 h-5" viewBox="0 0 24 24">
-                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
-                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
-                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"></path>
-                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"></path>
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                         </svg>
-                        <span class="text-sm font-medium text-[#374151]">Google</span>
+                        <span class="text-sm font-medium text-[#374151]">Masuk dengan Google</span>
                     </a>
                 </div>
 
                 <p class="text-center text-xs text-[#6B7280]">
                     Belum punya akun?
-                    <a href="<?= BASE_URL ?>/auth/register" class="text-trevio hover:text-trevio-dark transition-colors font-medium"> Daftar Sekarang</a>
+                    <a href="<?= defined('BASE_URL') ? BASE_URL . '/auth/register' : '#' ?>" class="text-trevio hover:text-trevio-dark transition-colors font-medium">Daftar Sekarang</a>
                 </p>
             </section>
         </div>
     </main>
-    <?php
-    // Footer global menutup halaman login.
-    require __DIR__ . '/../layouts/footer.php';
-    ?>
+
+    <?php require __DIR__ . '/../layouts/footer.php'; ?>
 </body>
 </html>

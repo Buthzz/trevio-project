@@ -1,5 +1,4 @@
 <?php
-// v3
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -10,7 +9,6 @@ class AuthController extends Controller {
 
     public function __construct() {
         $this->userModel = new User();
-        // Rate limiting dihapus sesuai permintaan
     }
 
     public function login() {
@@ -36,7 +34,9 @@ class AuthController extends Controller {
         $this->view('auth/register', $data);
     }
 
-    // === BAGIAN YANG DIMODIFIKASI DENGAN DEBUGGING ===
+    /**
+     * ✅ FIXED: Login Authentication (Debug Code Removed)
+     */
     public function authenticate() {
         $this->validateRequest();
         $this->validateCsrf();
@@ -44,76 +44,78 @@ class AuthController extends Controller {
         $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
         $password = $_POST['password'] ?? '';
 
+        // Validation
         if (!$email || empty($password)) {
             $this->redirectWithError('/auth/login', "Email tidak valid atau password kosong.");
         }
 
-        // Ambil user dari database
+        // Get user from database
         $user = $this->userModel->findByEmail($email);
 
-        // --- 🛠️ START DEBUGGING CODE 🛠️ ---
-        // HAPUS BLOCK INI SETELAH MASALAH SELESAI
-        echo "<div style='background:#f8f9fa; padding:20px; border:2px solid #333; font-family:monospace;'>";
-        echo "<h3>🔍 DEBUG LOGIN PROCESS</h3>";
-        echo "<strong>Input Email:</strong> " . htmlspecialchars($email) . "<br>";
-        echo "<strong>Input Password:</strong> " . htmlspecialchars($password) . "<br><hr>";
-
+        // Check user exists
         if (!$user) {
-            echo "<strong style='color:red;'>❌ ERROR: User tidak ditemukan di database!</strong><br>";
-            echo "Saran: Cek tabel 'users' di database, pastikan email '$email' sudah ada.";
-        } else {
-            echo "<strong style='color:green;'>✅ User Ditemukan!</strong><br>";
-            echo "<strong>Data User DB:</strong><pre>" . print_r($user, true) . "</pre><hr>";
-            
-            echo "<strong>Cek Password:</strong><br>";
-            echo "Hash di DB: " . $user['password'] . "<br>";
-            
-            $checkPassword = password_verify($password, $user['password']);
-            
-            if ($checkPassword) {
-                echo "<strong style='color:green;'>✅ Password COCOK!</strong><br>";
-            } else {
-                echo "<strong style='color:red;'>❌ Password TIDAK COCOK!</strong><br>";
-                echo "Kemungkinan: <br>";
-                echo "1. Password input salah ketik.<br>";
-                echo "2. Hash di database bukan hasil dari password_hash(..., PASSWORD_BCRYPT).<br>";
-            }
-
-            echo "<hr><strong>Cek Auth Provider:</strong> " . $user['auth_provider'];
-            if ($user['auth_provider'] !== 'email') {
-                 echo " <strong style='color:orange;'>(⚠️ Perhatikan! Provider harus 'email')</strong>";
-            }
+            error_log("Login failed: User not found - Email: {$email}");
+            $this->redirectWithError('/auth/login', "Email atau password salah.");
         }
-        echo "</div>";
-        die(); // Menghentikan eksekusi agar Anda bisa membaca pesan debug
-        // --- 🛠️ END DEBUGGING CODE 🛠️ ---
 
-        // Logika Asli (Tidak akan dieksekusi selama ada die() di atas)
-        if ($user && $user['auth_provider'] === 'email' && password_verify($password, $user['password'])) {
-            $this->loginUser($user);
-        } else {
-            $this->redirectWithError('/auth/login', "Kredensial tidak cocok.");
+        // Check auth provider (only email/password login allowed here)
+        if ($user['auth_provider'] !== 'email') {
+            error_log("Login failed: Wrong auth provider - User: {$email}, Provider: {$user['auth_provider']}");
+            $this->redirectWithError('/auth/login', "Akun ini terdaftar dengan " . ucfirst($user['auth_provider']) . ". Silakan gunakan metode login tersebut.");
         }
+
+        // Check account status
+        if (!$user['is_active']) {
+            error_log("Login failed: Account inactive - User: {$email}");
+            $this->redirectWithError('/auth/login', "Akun Anda tidak aktif. Silakan hubungi administrator.");
+        }
+
+        // Verify password
+        if (!password_verify($password, $user['password'])) {
+            error_log("Login failed: Wrong password - User: {$email}");
+            $this->redirectWithError('/auth/login', "Email atau password salah.");
+        }
+
+        // ✅ SUCCESS: Login user
+        $this->loginUser($user);
     }
-    // ===============================================
 
+    /**
+     * ✅ FIXED: Registration Handler (Consistent Password Hashing)
+     */
     public function store() {
         $this->validateRequest();
         $this->validateCsrf();
 
-        $fullName = strip_tags(trim($_POST['full_name']));
+        $fullName = strip_tags(trim($_POST['full_name'] ?? ''));
         $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
         $password = $_POST['password'] ?? '';
+        $passwordConfirmation = $_POST['password_confirmation'] ?? '';
         $role = ($_POST['user_type'] === 'host') ? 'owner' : 'customer';
 
-        if (!$email || empty($fullName) || strlen($password) < 8) {
-            $this->redirectWithError('/auth/register', "Data tidak valid. Password minimal 8 karakter.");
+        // Validation
+        if (empty($fullName) || strlen($fullName) < 3) {
+            $this->redirectWithError('/auth/register', "Nama lengkap minimal 3 karakter.");
         }
 
+        if (!$email) {
+            $this->redirectWithError('/auth/register', "Email tidak valid.");
+        }
+
+        if (strlen($password) < 8) {
+            $this->redirectWithError('/auth/register', "Password minimal 8 karakter.");
+        }
+
+        if ($password !== $passwordConfirmation) {
+            $this->redirectWithError('/auth/register', "Konfirmasi password tidak cocok.");
+        }
+
+        // Check email duplicate
         if ($this->userModel->findByEmail($email)) {
-            $this->redirectWithError('/auth/register', "Email sudah terdaftar.");
+            $this->redirectWithError('/auth/register', "Email sudah terdaftar. Silakan gunakan email lain atau login.");
         }
 
+        // Create user with hashed password
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
         $data = [
             'name' => $fullName,
@@ -125,13 +127,19 @@ class AuthController extends Controller {
             'is_active' => 1
         ];
 
-        if ($this->userModel->create($data)) {
-            $_SESSION['flash_success'] = "Registrasi berhasil! Silakan login.";
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
-        }
+        $userId = $this->userModel->create($data);
         
-        $this->redirectWithError('/auth/register', "Terjadi kesalahan sistem.");
+        if ($userId) {
+            // Get full user data for login
+            $user = $this->userModel->find($userId);
+            
+            // Auto login after registration
+            $_SESSION['flash_success'] = "Registrasi berhasil! Selamat datang di Trevio.";
+            $this->loginUser($user);
+        } else {
+            error_log("Registration failed: Database error - Email: {$email}");
+            $this->redirectWithError('/auth/register', "Terjadi kesalahan sistem. Silakan coba lagi.");
+        }
     }
 
     public function logout() {
@@ -148,6 +156,7 @@ class AuthController extends Controller {
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
 
+        // Role-based redirect
         if ($user['role'] === 'admin') {
             header('Location: ' . BASE_URL . '/admin/dashboard');
         } elseif ($user['role'] === 'owner') {
