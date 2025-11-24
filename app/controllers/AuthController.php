@@ -10,12 +10,7 @@ class AuthController extends Controller {
 
     public function __construct() {
         $this->userModel = new User();
-        if (isset($_SESSION['login_attempts']) && $_SESSION['login_attempts'] > 5) {
-            if (time() - $_SESSION['last_attempt_time'] < 900) { // 15 min block
-                die("Too many login attempts. Please try again later.");
-            }
-            unset($_SESSION['login_attempts']);
-        }
+        // Rate limiting removed
     }
 
     public function login() {
@@ -50,7 +45,6 @@ class AuthController extends Controller {
         $password = $_POST['password'] ?? '';
 
         if (!$email || empty($password)) {
-            $this->incrementLoginAttempts();
             $this->redirectWithError('/auth/login', "Email tidak valid atau password kosong.");
         }
 
@@ -59,7 +53,6 @@ class AuthController extends Controller {
         if ($user && $user['auth_provider'] === 'email' && password_verify($password, $user['password'])) {
             $this->loginUser($user);
         } else {
-            $this->incrementLoginAttempts();
             $this->redirectWithError('/auth/login', "Kredensial tidak cocok.");
         }
     }
@@ -114,8 +107,7 @@ class AuthController extends Controller {
     private function loginUser($user) {
         // Security: Prevent Session Fixation
         session_regenerate_id(true);
-        $_SESSION['login_attempts'] = 0;
-
+        
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_name'] = $user['name'];
@@ -156,11 +148,6 @@ class AuthController extends Controller {
         $_SESSION['flash_error'] = $message;
         header('Location: ' . BASE_URL . $path);
         exit;
-    }
-
-    private function incrementLoginAttempts() {
-        $_SESSION['login_attempts'] = ($_SESSION['login_attempts'] ?? 0) + 1;
-        $_SESSION['last_attempt_time'] = time();
     }
 
     // --- Google OAuth (Secured) ---
