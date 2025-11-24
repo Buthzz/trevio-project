@@ -37,12 +37,7 @@ class App {
             // /admin/hotels -> AdminHotelController
             // /admin/payments -> AdminPaymentController
             if ($url[0] === 'admin' && isset($url[1])) {
-                // Convert plural to singular (simple rule: remove trailing 's')
-                $resource = $url[1];
-                $singular = rtrim($resource, 's');
-                
-                // Try both singular and plural forms
-                $u_controller = 'Admin' . ucfirst($singular) . 'Controller';
+                $u_controller = 'Admin' . ucfirst($url[1]) . 'Controller';
                 
                 $pathLower = '../app/controllers/' . $u_controller . '.php';
                 $pathCap   = '../app/Controllers/' . $u_controller . '.php';
@@ -51,17 +46,6 @@ class App {
                     $this->controller = $u_controller;
                     unset($url[0]); // Remove 'admin'
                     unset($url[1]); // Remove resource name
-                } else {
-                    // Try plural form
-                    $u_controller = 'Admin' . ucfirst($resource) . 'Controller';
-                    $pathLower = '../app/controllers/' . $u_controller . '.php';
-                    $pathCap   = '../app/Controllers/' . $u_controller . '.php';
-                    
-                    if (file_exists($pathLower) || file_exists($pathCap)) {
-                        $this->controller = $u_controller;
-                        unset($url[0]); // Remove 'admin'
-                        unset($url[1]); // Remove resource name
-                    }
                 }
             } else {
                 $u_controller = ucfirst($url[0]) . 'Controller';
