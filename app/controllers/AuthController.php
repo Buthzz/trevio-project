@@ -115,12 +115,11 @@ class AuthController extends Controller {
             $this->redirectWithError('/auth/register', "Email sudah terdaftar. Silakan gunakan email lain atau login.");
         }
 
-        // Create user with hashed password
-        $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
+        // Create user (password akan di-hash otomatis oleh Model)
         $data = [
             'name' => $fullName,
             'email' => $email,
-            'password' => $hashedPassword,
+            'password' => $password,  // Password plain text, biar Model yang hash
             'role' => $role,
             'auth_provider' => 'email',
             'is_verified' => 1, 
