@@ -81,9 +81,12 @@ class Hotel extends Model {
      */
     public function getFeatured($limit = 8) {
         $query = "SELECT h.*, 
+                  MIN(r.price_per_night) as min_price,
                   (SELECT COUNT(*) FROM rooms WHERE hotel_id = h.id AND is_available = 1) as available_rooms
                   FROM {$this->table} h
+                  LEFT JOIN rooms r ON h.id = r.hotel_id
                   WHERE h.is_active = 1 AND h.is_verified = 1
+                  GROUP BY h.id
                   ORDER BY h.average_rating DESC, h.total_reviews DESC
                   LIMIT " . (int)$limit;
         
@@ -217,5 +220,25 @@ class Hotel extends Model {
         }
         
         return $hotel;
+    }
+    
+    /**
+     * Get featured reviews with high ratings
+     * @param int $limit Number of reviews to return
+     * @param float $minRating Minimum rating filter
+     * @return array
+     */
+    public function getFeaturedReviews($limit = 3, $minRating = 4.8) {
+        $query = "SELECT r.*, u.name as customer_name, h.name as hotel_name, h.city
+                  FROM reviews r
+                  INNER JOIN users u ON r.customer_id = u.id
+                  INNER JOIN hotels h ON r.hotel_id = h.id
+                  WHERE r.is_approved = 1 AND r.rating >= :min_rating
+                  ORDER BY r.rating DESC, r.created_at DESC
+                  LIMIT " . (int)$limit;
+        
+        $this->query($query);
+        $this->bind(':min_rating', $minRating);
+        return $this->resultSet();
     }
 }
