@@ -92,12 +92,33 @@ if (!function_exists('trevio_get_auth_context')) {
 
 /**
  * Memulai sesi dengan aman jika belum aktif.
+ * [SECURITY]: Configured with httponly, secure (HTTPS), and samesite flags
  */
 if (!function_exists('trevio_start_session')) {
     function trevio_start_session(): void
     {
         if (session_status() === PHP_SESSION_NONE) {
+            // [SECURITY]: Session configuration for production
+            ini_set('session.cookie_httponly', '1');
+            ini_set('session.cookie_samesite', 'Lax');
+            
+            // [SECURITY]: Enable secure flag only on HTTPS
+            if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+                ini_set('session.cookie_secure', '1');
+            }
+            
+            // [SECURITY]: Prevent session fixation
+            ini_set('session.use_strict_mode', '1');
+            
             session_start();
+            
+            // [SECURITY]: Regenerate session ID periodically
+            if (!isset($_SESSION['last_regeneration'])) {
+                $_SESSION['last_regeneration'] = time();
+            } elseif (time() - $_SESSION['last_regeneration'] > 300) { // 5 minutes
+                session_regenerate_id(true);
+                $_SESSION['last_regeneration'] = time();
+            }
         }
     }
 }

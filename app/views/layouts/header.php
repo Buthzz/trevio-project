@@ -22,11 +22,11 @@ if (isset($profileLink)) {
 // - 'admin' untuk Dashboard Admin
 // - 'host' untuk Dashboard Owner
 // - 'guest' untuk customer biasa (hanya logout)
-// Set $SIMULATE_LOGIN = false untuk kembali ke mode normal
-$SIMULATE_LOGIN = false;  // Set ke false untuk disable simulasi
-$SIMULATE_ROLE = 'guest'; // Ganti dengan: 'admin', 'host', atau 'guest'
-$SIMULATE_NAME = 'M. Hendrik Purwanto';
-$SIMULATE_AVATAR = 'https://tugas.animenesia.site/uploads/1762854705_0ffb45e7b7.jpg'; // atau URL avatar jika ada
+// Set environment variable TREVIO_SIMULATE_LOGIN=true untuk enable simulasi
+$SIMULATE_LOGIN = filter_var(getenv('TREVIO_SIMULATE_LOGIN'), FILTER_VALIDATE_BOOLEAN);
+$SIMULATE_ROLE = getenv('TREVIO_SIMULATE_ROLE') ?: 'guest'; // 'admin', 'host', atau 'guest'
+$SIMULATE_NAME = getenv('TREVIO_SIMULATE_NAME') ?: 'M. Hendrik Purwanto';
+$SIMULATE_AVATAR = getenv('TREVIO_SIMULATE_AVATAR') ?: 'https://tugas.animenesia.site/uploads/1762854705_0ffb45e7b7.jpg';
 
 // Terapkan simulasi jika diaktifkan
 if ($SIMULATE_LOGIN) {
@@ -53,21 +53,9 @@ $assetBase  = $assetBase ?? rtrim(dirname($scriptName), '/');
 // Pastikan base path tidak kosong supaya link CSS tetap valid.
 $assetBase  = ($assetBase === '' || $assetBase === '/') ? '.' : $assetBase;
 // Judul default ketika view tidak memberikan $pageTitle.
-// Judul default ketika view tidak memberikan $pageTitle.
 $pageTitle  = $pageTitle ?? 'Trevio';
 
-if (preg_match('#^(.*)/app/#', $scriptName, $matches)) {
-    $projectBaseUrl = $matches[1];
-} else {
-    $projectBaseUrl = '';
-}
-
-// Default tautan navigasi utama yang bisa dioverride dari view.
-$homeLink = $homeLink ?? trevio_view_route('home/index.php');
-$logoUrl  = $logoUrl ?? trevio_view_route('../../public/images/trevio.svg');
-$loginUrl = trevio_view_route('auth/login.php');
-$registerUrl = trevio_view_route('auth/register.php');
-
+// Deteksi project base URL untuk routing
 if (preg_match('#^(.*)/app/#', $scriptName, $matches)) {
     $projectBaseUrl = $matches[1];
 } else {

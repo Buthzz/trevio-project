@@ -57,9 +57,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $specialRequest = filter_input(INPUT_POST, 'special_request', FILTER_SANITIZE_SPECIAL_CHARS);
     
     // Generate kode booking dan invoice
-    // [SECURITY]: Gunakan random_bytes untuk keamanan yang lebih baik
-    $bookingCode = 'TRV-' . date('ymd') . '-' . bin2hex(random_bytes(2));
-    $invoiceCode = 'INV-' . date('Ymd') . '-' . bin2hex(random_bytes(2));
+    // [SECURITY]: Gunakan 4 bytes random untuk menghindari collision (16M possibilities per day)
+    $bookingCode = 'TRV-' . date('ymd') . '-' . bin2hex(random_bytes(4));
+    $invoiceCode = 'INV-' . date('Ymd') . '-' . bin2hex(random_bytes(4));
 
     // Hitung total (simulasi)
     $nights = 3; // Default 3 malam sesuai tampilan

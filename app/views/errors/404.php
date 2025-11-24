@@ -1,11 +1,17 @@
 <?php
-// Judul halaman untuk header
-$pageTitle = '404 Not Found | Trevio';
-
-// Include header
+require_once __DIR__ . '/../../../helpers/functions.php';
 trevio_start_session();
-require_once __DIR__ . '/../layouts/header.php';
 ?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 Not Found | Trevio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50">
+<?php require __DIR__ . '/../layouts/header.php'; ?>
 
 <div class="flex min-h-[70vh] flex-col items-center justify-center px-6 py-12 text-center">
     <div class="mb-8 rounded-full bg-blue-50 p-6">
@@ -22,7 +28,7 @@ require_once __DIR__ . '/../layouts/header.php';
     </p>
 
     <div class="flex flex-col gap-4 sm:flex-row">
-        <a href="<?= htmlspecialchars($homeLink ?? '/') ?>" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        <a href="<?= BASE_URL ?>" class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white transition hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
             Kembali ke Beranda
         </a>
         <button onclick="history.back()" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 focus:ring-offset-2">
@@ -31,7 +37,6 @@ require_once __DIR__ . '/../layouts/header.php';
     </div>
 </div>
 
-<?php
-// Include footer
-require_once __DIR__ . '/../layouts/footer.php';
-?>
+<?php require __DIR__ . '/../layouts/footer.php'; ?>
+</body>
+</html>

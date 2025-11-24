@@ -273,10 +273,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Footer global menutup halaman registrasi.
     require __DIR__ . '/../layouts/footer.php';
     ?>
-    <?php
-    // Footer global menutup halaman registrasi.
-    require __DIR__ . '/../layouts/footer.php';
-    ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             // Skenario konten slider hero auth.

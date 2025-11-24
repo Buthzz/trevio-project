@@ -2,67 +2,8 @@
 require_once __DIR__ . '/../../../helpers/functions.php';
 trevio_start_session();
 
-// [SECURITY]: Redirect jika sudah login
-if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true) {
-    $homeUrl = trevio_view_route('home/index.php');
-    header("Location: $homeUrl");
-    exit;
-}
-
-// [BACKEND NOTE]: Handle login logic
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // [SECURITY]: Verifikasi CSRF Token
-    if (!trevio_verify_csrf()) {
-        die('Akses ditolak: Token CSRF tidak valid. Silakan refresh halaman.');
-    }
-
-    $email = filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL);
-    $password = $_POST['password'] ?? '';
-
-    // [SECURITY]: Validasi input
-    if (empty($email) || empty($password)) {
-        $error = 'Email dan password wajib diisi.';
-    } else {
-        // [BACKEND NOTE]: Simulasi validasi user dari database
-        // User dummy: user@gmail.com / password123
-        $validEmail = 'user@gmail.com';
-        $validPassword = 'password123';
-
-        if ($email === $validEmail && $password === $validPassword) {
-            // Simulasi data user dari database
-            $dummyUser = [
-                'id' => 1,
-                'name' => 'Trevio User',
-                'email' => $email,
-                'avatar' => 'https://ui-avatars.com/api/?name=Trevio+User&background=0EA5E9&color=fff',
-                'role' => 'guest'
-            ];
-
-            // Set session
-            $_SESSION['user_id'] = $dummyUser['id'];
-            $_SESSION['user_name'] = $dummyUser['name'];
-            $_SESSION['user_email'] = $dummyUser['email'];
-            $_SESSION['user_avatar'] = $dummyUser['avatar'];
-            $_SESSION['user_role'] = $dummyUser['role'];
-            $_SESSION['is_logged_in'] = true;
-            $_SESSION['login_provider'] = 'email';
-
-            // Redirect ke home atau return_url
-            $returnUrl = $_GET['return_url'] ?? trevio_view_route('home/index.php');
-            $returnUrl = urldecode($returnUrl);
-            
-            if (strpos($returnUrl, 'home/index.php') !== false) {
-                $returnUrl .= (strpos($returnUrl, '?') === false ? '?' : '&') . 'login_success=email';
-            }
-
-            header("Location: $returnUrl");
-            exit;
-        } else {
-            // [SECURITY]: Pesan error generik
-            $error = 'Email atau password salah.';
-        }
-    }
-}
+// [NOTE]: Login logic handled by AuthController
+// Form submits to /auth/authenticate via POST
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -90,7 +31,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         };
     </script>
 </head>
-<body class="bg-slate-50 font-sans text-slate-900 antialiased">
+<body class="min-h-screen bg-[#F5F7FA] font-sans text-base text-[#111827]">
     <?php
     // Header global
     require __DIR__ . '/../layouts/header.php';
@@ -121,13 +62,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p class="text-sm text-[#6B7280]">Silakan masuk untuk melanjutkan.</p>
                 </div>
 
-                <form method="post" action="#" class="space-y-4" autocomplete="off">
-                    <?= trevio_csrf_field() ?>
+                <form method="post" action="<?= BASE_URL ?>/auth/authenticate" class="space-y-4" autocomplete="off">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
                     
-                    <?php if (isset($error)): ?>
+                    <?php if (isset($_SESSION['flash_error'])): ?>
                         <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm mb-4">
-                            <?= htmlspecialchars($error) ?>
+                            <?= htmlspecialchars($_SESSION['flash_error']) ?>
                         </div>
+                        <?php unset($_SESSION['flash_error']); ?>
                     <?php endif; ?>
 
                     <div class="form-group">
@@ -192,7 +134,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
 
                 <div class="mb-5 flex flex-wrap justify-center gap-3">
-                    <a href="google-callback.php?login_type=google&state=<?= trevio_csrf_token() ?>" class="w-full md:w-auto flex items-center justify-center gap-2 px-6 md:px-16 py-2.5 border border-[#D1D5DB] rounded-lg hover:bg-gray-100 transition-colors">
+                    <a href="<?= BASE_URL ?>/auth/google" class="w-full md:w-auto flex items-center justify-center gap-2 px-6 md:px-16 py-2.5 border border-[#D1D5DB] rounded-lg hover:bg-gray-100 transition-colors">
                         <svg class="w-5 h-5" viewBox="0 0 24 24">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"></path>
                             <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"></path>
@@ -205,15 +147,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <p class="text-center text-xs text-[#6B7280]">
                     Belum punya akun?
-                    <a href="./register.php" class="text-trevio hover:text-trevio-dark transition-colors font-medium"> Daftar Sekarang</a>
+                    <a href="<?= BASE_URL ?>/auth/register" class="text-trevio hover:text-trevio-dark transition-colors font-medium"> Daftar Sekarang</a>
                 </p>
             </section>
         </div>
     </main>
-    <?php
-    // Footer global menutup halaman login.
-    require __DIR__ . '/../layouts/footer.php';
-    ?>
     <?php
     // Footer global menutup halaman login.
     require __DIR__ . '/../layouts/footer.php';
