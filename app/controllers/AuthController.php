@@ -51,6 +51,8 @@ class AuthController extends Controller {
 
         // Get user from database
         $user = $this->userModel->findByEmail($email);
+        var_dump($user);
+        exit;
 
         // Check user exists
         if (!$user) {
