@@ -46,16 +46,6 @@ if (file_exists(__DIR__ . '/../config/app.php')) {
     require_once __DIR__ . '/../config/app.php';
 }
 
-// Load database configuration
-if (file_exists(__DIR__ . '/../config/database.php')) {
-    require_once __DIR__ . '/../config/database.php';
-}
-
-// Load config jika ada
-if (file_exists(__DIR__ . '/../config/config.php')) {
-    require_once __DIR__ . '/../config/config.php';
-}
-
 // Environment variables are loaded by config/app.php
 // Helper functions can be loaded here if needed
 if (file_exists(__DIR__ . '/../helpers/functions.php')) {
