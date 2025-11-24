@@ -10,15 +10,15 @@ class Hotel extends Model {
     protected $table = 'hotels';
 
     public function getByOwner($ownerId) {
-        $this->db->query("SELECT * FROM {$this->table} WHERE owner_id = :owner_id ORDER BY created_at DESC");
-        $this->db->bind(':owner_id', $ownerId);
-        return $this->db->resultSet();
+        $this->query("SELECT * FROM {$this->table} WHERE owner_id = :owner_id ORDER BY created_at DESC");
+        $this->bind(':owner_id', $ownerId);
+        return $this->resultSet();
     }
 
     public function find($id) {
-        $this->db->query("SELECT * FROM {$this->table} WHERE id = :id");
-        $this->db->bind(':id', $id);
-        return $this->db->single();
+        $this->query("SELECT * FROM {$this->table} WHERE id = :id");
+        $this->bind(':id', $id);
+        return $this->single();
     }
 
     public function create($data) {
@@ -28,12 +28,12 @@ class Hotel extends Model {
                   (:owner_id, :name, :description, :address, :city, :province, :star_rating, :main_image, :facilities, :contact_phone, :contact_email, :is_active)";
         
         try {
-            $this->db->query($query);
+            $this->query($query);
             foreach ($data as $key => $value) {
-                $this->db->bind(":{$key}", $value);
+                $this->bind(":{$key}", $value);
             }
-            $this->db->execute();
-            return $this->db->lastInsertId();
+            $this->execute();
+            return $this->lastInsertId();
         } catch (PDOException $e) {
             error_log($e->getMessage());
             return false;
@@ -48,12 +48,12 @@ class Hotel extends Model {
                   WHERE id = :id AND owner_id = :owner_id";
 
         try {
-            $this->db->query($query);
+            $this->query($query);
             foreach ($data as $key => $value) {
-                $this->db->bind(":{$key}", $value);
+                $this->bind(":{$key}", $value);
             }
-            $this->db->bind(':id', $id);
-            return $this->db->execute();
+            $this->bind(':id', $id);
+            return $this->execute();
         } catch (PDOException $e) {
             error_log($e->getMessage());
             return false;
@@ -61,16 +61,16 @@ class Hotel extends Model {
     }
 
     public function delete($id, $ownerId) {
-        $this->db->query("DELETE FROM {$this->table} WHERE id = :id AND owner_id = :owner_id");
-        $this->db->bind(':id', $id);
-        $this->db->bind(':owner_id', $ownerId);
-        return $this->db->execute();
+        $this->query("DELETE FROM {$this->table} WHERE id = :id AND owner_id = :owner_id");
+        $this->bind(':id', $id);
+        $this->bind(':owner_id', $ownerId);
+        return $this->execute();
     }
     
     public function countByOwner($ownerId) {
-        $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE owner_id = :owner_id");
-        $this->db->bind(':owner_id', $ownerId);
-        $result = $this->db->single();
+        $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE owner_id = :owner_id");
+        $this->bind(':owner_id', $ownerId);
+        $result = $this->single();
         return $result['total'] ?? 0;
     }
     
@@ -87,8 +87,8 @@ class Hotel extends Model {
                   ORDER BY h.average_rating DESC, h.total_reviews DESC
                   LIMIT " . (int)$limit;
         
-        $this->db->query($query);
-        return $this->db->resultSet();
+        $this->query($query);
+        return $this->resultSet();
     }
     
     /**
@@ -161,12 +161,12 @@ class Hotel extends Model {
                 $query .= " ORDER BY h.average_rating DESC, h.total_reviews DESC";
         }
         
-        $this->db->query($query);
+        $this->query($query);
         foreach ($bindings as $key => $value) {
-            $this->db->bind($key, $value);
+            $this->bind($key, $value);
         }
         
-        return $this->db->resultSet();
+        return $this->resultSet();
     }
     
     /**
@@ -182,8 +182,8 @@ class Hotel extends Model {
                   ORDER BY hotel_count DESC
                   LIMIT " . (int)$limit;
         
-        $this->db->query($query);
-        $results = $this->db->resultSet();
+        $this->query($query);
+        $results = $this->resultSet();
         
         // Format for frontend
         $destinations = ['🔥 Semua']; // Default "All" option
@@ -207,9 +207,9 @@ class Hotel extends Model {
         }
         
         // Get available rooms
-        $this->db->query("SELECT * FROM rooms WHERE hotel_id = :hotel_id AND is_available = 1 ORDER BY price_per_night ASC");
-        $this->db->bind(':hotel_id', $id);
-        $hotel['rooms'] = $this->db->resultSet();
+        $this->query("SELECT * FROM rooms WHERE hotel_id = :hotel_id AND is_available = 1 ORDER BY price_per_night ASC");
+        $this->bind(':hotel_id', $id);
+        $hotel['rooms'] = $this->resultSet();
         
         // Decode JSON fields
         if (!empty($hotel['facilities'])) {
