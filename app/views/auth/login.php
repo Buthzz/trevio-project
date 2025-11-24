@@ -214,5 +214,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Footer global menutup halaman login.
     require __DIR__ . '/../layouts/footer.php';
     ?>
+    <?php
+    // Footer global menutup halaman login.
+    require __DIR__ . '/../layouts/footer.php';
+    ?>
 </body>
 </html>

@@ -1,5 +1,6 @@
 <?php
 // Footer tidak butuh inisialisasi, blok ini disiapkan untuk penyesuaian variabel jika diperlukan.
+// Footer tidak butuh inisialisasi, blok ini disiapkan untuk penyesuaian variabel jika diperlukan.
 ?>
 </main>
 <!-- Footer global: update link/contacts via variabel jika perlu -->

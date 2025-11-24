@@ -1,7 +1,7 @@
 # Contributing Guidelines
 
 ## Before You Start
-1. Pull latest from `dev`: `git pull origin dev`
+1. Pull latest from `development`: `git pull origin development`
 2. Check [docs/pembagian-tugas.md](docs/pembagian-tugas.md)
 3. Make sure you're working on YOUR files only
 

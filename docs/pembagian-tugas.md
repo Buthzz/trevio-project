@@ -60,17 +60,9 @@ libraries/
 ---
 
 ### **2️⃣ Fajar (Backend + Database + DevOps)**
-**Folder:** `app/controllers/admin/` + `database/` + `docs/`
+**Folder:** `database/` + `docs/`
 
 ```
-app/controllers/admin/
-├── PaymentController.php        ✅ Verify/reject payment
-├── RefundController.php         ✅ Process refund
-└── UserController.php           ✅ Manage users
-
-app/models/
-├── Payment.php                  ✅ Payment CRUD
-└── Refund.php                   ✅ Refund CRUD
 
 database/
 ├── trevio_final.sql             ✅ Database schema
@@ -89,16 +81,24 @@ docs/
 ---
 
 ### **3️⃣ Syadat (QA + User Flow + Backend Ringan)**
-**Folder:** `app/controllers/owner/` + `tests/` + `docs/`
+**Folder:** `app/controllers/owner/` + `tests/` + `docs/` + `app/controllers/admin/`
 
 ```
 app/controllers/owner/
 ├── HotelController.php          ✅ CRUD hotels (INSERT, UPDATE, DELETE)
 └── RoomController.php           ✅ CRUD rooms (INSERT, UPDATE, DELETE, slot logic)
 
+app/controllers/admin/
+├── PaymentController.php        ✅ Verify/reject payment
+├── RefundController.php         ✅ Process refund
+└── UserController.php           ✅ Manage users
+
 app/models/
 ├── Hotel.php                    ✅ Hotel CRUD
 └── Room.php                     ✅ Room CRUD (available_slots logic)
+├── Payment.php                  ✅ Payment CRUD
+└── Refund.php                   ✅ Refund CRUD
+
 
 tests/
 ├── booking-flow-test.md         ✅ Test booking scenario

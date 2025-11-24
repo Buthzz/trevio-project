@@ -47,11 +47,26 @@ $profileLink    = $authContext['profileLink'];
 // Nama script aktif dipakai untuk menentukan base asset.
 $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
 // Basis path asset bisa dioverride dari view, fallback ke lokasi script.
+// Basis path asset bisa dioverride dari view, fallback ke lokasi script.
 $assetBase  = $assetBase ?? rtrim(dirname($scriptName), '/');
+// Pastikan base path tidak kosong supaya link CSS tetap valid.
 // Pastikan base path tidak kosong supaya link CSS tetap valid.
 $assetBase  = ($assetBase === '' || $assetBase === '/') ? '.' : $assetBase;
 // Judul default ketika view tidak memberikan $pageTitle.
+// Judul default ketika view tidak memberikan $pageTitle.
 $pageTitle  = $pageTitle ?? 'Trevio';
+
+if (preg_match('#^(.*)/app/#', $scriptName, $matches)) {
+    $projectBaseUrl = $matches[1];
+} else {
+    $projectBaseUrl = '';
+}
+
+// Default tautan navigasi utama yang bisa dioverride dari view.
+$homeLink = $homeLink ?? trevio_view_route('home/index.php');
+$logoUrl  = $logoUrl ?? trevio_view_route('../../public/images/trevio.svg');
+$loginUrl = trevio_view_route('auth/login.php');
+$registerUrl = trevio_view_route('auth/register.php');
 
 if (preg_match('#^(.*)/app/#', $scriptName, $matches)) {
     $projectBaseUrl = $matches[1];
@@ -114,7 +129,14 @@ $registerUrl = trevio_view_route('auth/register.php');
         </a>
 
         <div class="hidden items-center gap-3 sm:gap-4 md:flex">
+        <div class="hidden items-center gap-3 sm:gap-4 md:flex">
             <button type="button"
+                    class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600 sm:px-4 sm:py-1.5 sm:text-xs">
+                <span class="relative inline-flex h-5 w-5 overflow-hidden rounded-full border border-slate-300 bg-white">
+                    <span class="absolute inset-x-0 top-0 h-1/2 bg-red-600"></span>
+                    <span class="absolute inset-x-0 bottom-0 h-1/2 bg-white"></span>
+                </span>
+                ID
                     class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600 sm:px-4 sm:py-1.5 sm:text-xs">
                 <span class="relative inline-flex h-5 w-5 overflow-hidden rounded-full border border-slate-300 bg-white">
                     <span class="absolute inset-x-0 top-0 h-1/2 bg-red-600"></span>

@@ -231,6 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </section>
 
             <!-- Kolom kanan: hero slider storytelling -->
+            <!-- Kolom kanan: hero slider storytelling -->
             <section id="auth-hero" class="md:w-[55%] relative min-h-[280px] md:min-h-[440px] order-1 md:order-2">
                 <div id="auth-hero-bg" class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&h=1000&fit=crop');"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent"></div>
@@ -272,8 +273,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Footer global menutup halaman registrasi.
     require __DIR__ . '/../layouts/footer.php';
     ?>
+    <?php
+    // Footer global menutup halaman registrasi.
+    require __DIR__ . '/../layouts/footer.php';
+    ?>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Skenario konten slider hero auth.
             // Skenario konten slider hero auth.
             const slides = [
                 {
@@ -294,6 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
 
             // Ambil referensi elemen utama slider.
+            // Ambil referensi elemen utama slider.
             const heroSection = document.querySelector('#auth-hero');
             const heroBackground = document.querySelector('#auth-hero-bg');
             const heroTitle = document.querySelector('#auth-hero-title');
@@ -306,14 +313,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             // Kelas indikator aktif/nonaktif untuk dot slider.
+            // Kelas indikator aktif/nonaktif untuk dot slider.
             const activeClass = 'bg-white';
             const inactiveClass = 'bg-white/40';
             const dots = dotsContainer.querySelectorAll('[data-dot-index]');
             // Posisi slide saat ini.
+            // Posisi slide saat ini.
             let currentIndex = 0;
+            // Timer otomatis untuk rotasi slide.
             // Timer otomatis untuk rotasi slide.
             let rotationTimer = null;
 
+            // Tandai dot mana yang aktif sesuai slide.
             // Tandai dot mana yang aktif sesuai slide.
             const setActiveDot = function (index) {
                 dots.forEach(function (dot, dotIndex) {
@@ -322,6 +333,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             };
 
+            // Terapkan data slide ke elemen hero.
             // Terapkan data slide ke elemen hero.
             const applySlide = function (index) {
                 const slide = slides[index];
@@ -332,11 +344,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             };
 
             // Geser slide berdasarkan arah tertentu.
+            // Geser slide berdasarkan arah tertentu.
             const rotateSlide = function (step) {
                 currentIndex = (currentIndex + step + slides.length) % slides.length;
                 applySlide(currentIndex);
             };
 
+            // Mulai interval autoplay agar hero tetap dinamis.
             // Mulai interval autoplay agar hero tetap dinamis.
             const startRotation = function () {
                 if (rotationTimer) {
@@ -349,6 +363,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (prevButton) {
                 // Navigasi ke slide sebelumnya dan reset timer.
+                // Navigasi ke slide sebelumnya dan reset timer.
                 prevButton.addEventListener('click', function () {
                     rotateSlide(-1);
                     startRotation();
@@ -356,6 +371,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
             if (nextButton) {
+                // Navigasi ke slide selanjutnya dan reset timer.
                 // Navigasi ke slide selanjutnya dan reset timer.
                 nextButton.addEventListener('click', function () {
                     rotateSlide(1);
