@@ -61,6 +61,7 @@ class User extends Model {
         } catch (PDOException $e) {
             error_log("User FindByEmail Error: " . $e->getMessage());
             var_dump($e);
+            die();
             return false;
         }
     }
