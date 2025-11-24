@@ -10,6 +10,8 @@
  * - Improved token refresh with error recovery
  * - Better type checking and null safety
  * - Secure token and user data management
+ * - Standardized error responses
+ * - JSDoc documentation for public APIs
  * ===================================================================
  */
 
@@ -26,14 +28,62 @@ const GoogleAuth = (function () {
   let tokenRefreshInterval = null;
   let gisInitialized = false;
 
+  /**
+   * @typedef {Object} AuthResponse
+   * @property {boolean} success - Operation success status
+   * @property {*} data - Response data or null
+   * @property {string} error - Error message if failed
+   */
+
+  /**
+   * Creates standardized success response
+   * @param {*} data - Response data
+   * @returns {AuthResponse} Success response
+   * @private
+   */
+  const createSuccessResponse = (data) => ({
+    success: true,
+    data,
+  });
+
+  /**
+   * Creates standardized error response
+   * @param {string} error - Error message
+   * @returns {AuthResponse} Error response
+   * @private
+   */
+  const createErrorResponse = (error) => ({
+    success: false,
+    data: null,
+    error,
+  });
+
+  /**
+   * Logs message to console when DEBUG enabled
+   * @param {string} message - Message to log
+   * @returns {void}
+   */
   const log = (message) => {
     if (window.DEBUG) console.log(`[GOOGLE-AUTH] ${message}`);
   };
 
+  /**
+   * Logs error to console
+   * @param {string} message - Error message
+   * @param {Error} error - Optional error object
+   * @returns {void}
+   */
   const logError = (message, error = null) => {
     if (window.DEBUG) console.error(`[GOOGLE-AUTH ERROR] ${message}`, error || '');
   };
 
+  /**
+   * Emits event to all registered listeners
+   * @param {string} event - Event name
+   * @param {*} data - Event data
+   * @returns {void}
+   * @private
+   */
   const emit = (event, data) => {
     if (listeners.has(event)) {
       const eventListeners = listeners.get(event);
@@ -43,6 +93,12 @@ const GoogleAuth = (function () {
     }
   };
 
+  /**
+   * Parses JWT token to extract payload
+   * @param {string} token - JWT token
+   * @returns {Object|null} Parsed JWT payload or null
+   * @private
+   */
   const parseJwt = (token) => {
     if (!token || typeof token !== 'string') return null;
     try {
@@ -65,32 +121,58 @@ const GoogleAuth = (function () {
     }
   };
 
+  /**
+   * Stores token in localStorage
+   * @param {string} token - JWT token
+   * @returns {AuthResponse} Storage response
+   * @private
+   */
   const storeToken = (token) => {
-    if (!token || typeof token !== 'string') { logError('Invalid token provided'); return false; }
+    if (!token || typeof token !== 'string') {
+      return createErrorResponse('Invalid token provided');
+    }
     try {
       localStorage.setItem(STORAGE_KEYS.token, token);
-      return true;
+      return createSuccessResponse(true);
     } catch (e) {
       logError('Failed to store token', e);
-      return false;
+      return createErrorResponse('Failed to store token');
     }
   };
 
+  /**
+   * Gets token from localStorage
+   * @returns {string|null} Stored token or null
+   * @private
+   */
   const getToken = () => {
     try { return localStorage.getItem(STORAGE_KEYS.token); } catch (e) { logError('Failed to get token', e); return null; }
   };
 
+  /**
+   * Stores user object in localStorage
+   * @param {Object} user - User object
+   * @returns {AuthResponse} Storage response
+   * @private
+   */
   const storeUser = (user) => {
-    if (!user || typeof user !== 'object') { logError('Invalid user object'); return false; }
+    if (!user || typeof user !== 'object') {
+      return createErrorResponse('Invalid user object');
+    }
     try {
       localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user));
-      return true;
+      return createSuccessResponse(true);
     } catch (e) {
       logError('Failed to store user', e);
-      return false;
+      return createErrorResponse('Failed to store user');
     }
   };
 
+  /**
+   * Gets user object from localStorage
+   * @returns {Object|null} User object or null
+   * @private
+   */
   const getUser = () => {
     try {
       const user = localStorage.getItem(STORAGE_KEYS.user);
@@ -101,6 +183,12 @@ const GoogleAuth = (function () {
     }
   };
 
+  /**
+   * Checks if JWT token is valid
+   * @param {string} token - JWT token
+   * @returns {boolean} Whether token is valid
+   * @private
+   */
   const isTokenValid = (token) => {
     if (!token) return false;
     try {
@@ -114,6 +202,11 @@ const GoogleAuth = (function () {
     }
   };
 
+  /**
+   * Clears all session data
+   * @returns {void}
+   * @private
+   */
   const clearSession = () => {
     try {
       localStorage.removeItem(STORAGE_KEYS.token);
@@ -124,6 +217,11 @@ const GoogleAuth = (function () {
     }
   };
 
+  /**
+   * Loads Google Sign-In library
+   * @returns {Promise<void>} Promise that resolves when library is loaded
+   * @private
+   */
   const loadGoogleSignInLibrary = () => {
     return new Promise((resolve) => {
       if (gisScriptLoaded) { log('GIS script already loaded'); resolve(); return; }
@@ -145,6 +243,11 @@ const GoogleAuth = (function () {
     });
   };
 
+  /**
+   * Loads Google API library
+   * @returns {Promise<void>} Promise that resolves when library is loaded
+   * @private
+   */
   const loadGapiLibrary = () => {
     return new Promise((resolve) => {
       if (gapiScriptLoaded) { log('GAPI script already loaded'); resolve(); return; }
@@ -173,58 +276,87 @@ const GoogleAuth = (function () {
     });
   };
 
+  /**
+   * Handles sign-in response from Google
+   * @param {Object} response - Google sign-in response
+   * @returns {AuthResponse} Sign-in response
+   * @private
+   */
   const handleSignInResponse = (response) => {
-    if (!response || typeof response !== 'object') { logError('Invalid response object'); return; }
-    if (!response.credential) { logError('No credential in response'); return; }
+    if (!response || typeof response !== 'object') {
+      return createErrorResponse('Invalid response object');
+    }
+    if (!response.credential) {
+      return createErrorResponse('No credential in response');
+    }
     
     try {
       const token = response.credential;
       const user = parseJwt(token);
       
-      if (!user) { logError('Failed to parse user from token'); return; }
+      if (!user) {
+        return createErrorResponse('Failed to parse user from token');
+      }
       
       storeToken(token);
       storeUser(user);
       log('User signed in successfully');
       emit('signin', user);
+      return createSuccessResponse(user);
     } catch (e) {
       logError('Error handling sign-in response', e);
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Refreshes authentication token
+   * @returns {Promise<AuthResponse>} Token refresh response
+   */
   const refreshToken = () => {
     const token = getToken();
-    if (!token) { logError('No token available to refresh'); return Promise.reject('No token'); }
+    if (!token) {
+      logError('No token available to refresh');
+      return Promise.resolve(createErrorResponse('No token available'));
+    }
     
     if (isTokenValid(token)) {
       log('Token still valid, skipping refresh');
-      return Promise.resolve(token);
+      return Promise.resolve(createSuccessResponse(token));
     }
     
     try {
       return gapi.auth2.getAuthInstance().signIn().then(
         (googleUser) => {
           const authResponse = googleUser.getAuthResponse();
-          if (!authResponse) { logError('No auth response from refresh'); return Promise.reject('No auth response'); }
+          if (!authResponse) {
+            return createErrorResponse('No auth response from refresh');
+          }
           
           const newToken = authResponse.id_token;
-          if (!newToken) { logError('No new token in auth response'); return Promise.reject('No token'); }
+          if (!newToken) {
+            return createErrorResponse('No new token in auth response');
+          }
           
           storeToken(newToken);
           log('Token refreshed successfully');
-          return newToken;
+          return createSuccessResponse(newToken);
         },
         (error) => {
           logError('Token refresh failed', error);
-          return Promise.reject(error);
+          return createErrorResponse(error.message || 'Token refresh failed');
         }
       );
     } catch (e) {
       logError('Error refreshing token', e);
-      return Promise.reject(e);
+      return Promise.resolve(createErrorResponse(e.message));
     }
   };
 
+  /**
+   * Initializes Google Authentication
+   * @returns {Promise<AuthResponse>} Initialization response
+   */
   const init = () => {
     return Promise.race([
       new Promise((resolve) => {
@@ -239,27 +371,37 @@ const GoogleAuth = (function () {
               gisInitialized = true;
               log('Google Auth initialized');
               emit('ready', { authenticated: !!getToken() });
-              resolve();
+              resolve(createSuccessResponse({ initialized: true }));
             } else {
               logError('Google API not available');
-              resolve();
+              resolve(createErrorResponse('Google API not available'));
             }
           } catch (e) {
             logError('Error initializing Google Auth', e);
-            resolve();
+            resolve(createErrorResponse(e.message));
           }
         })();
       }),
-      new Promise((resolve) => setTimeout(() => { logError('Google Auth initialization timeout'); resolve(); }, 5000))
+      new Promise((resolve) => setTimeout(() => { logError('Google Auth initialization timeout'); resolve(createErrorResponse('Initialization timeout')); }, 5000))
     ]);
   };
 
+  /**
+   * Renders Google Sign-In button
+   * @param {HTMLElement|string} container - Container element or selector
+   * @param {Object} options - Button options
+   * @returns {AuthResponse} Render response
+   */
   const renderSignInButton = (container, options = {}) => {
-    if (!gisInitialized) { logError('Google Auth not initialized'); return; }
+    if (!gisInitialized) {
+      return createErrorResponse('Google Auth not initialized');
+    }
     
     try {
       const containerEl = typeof container === 'string' ? document.querySelector(container) : container;
-      if (!containerEl) { logError('Container not found'); return; }
+      if (!containerEl) {
+        return createErrorResponse('Container not found');
+      }
       
       window.google.accounts.id.renderButton(containerEl, {
         type: options.type || 'standard',
@@ -269,11 +411,17 @@ const GoogleAuth = (function () {
         ...options,
       });
       log('Sign-in button rendered');
+      return createSuccessResponse(true);
     } catch (e) {
       logError('Error rendering sign-in button', e);
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Signs out current user
+   * @returns {AuthResponse} Sign-out response
+   */
   const signOut = () => {
     try {
       clearSession();
@@ -286,49 +434,110 @@ const GoogleAuth = (function () {
       clearInterval(tokenRefreshInterval);
       log('User signed out');
       emit('signout', null);
+      return createSuccessResponse(null);
     } catch (e) {
       logError('Error signing out', e);
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Registers event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   * @returns {AuthResponse} Registration response
+   */
   const on = (event, callback) => {
-    if (!event || typeof event !== 'string' || typeof callback !== 'function') { logError('Invalid event or callback'); return; }
+    if (!event || typeof event !== 'string' || typeof callback !== 'function') {
+      return createErrorResponse('Invalid event or callback');
+    }
     if (!listeners.has(event)) listeners.set(event, []);
     listeners.get(event).push(callback);
     log(`Listener added for event: ${event}`);
+    return createSuccessResponse(true);
   };
 
+  /**
+   * Removes event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   * @returns {AuthResponse} Removal response
+   */
   const off = (event, callback) => {
-    if (!event || typeof event !== 'string') { logError('Invalid event'); return; }
-    if (!listeners.has(event)) return;
+    if (!event || typeof event !== 'string') {
+      return createErrorResponse('Invalid event');
+    }
+    if (!listeners.has(event)) return createSuccessResponse(true);
     const callbacks = listeners.get(event);
     const index = callbacks.indexOf(callback);
     if (index > -1) callbacks.splice(index, 1);
     log(`Listener removed for event: ${event}`);
+    return createSuccessResponse(true);
   };
 
+  /**
+   * Registers one-time event listener
+   * @param {string} event - Event name
+   * @param {Function} callback - Callback function
+   * @returns {AuthResponse} Registration response
+   */
   const once = (event, callback) => {
-    if (!event || typeof event !== 'string' || typeof callback !== 'function') { logError('Invalid event or callback'); return; }
+    if (!event || typeof event !== 'string' || typeof callback !== 'function') {
+      return createErrorResponse('Invalid event or callback');
+    }
     const wrapper = (data) => {
       callback(data);
       off(event, wrapper);
     };
     on(event, wrapper);
     log(`One-time listener added for event: ${event}`);
+    return createSuccessResponse(true);
+  };
+
+  /**
+   * Gets current authentication token
+   * @returns {string|null} JWT token or null
+   */
+  const getTokenPublic = () => getToken();
+
+  /**
+   * Gets current user object
+   * @returns {Object|null} User object or null
+   */
+  const getUserPublic = () => getUser();
+
+  /**
+   * Checks if current token is valid
+   * @returns {boolean} Whether token is valid
+   */
+  const isTokenValidPublic = () => isTokenValid(getToken());
+
+  /**
+   * Handles Google sign-in response (public wrapper)
+   * @param {Object} response - Google sign-in response
+   * @returns {void}
+   */
+  const handleSignInResponsePublic = (response) => {
+    handleSignInResponse(response);
   };
 
   return {
+    // Initialization
     init,
-    getToken,
-    getUser,
-    isTokenValid,
+    
+    // Authentication
+    getToken: getTokenPublic,
+    getUser: getUserPublic,
+    isTokenValid: isTokenValidPublic,
     refreshToken,
-    handleSignInResponse,
+    handleSignInResponse: handleSignInResponsePublic,
+    
+    // UI
     renderSignInButton,
     signOut,
-    on,
-    off,
-    once,
+    
+    // Events
+    on, off, once,
   };
 })();
 

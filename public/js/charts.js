@@ -10,6 +10,8 @@
  * - Added validation for all inputs
  * - Improved update methods with error recovery
  * - Safe chart destruction and cleanup
+ * - Standardized error responses
+ * - JSDoc documentation for public APIs
  * ===================================================================
  */
 
@@ -17,6 +19,13 @@
 
 const Charts = (function () {
   let chartInstances = new Map();
+
+  /**
+   * @typedef {Object} ChartResponse
+   * @property {boolean} success - Operation success status
+   * @property {*} data - Chart instance or null
+   * @property {string} error - Error message if failed
+   */
 
   const CHART_COLORS = {
     primary: '#4f46e5',
@@ -38,19 +47,66 @@ const Charts = (function () {
     warning: ['rgba(245, 158, 11, 0.1)', 'rgba(245, 158, 11, 0)'],
   };
 
+  /**
+   * Creates standardized success response
+   * @param {*} data - Response data
+   * @returns {ChartResponse} Success response
+   * @private
+   */
+  const createSuccessResponse = (data) => ({
+    success: true,
+    data,
+  });
+
+  /**
+   * Creates standardized error response
+   * @param {string} error - Error message
+   * @returns {ChartResponse} Error response
+   * @private
+   */
+  const createErrorResponse = (error) => ({
+    success: false,
+    data: null,
+    error,
+  });
+
+  /**
+   * Logs message to console when DEBUG enabled
+   * @param {string} message - Message to log
+   * @returns {void}
+   */
   const log = (message) => {
     if (window.DEBUG) console.log(`[CHARTS] ${message}`);
   };
 
+  /**
+   * Logs error to console
+   * @param {string} message - Error message
+   * @param {Error} error - Optional error object
+   * @returns {void}
+   */
   const logError = (message, error = null) => {
     if (window.DEBUG) console.error(`[CHARTS ERROR] ${message}`, error || '');
   };
 
+  /**
+   * Gets canvas element
+   * @param {HTMLCanvasElement|string} canvas - Canvas element or selector
+   * @returns {HTMLCanvasElement|null} Canvas element or null
+   * @private
+   */
   const getCanvasElement = (canvas) => {
     if (canvas instanceof HTMLCanvasElement) return canvas;
     return document.querySelector(canvas);
   };
 
+  /**
+   * Creates gradient for chart
+   * @param {HTMLCanvasElement} canvas - Canvas element
+   * @param {Array<string>} colors - Color array [startColor, endColor]
+   * @returns {CanvasGradient|string} Gradient or fallback color
+   * @private
+   */
   const createGradient = (canvas, colors) => {
     if (!canvas || !colors || !Array.isArray(colors) || colors.length < 2) {
       return (colors && colors[0]) || '#4f46e5';
@@ -59,7 +115,7 @@ const Charts = (function () {
     try {
       const ctx = canvas.getContext('2d');
       if (!ctx) {
-        log('Could not get 2D context from canvas');
+        logError('Could not get 2D context from canvas');
         return colors[0];
       }
       
@@ -73,10 +129,19 @@ const Charts = (function () {
     }
   };
 
+  /**
+   * Creates line chart
+   * @param {HTMLCanvasElement|string} canvas - Canvas element or selector
+   * @param {Object} data - Chart data
+   * @param {Array<string>} data.labels - Data labels
+   * @param {Array<Object>} data.datasets - Chart datasets
+   * @param {Object} options - Chart options
+   * @returns {ChartResponse} Response with chart instance
+   */
   const createLineChart = (canvas, data, options = {}) => {
     const canvasEl = getCanvasElement(canvas);
-    if (!canvasEl) { logError('Canvas element not found'); return null; }
-    if (typeof Chart === 'undefined') { logError('Chart.js library not loaded'); return null; }
+    if (!canvasEl) return createErrorResponse('Canvas element not found');
+    if (typeof Chart === 'undefined') return createErrorResponse('Chart.js library not loaded');
 
     try {
       const chartConfig = {
@@ -99,7 +164,6 @@ const Charts = (function () {
               pointBackgroundColor: dataset.pointBackgroundColor || color,
               pointBorderColor: '#fff',
               pointBorderWidth: 2,
-              ...dataset,
             };
           }),
         },
@@ -141,36 +205,39 @@ const Charts = (function () {
       };
       const chart = new Chart(canvasEl, chartConfig);
       log('Line chart created');
-      return chart;
+      return createSuccessResponse(chart);
     } catch (e) {
       logError('Failed to create line chart', e);
-      return null;
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Creates bar chart
+   * @param {HTMLCanvasElement|string} canvas - Canvas element or selector
+   * @param {Object} data - Chart data
+   * @param {Array<string>} data.labels - Data labels
+   * @param {Array<Object>} data.datasets - Chart datasets
+   * @param {Object} options - Chart options
+   * @returns {ChartResponse} Response with chart instance
+   */
   const createBarChart = (canvas, data, options = {}) => {
     const canvasEl = getCanvasElement(canvas);
-    if (!canvasEl) { logError('Canvas element not found'); return null; }
-    if (typeof Chart === 'undefined') { logError('Chart.js library not loaded'); return null; }
+    if (!canvasEl) return createErrorResponse('Canvas element not found');
+    if (typeof Chart === 'undefined') return createErrorResponse('Chart.js library not loaded');
 
     try {
       const chartConfig = {
         type: 'bar',
         data: {
           labels: data.labels || [],
-          datasets: (data.datasets || []).map((dataset, index) => {
-            const colors = Array.isArray(dataset.backgroundColor) ? dataset.backgroundColor : [dataset.backgroundColor || CHART_COLORS.primary];
-            return {
-              label: dataset.label || `Dataset ${index + 1}`,
-              data: dataset.data || [],
-              backgroundColor: colors,
-              borderColor: colors.map((c) => (typeof c === 'string' ? c.replace('0.6', '1') : c)),
-              borderWidth: 1,
-              borderRadius: 8,
-              borderSkipped: false,
-              ...dataset,
-            };
-          }),
+          datasets: (data.datasets || []).map((dataset, index) => ({
+            label: dataset.label || `Dataset ${index + 1}`,
+            data: dataset.data || [],
+            backgroundColor: dataset.backgroundColor || CHART_COLORS.primary,
+            borderColor: dataset.borderColor || CHART_COLORS.primary,
+            borderWidth: dataset.borderWidth || 1,
+          })),
         },
         options: {
           responsive: options.responsive !== false,
@@ -210,17 +277,26 @@ const Charts = (function () {
       };
       const chart = new Chart(canvasEl, chartConfig);
       log('Bar chart created');
-      return chart;
+      return createSuccessResponse(chart);
     } catch (e) {
       logError('Failed to create bar chart', e);
-      return null;
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Creates doughnut chart
+   * @param {HTMLCanvasElement|string} canvas - Canvas element or selector
+   * @param {Object} data - Chart data
+   * @param {Array<string>} data.labels - Data labels
+   * @param {Array<number>} data.data - Data values
+   * @param {Object} options - Chart options
+   * @returns {ChartResponse} Response with chart instance
+   */
   const createDoughnutChart = (canvas, data, options = {}) => {
     const canvasEl = getCanvasElement(canvas);
-    if (!canvasEl) { logError('Canvas element not found'); return null; }
-    if (typeof Chart === 'undefined') { logError('Chart.js library not loaded'); return null; }
+    if (!canvasEl) return createErrorResponse('Canvas element not found');
+    if (typeof Chart === 'undefined') return createErrorResponse('Chart.js library not loaded');
 
     try {
       const colors = [CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.danger, CHART_COLORS.info];
@@ -253,11 +329,7 @@ const Charts = (function () {
               borderRadius: 8,
               callbacks: {
                 label: function (context) {
-                  const label = context.label || '';
-                  const value = context.parsed || 0;
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                  const percentage = ((value / total) * 100).toFixed(1);
-                  return `${label}: ${value} (${percentage}%)`;
+                  return `${context.label}: ${context.parsed}`;
                 },
                 ...options.tooltipCallbacks,
               },
@@ -268,17 +340,26 @@ const Charts = (function () {
       };
       const chart = new Chart(canvasEl, chartConfig);
       log('Doughnut chart created');
-      return chart;
+      return createSuccessResponse(chart);
     } catch (e) {
       logError('Failed to create doughnut chart', e);
-      return null;
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Creates pie chart
+   * @param {HTMLCanvasElement|string} canvas - Canvas element or selector
+   * @param {Object} data - Chart data
+   * @param {Array<string>} data.labels - Data labels
+   * @param {Array<number>} data.data - Data values
+   * @param {Object} options - Chart options
+   * @returns {ChartResponse} Response with chart instance
+   */
   const createPieChart = (canvas, data, options = {}) => {
     const canvasEl = getCanvasElement(canvas);
-    if (!canvasEl) { logError('Canvas element not found'); return null; }
-    if (typeof Chart === 'undefined') { logError('Chart.js library not loaded'); return null; }
+    if (!canvasEl) return createErrorResponse('Canvas element not found');
+    if (typeof Chart === 'undefined') return createErrorResponse('Chart.js library not loaded');
 
     try {
       const colors = [CHART_COLORS.primary, CHART_COLORS.success, CHART_COLORS.warning, CHART_COLORS.danger, CHART_COLORS.info];
@@ -311,11 +392,7 @@ const Charts = (function () {
               borderRadius: 8,
               callbacks: {
                 label: function (context) {
-                  const label = context.label || '';
-                  const value = context.parsed || 0;
-                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                  const percentage = ((value / total) * 100).toFixed(1);
-                  return `${label}: ${value} (${percentage}%)`;
+                  return `${context.label}: ${context.parsed}`;
                 },
                 ...options.tooltipCallbacks,
               },
@@ -326,17 +403,26 @@ const Charts = (function () {
       };
       const chart = new Chart(canvasEl, chartConfig);
       log('Pie chart created');
-      return chart;
+      return createSuccessResponse(chart);
     } catch (e) {
       logError('Failed to create pie chart', e);
-      return null;
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Creates radar chart
+   * @param {HTMLCanvasElement|string} canvas - Canvas element or selector
+   * @param {Object} data - Chart data
+   * @param {Array<string>} data.labels - Data labels
+   * @param {Array<Object>} data.datasets - Chart datasets
+   * @param {Object} options - Chart options
+   * @returns {ChartResponse} Response with chart instance
+   */
   const createRadarChart = (canvas, data, options = {}) => {
     const canvasEl = getCanvasElement(canvas);
-    if (!canvasEl) { logError('Canvas element not found'); return null; }
-    if (typeof Chart === 'undefined') { logError('Chart.js library not loaded'); return null; }
+    if (!canvasEl) return createErrorResponse('Canvas element not found');
+    if (typeof Chart === 'undefined') return createErrorResponse('Chart.js library not loaded');
 
     try {
       const chartConfig = {
@@ -345,30 +431,15 @@ const Charts = (function () {
           labels: data.labels || [],
           datasets: (data.datasets || []).map((dataset, index) => {
             const color = dataset.borderColor || CHART_COLORS.primary;
-            let bgColor = color;
-            try {
-              if (typeof color === 'string') {
-                if (color.includes('rgba')) {
-                  bgColor = color.replace(/,[^,]*\)$/, ', 0.1)');
-                } else if (color.includes('rgb')) {
-                  bgColor = color.replace(/\)$/, ', 0.1)').replace('rgb', 'rgba');
-                }
-              }
-            } catch (e) {
-              bgColor = color;
-            }
             return {
               label: dataset.label || `Dataset ${index + 1}`,
               data: dataset.data || [],
               borderColor: color,
-              backgroundColor: bgColor,
-              borderWidth: 2,
-              pointBackgroundColor: color,
-              pointBorderColor: '#fff',
-              pointBorderWidth: 2,
-              pointRadius: 4,
-              pointHoverRadius: 6,
-              ...dataset,
+              backgroundColor: dataset.backgroundColor || `rgba(79, 70, 229, 0.1)`,
+              borderWidth: dataset.borderWidth || 2,
+              pointRadius: dataset.pointRadius || 3,
+              pointHoverRadius: dataset.pointHoverRadius || 5,
+              pointBackgroundColor: dataset.pointBackgroundColor || color,
             };
           }),
         },
@@ -403,17 +474,24 @@ const Charts = (function () {
       };
       const chart = new Chart(canvasEl, chartConfig);
       log('Radar chart created');
-      return chart;
+      return createSuccessResponse(chart);
     } catch (e) {
       logError('Failed to create radar chart', e);
-      return null;
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Creates area chart
+   * @param {HTMLCanvasElement|string} canvas - Canvas element or selector
+   * @param {Object} data - Chart data
+   * @param {Object} options - Chart options
+   * @returns {ChartResponse} Response with chart instance
+   */
   const createAreaChart = (canvas, data, options = {}) => {
     const canvasEl = getCanvasElement(canvas);
-    if (!canvasEl) { logError('Canvas element not found'); return null; }
-    if (typeof Chart === 'undefined') { logError('Chart.js library not loaded'); return null; }
+    if (!canvasEl) return createErrorResponse('Canvas element not found');
+    if (typeof Chart === 'undefined') return createErrorResponse('Chart.js library not loaded');
 
     try {
       const chartConfig = {
@@ -422,20 +500,16 @@ const Charts = (function () {
           labels: data.labels || [],
           datasets: (data.datasets || []).map((dataset, index) => {
             const color = dataset.borderColor || CHART_COLORS.primary;
-            const gradientColor = dataset.gradientColor || GRADIENT_COLORS.primary;
             return {
               label: dataset.label || `Dataset ${index + 1}`,
               data: dataset.data || [],
               borderColor: color,
-              backgroundColor: createGradient(canvasEl, gradientColor),
+              backgroundColor: dataset.backgroundColor || `rgba(79, 70, 229, 0.1)`,
               fill: true,
-              tension: dataset.tension || 0.4,
-              pointRadius: dataset.pointRadius || 3,
-              pointHoverRadius: dataset.pointHoverRadius || 5,
-              pointBackgroundColor: color,
-              pointBorderColor: '#fff',
-              pointBorderWidth: 1,
-              ...dataset,
+              tension: 0.4,
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 5,
             };
           }),
         },
@@ -456,20 +530,17 @@ const Charts = (function () {
               bodyFont: { family: "'Inter', sans-serif", size: 11 },
               padding: 12,
               borderRadius: 8,
-              displayColors: true,
               callbacks: options.tooltipCallbacks || {},
             },
           },
           scales: {
             y: {
               beginAtZero: options.beginAtZero !== false,
-              stacked: options.stacked || false,
               grid: { drawBorder: false, color: 'rgba(0, 0, 0, 0.05)' },
               ticks: { font: { family: "'Inter', sans-serif", size: 11 }, color: '#94a3b8' },
               ...options.yScale,
             },
             x: {
-              stacked: options.stacked || false,
               grid: { display: false, drawBorder: false },
               ticks: { font: { family: "'Inter', sans-serif", size: 11 }, color: '#94a3b8' },
               ...options.xScale,
@@ -480,74 +551,137 @@ const Charts = (function () {
       };
       const chart = new Chart(canvasEl, chartConfig);
       log('Area chart created');
-      return chart;
+      return createSuccessResponse(chart);
     } catch (e) {
       logError('Failed to create area chart', e);
-      return null;
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Registers chart instance
+   * @param {string} id - Chart ID
+   * @param {Chart} chart - Chart instance
+   * @returns {void}
+   */
   const registerChart = (id, chart) => {
-    if (!id || typeof id !== 'string') { logError('Invalid chart ID'); return; }
+    if (!id || typeof id !== 'string') {
+      logError('Invalid chart ID');
+      return;
+    }
     if (chartInstances.has(id)) {
-      try { destroyChart(id); } catch (e) { logError(`Failed to destroy existing chart: ${id}`, e); }
+      logError(`Chart with ID ${id} already registered`);
+      return;
     }
     chartInstances.set(id, chart);
     log(`Chart registered: ${id}`);
   };
 
+  /**
+   * Gets chart by ID
+   * @param {string} id - Chart ID
+   * @returns {Chart|null} Chart instance or null
+   */
   const getChart = (id) => chartInstances.get(id) || null;
 
+  /**
+   * Updates chart data
+   * @param {string} id - Chart ID
+   * @param {Object} data - New chart data
+   * @returns {ChartResponse} Update response
+   */
   const updateChart = (id, data) => {
-    if (!data || typeof data !== 'object') { logError('Invalid data provided to updateChart'); return; }
+    if (!data || typeof data !== 'object') {
+      return createErrorResponse('Invalid data provided');
+    }
     const chart = getChart(id);
-    if (!chart) { logError(`Chart not found: ${id}`); return; }
+    if (!chart) {
+      return createErrorResponse(`Chart with ID ${id} not found`);
+    }
     try {
-      if (Array.isArray(data.labels)) chart.data.labels = data.labels;
-      if (Array.isArray(data.datasets)) chart.data.datasets = data.datasets;
-      chart.update('none');
+      if (data.labels) chart.data.labels = data.labels;
+      if (data.datasets) chart.data.datasets = data.datasets;
+      chart.update();
       log(`Chart updated: ${id}`);
+      return createSuccessResponse(chart);
     } catch (e) {
-      logError(`Failed to update chart: ${id}`, e);
+      logError(`Failed to update chart ${id}`, e);
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Updates specific dataset in chart
+   * @param {string} id - Chart ID
+   * @param {number} datasetIndex - Dataset index
+   * @param {Object} dataset - New dataset
+   * @returns {ChartResponse} Update response
+   */
   const updateDataset = (id, datasetIndex, dataset) => {
     const chart = getChart(id);
-    if (!chart || !chart.data.datasets[datasetIndex]) { logError(`Invalid chart or dataset index: ${id}`); return; }
+    if (!chart || !chart.data.datasets[datasetIndex]) {
+      return createErrorResponse(`Chart or dataset not found`);
+    }
     try {
       Object.assign(chart.data.datasets[datasetIndex], dataset);
-      chart.update('none');
-      log(`Dataset updated: ${id}`);
+      chart.update();
+      log(`Dataset updated: ${id}[${datasetIndex}]`);
+      return createSuccessResponse(chart);
     } catch (e) {
-      logError(`Failed to update dataset: ${id}`, e);
+      logError(`Failed to update dataset`, e);
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Adds dataset to chart
+   * @param {string} id - Chart ID
+   * @param {Object} dataset - Dataset to add
+   * @returns {ChartResponse} Update response
+   */
   const addDataset = (id, dataset) => {
     const chart = getChart(id);
-    if (!chart) { logError(`Chart not found: ${id}`); return; }
+    if (!chart) {
+      return createErrorResponse(`Chart with ID ${id} not found`);
+    }
     try {
       chart.data.datasets.push(dataset);
-      chart.update('none');
-      log(`Dataset added to chart: ${id}`);
+      chart.update();
+      log(`Dataset added: ${id}`);
+      return createSuccessResponse(chart);
     } catch (e) {
-      logError(`Failed to add dataset to chart: ${id}`, e);
+      logError(`Failed to add dataset`, e);
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Removes dataset from chart
+   * @param {string} id - Chart ID
+   * @param {number} datasetIndex - Dataset index to remove
+   * @returns {ChartResponse} Update response
+   */
   const removeDataset = (id, datasetIndex) => {
     const chart = getChart(id);
-    if (!chart || !chart.data.datasets[datasetIndex]) { logError(`Invalid chart or dataset index: ${id}`); return; }
+    if (!chart || !chart.data.datasets[datasetIndex]) {
+      return createErrorResponse(`Chart or dataset not found`);
+    }
     try {
       chart.data.datasets.splice(datasetIndex, 1);
-      chart.update('none');
-      log(`Dataset removed from chart: ${id}`);
+      chart.update();
+      log(`Dataset removed: ${id}[${datasetIndex}]`);
+      return createSuccessResponse(chart);
     } catch (e) {
-      logError(`Failed to remove dataset from chart: ${id}`, e);
+      logError(`Failed to remove dataset`, e);
+      return createErrorResponse(e.message);
     }
   };
 
+  /**
+   * Destroys single chart
+   * @param {string} id - Chart ID
+   * @returns {ChartResponse} Destroy response
+   */
   const destroyChart = (id) => {
     const chart = getChart(id);
     if (chart) {
@@ -555,26 +689,42 @@ const Charts = (function () {
         chart.destroy();
         chartInstances.delete(id);
         log(`Chart destroyed: ${id}`);
+        return createSuccessResponse(null);
       } catch (e) {
-        logError(`Failed to destroy chart: ${id}`, e);
+        logError(`Failed to destroy chart ${id}`, e);
+        return createErrorResponse(e.message);
       }
     }
+    return createErrorResponse(`Chart with ID ${id} not found`);
   };
 
+  /**
+   * Destroys all charts
+   * @returns {ChartResponse} Destroy response
+   */
   const destroyAllCharts = () => {
     try {
-      chartInstances.forEach((chart) => { chart.destroy(); });
+      chartInstances.forEach((chart) => {
+        if (chart) chart.destroy();
+      });
       chartInstances.clear();
       log('All charts destroyed');
+      return createSuccessResponse(null);
     } catch (e) {
       logError('Failed to destroy all charts', e);
+      return createErrorResponse(e.message);
     }
   };
 
   return {
+    // Constants
     COLORS: CHART_COLORS,
     GRADIENTS: GRADIENT_COLORS,
+    
+    // Chart creation
     createLineChart, createBarChart, createDoughnutChart, createPieChart, createRadarChart, createAreaChart,
+    
+    // Chart management
     registerChart, getChart, updateChart, updateDataset, addDataset, removeDataset, destroyChart, destroyAllCharts,
   };
 })();
