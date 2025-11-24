@@ -19,10 +19,14 @@ class HomeController extends Controller {
         // Get popular destinations for quick filters
         $destinations = $this->hotelModel->getPopularDestinations();
         
+        // Get featured reviews (rating >= 4.8)
+        $testimonials = $this->hotelModel->getFeaturedReviews(3, 4.8);
+        
         $data = [
             'title' => 'Trevio - Find Your Perfect Stay',
             'hotels' => $hotels,
             'destinations' => $destinations,
+            'testimonials' => $testimonials,
             'benefits' => [
                 [
                     'icon' => '💰',

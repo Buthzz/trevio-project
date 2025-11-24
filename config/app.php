@@ -5,8 +5,8 @@
  * Core settings for the Trevio application
  */
 
-// Prevent duplicate loading
-if (defined('TREVIO_CONFIG_LOADED')) {
+// Prevent duplicate loading - Check multiple guards
+if (defined('TREVIO_CONFIG_LOADED') || defined('APP_NAME') || defined('BASE_URL')) {
     return;
 }
 define('TREVIO_CONFIG_LOADED', true);
@@ -143,21 +143,21 @@ define('REVIEW_MIN_RATING', 1);
 define('REVIEW_MAX_RATING', 5);
 
 // Date formats
-define('DATE_FORMAT', 'Y-m-d');
-define('DATETIME_FORMAT', 'Y-m-d H:i:s');
-define('DISPLAY_DATE_FORMAT', 'd M Y');
-define('DISPLAY_DATETIME_FORMAT', 'd M Y H:i');
+if (!defined('DATE_FORMAT')) define('DATE_FORMAT', 'Y-m-d');
+if (!defined('DATETIME_FORMAT')) define('DATETIME_FORMAT', 'Y-m-d H:i:s');
+if (!defined('DISPLAY_DATE_FORMAT')) define('DISPLAY_DATE_FORMAT', 'd M Y');
+if (!defined('DISPLAY_DATETIME_FORMAT')) define('DISPLAY_DATETIME_FORMAT', 'd M Y H:i');
 
 // Currency settings
-define('CURRENCY_CODE', 'IDR');
-define('CURRENCY_SYMBOL', 'Rp');
+if (!defined('CURRENCY_CODE')) define('CURRENCY_CODE', 'IDR');
+if (!defined('CURRENCY_SYMBOL')) define('CURRENCY_SYMBOL', 'Rp');
 
 // Tax and service charge rates
-define('TAX_RATE', 0.10); // 10%
-define('SERVICE_CHARGE_RATE', 0.05); // 5%
+if (!defined('TAX_RATE')) define('TAX_RATE', 0.10); // 10%
+if (!defined('SERVICE_CHARGE_RATE')) define('SERVICE_CHARGE_RATE', 0.05); // 5%
 
 // Pagination
-define('ITEMS_PER_PAGE', 20);
+if (!defined('ITEMS_PER_PAGE')) define('ITEMS_PER_PAGE', 20);
 
 // Security headers (to be sent in response)
 $securityHeaders = [

@@ -4,95 +4,13 @@ require_once __DIR__ . '/../../../helpers/functions.php';
 trevio_start_session();
 
 // Judul halaman utama landing.
-$pageTitle = 'Trevio | Temukan Hotel Favoritmu';
+$pageTitle = $data['title'] ?? 'Trevio | Temukan Hotel Favoritmu';
 
-// Data dummy hotel populer untuk kartu inspirasi (Hanya Indonesia).
-$hotels = $hotels ?? [
-    [
-        'id' => 101,
-        'name' => 'Padma Hotel Bandung',
-        'city' => 'Bandung',
-        'start_price' => 2100000,
-        'thumbnail' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-        'rating' => 4.9,
-    ],
-    [
-        'id' => 102,
-        'name' => 'The Langham Jakarta',
-        'city' => 'Jakarta',
-        'start_price' => 3500000,
-        'thumbnail' => 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=80',
-        'rating' => 4.8,
-    ],
-    [
-        'id' => 103,
-        'name' => 'Amanjiwo Resort',
-        'city' => 'Yogyakarta',
-        'start_price' => 8500000,
-        'thumbnail' => 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80',
-        'rating' => 5.0,
-    ],
-    [
-        'id' => 104,
-        'name' => 'The Apurva Kempinski',
-        'city' => 'Bali',
-        'start_price' => 4200000,
-        'thumbnail' => 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
-        'rating' => 4.9,
-    ],
-];
-
-// Keunggulan utama Trevio untuk ditampilkan di fitur highlight.
-$benefits = [
-    [
-        'icon' => '<span class="text-xl font-bold" style="user-select: none;">$</span>',
-        'title' => 'Harga Jujur',
-        'description' => 'Tidak ada biaya tersembunyi saat checkout.'
-    ],
-    [
-        'icon' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="user-select: none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
-        'title' => 'Konfirmasi Instan',
-        'description' => 'E-voucher terbit otomatis setelah pembayaran.'
-    ],
-    [
-        'icon' => '<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="user-select: none;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>',
-        'title' => 'Fleksibilitas',
-        'description' => 'Reschedule mudah dan opsi refund tersedia.'
-    ],
-];
-
-// Testimoni pelanggan untuk meningkatkan kepercayaan.
-$testimonials = [
-    [
-        'name' => 'Budi Prameswari',
-        'trip' => 'Staycation di Bandung',
-        'rating' => '5.0',
-        'quote' => 'Booking lewat Trevio gampang banget, konfirmasi langsung masuk email dan WhatsApp.',
-        'avatar' => 'https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=300&q=80',
-    ],
-    [
-        'name' => 'M. Hendrik Purwanto',
-        'trip' => 'Perjalanan Comifuro ke Jakarta',
-        'rating' => '4.9',
-        'quote' => 'Harga sesuai yang tampil, fasilitas hotel juga sesuai deskripsi. Sangat rekomendasi.',
-        'avatar' => 'https://tugas.animenesia.site/uploads/1762854705_0ffb45e7b7.jpg?auto=format&fit=crop&w=300&q=80',
-    ],
-    [
-        'name' => 'Rina & Hendra',
-        'trip' => 'Liburan keluarga di Bali',
-        'rating' => '4.8',
-        'quote' => 'Proses check-in mulus dan ada pengingat otomatis sebelum keberangkatan.',
-        'avatar' => 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=80',
-    ],
-];
-
-// Hanya tampilkan testimoni dengan rating >= 4.8 sesuai kebutuhan hero trust signal.
-$featuredTestimonials = array_values(array_filter($testimonials, static function ($testimonial) {
-    return (float) ($testimonial['rating'] ?? 0) >= 4.8;
-}));
-
-// Daftar destinasi filter cepat pada hero.
-$destinations = ['🔥 Semua', 'Jakarta', 'Bandung', 'Yogyakarta', 'Surabaya', 'Bali', 'Lombok'];
+// Data dari controller (database)
+$hotels = $data['hotels'] ?? [];
+$benefits = $data['benefits'] ?? [];
+$destinations = $data['destinations'] ?? ['🔥 Semua'];
+$testimonials = $data['testimonials'] ?? [];
 
 // Mulai sesi lebih awal agar pengecekan login dapat berjalan aman.
 if (session_status() === PHP_SESSION_NONE) {
@@ -125,10 +43,10 @@ if (defined('BASE_URL')) {
     $hotelDetailUrl = BASE_URL . '/hotel/detail';
 } else {
     // Fallback manual jika BASE_URL tidak tersedia
-    $loginUrl = trevio_view_route('auth/login.php');
-    $registerUrl = trevio_view_route('auth/register.php');
-    $searchBaseUrl = trevio_view_route('hotel/search.php');
-    $hotelDetailUrl = trevio_view_route('hotel/detail.php');
+    $loginUrl = trevio_view_route('auth/login');
+    $registerUrl = trevio_view_route('auth/register');
+    $searchBaseUrl = trevio_view_route('hotel/search');
+    $hotelDetailUrl = trevio_view_route('hotel/detail');
 }
 
 // Normalisasi nilai default agar form tetap terisi saat reload.
@@ -306,8 +224,18 @@ require __DIR__ . '/../layouts/header.php';
     <?php else: ?>
         <div id="hotel-grid" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <?php foreach ($hotels as $hotel): ?>
-                <?php $thumbnail = $hotel['thumbnail'] ?? ''; ?>
-                <?php $ratingValue = number_format((float)($hotel['rating'] ?? 0), 1); ?>
+                <?php 
+                // Use main_image from database, fallback to placeholder
+                $thumbnail = !empty($hotel['main_image']) 
+                    ? htmlspecialchars($hotel['main_image']) 
+                    : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
+                
+                // Use average_rating from database
+                $ratingValue = number_format((float)($hotel['average_rating'] ?? 0), 1);
+                
+                // Use min_price from JOIN query
+                $startPrice = (float)($hotel['min_price'] ?? 0);
+                ?>
                 <a class="group relative block h-[320px] cursor-pointer overflow-hidden rounded-2xl border border-gray-100 bg-slate-900/5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl md:h-[360px]" href="<?= htmlspecialchars($hotelDetailUrl) ?>?id=<?= urlencode($hotel['id'] ?? '') ?>" data-city="<?= htmlspecialchars($hotel['city']) ?>">
                     <!-- Rating Badge di Pojok Kanan Atas -->
                     <div class="absolute top-4 right-4 z-20 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-xs font-bold text-slate-800 shadow-sm backdrop-blur-sm">
@@ -315,7 +243,7 @@ require __DIR__ . '/../layouts/header.php';
                         <?= htmlspecialchars($ratingValue) ?>
                     </div>
                     
-                    <img class="h-full w-full object-cover transition duration-700 group-hover:scale-105" src="<?= htmlspecialchars($thumbnail) ?>" alt="Foto <?= htmlspecialchars($hotel['name']) ?>">
+                    <img class="h-full w-full object-cover transition duration-700 group-hover:scale-105" src="<?= $thumbnail ?>" alt="Foto <?= htmlspecialchars($hotel['name']) ?>">
                     <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-900/30 to-transparent opacity-90 transition group-hover:opacity-100"></div>
                     <div class="absolute bottom-0 left-0 w-full p-5 text-white">
                         <div class="mb-2">
@@ -328,7 +256,7 @@ require __DIR__ . '/../layouts/header.php';
                         <div class="flex items-end justify-between border-t border-white/20 pt-3 text-sm">
                             <div>
                                 <p class="text-[11px] uppercase tracking-wide text-gray-400">Mulai dari</p>
-                                <p class="text-base font-semibold text-yellow-300">Rp <?= number_format((float)($hotel['start_price'] ?? 0), 0, ',', '.') ?></p>
+                                <p class="text-base font-semibold text-yellow-300">Rp <?= number_format($startPrice, 0, ',', '.') ?></p>
                             </div>
                             <span class="rounded-full bg-blue-600/90 px-3 py-1 text-xs font-semibold">Lihat Detail</span>
                         </div>
@@ -355,28 +283,37 @@ require __DIR__ . '/../layouts/header.php';
             <p class="mt-3 text-sm text-gray-500">Cerita singkat dari traveler Indonesia yang sudah mencoba Trevio.</p>
         </div>
         <div class="mt-10 grid gap-6 md:grid-cols-3">
-            <?php if (!empty($featuredTestimonials)): ?>
-                <?php foreach ($featuredTestimonials as $testimonial): ?>
+            <?php if (!empty($testimonials)): ?>
+                <?php foreach ($testimonials as $testimonial): ?>
+                    <?php 
+                    // Generate avatar from user name if not available
+                    $avatarUrl = !empty($testimonial['avatar']) 
+                        ? htmlspecialchars($testimonial['avatar']) 
+                        : 'https://ui-avatars.com/api/?name=' . urlencode($testimonial['customer_name']) . '&background=0EA5E9&color=fff';
+                    
+                    // Format trip description
+                    $tripDescription = 'Menginap di ' . htmlspecialchars($testimonial['hotel_name']) . ', ' . htmlspecialchars($testimonial['city']);
+                    ?>
                     <article class="flex h-full flex-col rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
                         <div class="flex items-center gap-3">
-                            <img class="h-10 w-10 rounded-full object-cover" src="<?= htmlspecialchars($testimonial['avatar']) ?>" alt="Foto <?= htmlspecialchars($testimonial['name']) ?>">
+                            <img class="h-10 w-10 rounded-full object-cover" src="<?= $avatarUrl ?>" alt="Foto <?= htmlspecialchars($testimonial['customer_name']) ?>">
                             <div>
-                                <p class="text-sm font-semibold text-gray-900" style="user-select: none;"><?= htmlspecialchars($testimonial['name']) ?></p>
-                                <p class="text-xs text-gray-500" style="user-select: none;"><?= htmlspecialchars($testimonial['trip']) ?></p>
+                                <p class="text-sm font-semibold text-gray-900" style="user-select: none;"><?= htmlspecialchars($testimonial['customer_name']) ?></p>
+                                <p class="text-xs text-gray-500" style="user-select: none;"><?= $tripDescription ?></p>
                             </div>
                             <div class="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-yellow-400">
                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M12 .5 15.7 8l8.3 1.2-6 5.8 1.4 8.2L12 19l-7.4 3.8 1.4-8.2-6-5.8L8.3 8z"></path>
                                 </svg>
-                                <span style="user-select: none;"><?= htmlspecialchars($testimonial['rating']) ?></span>
+                                <span style="user-select: none;"><?= number_format((float)$testimonial['rating'], 1) ?></span>
                             </div>
                         </div>
-                        <p class="mt-4 text-sm leading-6 text-gray-600" style="user-select: none;">"<?= htmlspecialchars($testimonial['quote']) ?>"</p>
+                        <p class="mt-4 text-sm leading-6 text-gray-600" style="user-select: none;">"<?= htmlspecialchars($testimonial['review_text']) ?>"</p>
                     </article>
                 <?php endforeach; ?>
             <?php else: ?>
                 <div class="md:col-span-3 rounded-3xl border border-dashed border-gray-200 bg-white/70 p-8 text-center text-sm text-gray-500">
-                    Belum ada testimoni dengan rating tinggi. Ajak pengguna mengirim review mereka melalui formulir di bawah ini.
+                    Belum ada testimoni. Jadilah yang pertama memberikan review setelah menginap!
                 </div>
             <?php endif; ?>
         </div>
