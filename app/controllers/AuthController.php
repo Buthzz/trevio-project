@@ -1,5 +1,5 @@
 <?php
-
+// v3
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -10,17 +10,11 @@ class AuthController extends Controller {
 
     public function __construct() {
         $this->userModel = new User();
-        if (isset($_SESSION['login_attempts']) && $_SESSION['login_attempts'] > 5) {
-            if (time() - $_SESSION['last_attempt_time'] < 900) { // 15 min block
-                die("Too many login attempts. Please try again later.");
-            }
-            unset($_SESSION['login_attempts']);
-        }
+        // Rate limiting dihapus sesuai permintaan
     }
 
     public function login() {
         $this->checkGuest();
-        // Generate CSRF Token
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
@@ -42,6 +36,7 @@ class AuthController extends Controller {
         $this->view('auth/register', $data);
     }
 
+    // === BAGIAN YANG DIMODIFIKASI DENGAN DEBUGGING ===
     public function authenticate() {
         $this->validateRequest();
         $this->validateCsrf();
@@ -50,25 +45,62 @@ class AuthController extends Controller {
         $password = $_POST['password'] ?? '';
 
         if (!$email || empty($password)) {
-            $this->incrementLoginAttempts();
             $this->redirectWithError('/auth/login', "Email tidak valid atau password kosong.");
         }
 
+        // Ambil user dari database
         $user = $this->userModel->findByEmail($email);
 
+        // --- 🛠️ START DEBUGGING CODE 🛠️ ---
+        // HAPUS BLOCK INI SETELAH MASALAH SELESAI
+        echo "<div style='background:#f8f9fa; padding:20px; border:2px solid #333; font-family:monospace;'>";
+        echo "<h3>🔍 DEBUG LOGIN PROCESS</h3>";
+        echo "<strong>Input Email:</strong> " . htmlspecialchars($email) . "<br>";
+        echo "<strong>Input Password:</strong> " . htmlspecialchars($password) . "<br><hr>";
+
+        if (!$user) {
+            echo "<strong style='color:red;'>❌ ERROR: User tidak ditemukan di database!</strong><br>";
+            echo "Saran: Cek tabel 'users' di database, pastikan email '$email' sudah ada.";
+        } else {
+            echo "<strong style='color:green;'>✅ User Ditemukan!</strong><br>";
+            echo "<strong>Data User DB:</strong><pre>" . print_r($user, true) . "</pre><hr>";
+            
+            echo "<strong>Cek Password:</strong><br>";
+            echo "Hash di DB: " . $user['password'] . "<br>";
+            
+            $checkPassword = password_verify($password, $user['password']);
+            
+            if ($checkPassword) {
+                echo "<strong style='color:green;'>✅ Password COCOK!</strong><br>";
+            } else {
+                echo "<strong style='color:red;'>❌ Password TIDAK COCOK!</strong><br>";
+                echo "Kemungkinan: <br>";
+                echo "1. Password input salah ketik.<br>";
+                echo "2. Hash di database bukan hasil dari password_hash(..., PASSWORD_BCRYPT).<br>";
+            }
+
+            echo "<hr><strong>Cek Auth Provider:</strong> " . $user['auth_provider'];
+            if ($user['auth_provider'] !== 'email') {
+                 echo " <strong style='color:orange;'>(⚠️ Perhatikan! Provider harus 'email')</strong>";
+            }
+        }
+        echo "</div>";
+        die(); // Menghentikan eksekusi agar Anda bisa membaca pesan debug
+        // --- 🛠️ END DEBUGGING CODE 🛠️ ---
+
+        // Logika Asli (Tidak akan dieksekusi selama ada die() di atas)
         if ($user && $user['auth_provider'] === 'email' && password_verify($password, $user['password'])) {
             $this->loginUser($user);
         } else {
-            $this->incrementLoginAttempts();
             $this->redirectWithError('/auth/login', "Kredensial tidak cocok.");
         }
     }
+    // ===============================================
 
     public function store() {
         $this->validateRequest();
         $this->validateCsrf();
 
-        // Sanitize & Validate
         $fullName = strip_tags(trim($_POST['full_name']));
         $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
         $password = $_POST['password'] ?? '';
@@ -89,7 +121,7 @@ class AuthController extends Controller {
             'password' => $hashedPassword,
             'role' => $role,
             'auth_provider' => 'email',
-            'is_verified' => 1, // In prod, set to 0 and send email verification
+            'is_verified' => 1, 
             'is_active' => 1
         ];
 
@@ -109,19 +141,13 @@ class AuthController extends Controller {
         exit;
     }
 
-    // --- Helpers ---
-
     private function loginUser($user) {
-        // Security: Prevent Session Fixation
         session_regenerate_id(true);
-        $_SESSION['login_attempts'] = 0;
-
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
 
-        // Redirect based on role
         if ($user['role'] === 'admin') {
             header('Location: ' . BASE_URL . '/admin/dashboard');
         } elseif ($user['role'] === 'owner') {
@@ -158,13 +184,6 @@ class AuthController extends Controller {
         exit;
     }
 
-    private function incrementLoginAttempts() {
-        $_SESSION['login_attempts'] = ($_SESSION['login_attempts'] ?? 0) + 1;
-        $_SESSION['last_attempt_time'] = time();
-    }
-
-    // --- Google OAuth (Secured) ---
-
     private function getGoogleAuthUrl() {
         $params = [
             'client_id'     => getenv('GOOGLE_CLIENT_ID'),
@@ -195,7 +214,6 @@ class AuthController extends Controller {
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        // Security: Verify SSL Peer (MITM Prevention)
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true); 
         
         $response = curl_exec($ch);
@@ -209,7 +227,6 @@ class AuthController extends Controller {
             $this->redirectWithError('/auth/login', "Invalid Google Token.");
         }
 
-        // Get User Info
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, 'https://www.googleapis.com/oauth2/v2/userinfo?access_token=' . $tokenData['access_token']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
