@@ -49,14 +49,14 @@ class Booking extends Model {
         $query = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
 
         try {
-            $this->db->query($query);
+            $this->query($query);
             
             foreach ($data as $field => $value) {
-                $this->db->bind(":{$field}", $value);
+                $this->bind(":{$field}", $value);
             }
             
-            if ($this->db->execute()) {
-                return (int) $this->db->lastInsertId();
+            if ($this->execute()) {
+                return (int) $this->lastInsertId();
             }
             return false;
 
@@ -79,9 +79,9 @@ class Booking extends Model {
                   WHERE b.booking_code = :code";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':code', $code);
-            return $this->db->single();
+            $this->query($query);
+            $this->bind(':code', $code);
+            return $this->single();
         } catch (PDOException $e) {
             error_log("Booking FindByCode Error: " . $e->getMessage());
             return false;
@@ -101,9 +101,9 @@ class Booking extends Model {
                   WHERE b.id = :id";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':id', $id);
-            return $this->db->single();
+            $this->query($query);
+            $this->bind(':id', $id);
+            return $this->single();
         } catch (PDOException $e) {
             error_log("Booking Find Error: " . $e->getMessage());
             return false;
@@ -122,12 +122,12 @@ class Booking extends Model {
      */
     public function submitPayment(int $bookingId, string $proofFile, string $bankName, string $accountName, string $accountNumber = ''): bool {
         try {
-            $this->db->beginTransaction();
+            $this->beginTransaction();
 
             // 1. Ambil total harga untuk validasi/pencatatan
-            $this->db->query("SELECT total_price FROM {$this->table} WHERE id = :id");
-            $this->db->bind(':id', $bookingId);
-            $booking = $this->db->single();
+            $this->query("SELECT total_price FROM {$this->table} WHERE id = :id");
+            $this->bind(':id', $bookingId);
+            $booking = $this->single();
             
             if (!$booking) {
                 throw new PDOException("Booking not found");
@@ -149,25 +149,25 @@ class Booking extends Model {
                 'uploaded', NOW()
             )";
             
-            $this->db->query($queryPayment);
-            $this->db->bind(':booking_id', $bookingId);
-            $this->db->bind(':amount', $booking['total_price']);
-            $this->db->bind(':bank_name', $bankName);
-            $this->db->bind(':proof', $proofFile);
-            $this->db->bind(':account_detail', "Sender: " . $fullAccountDetail); // Simpan detail pengirim
-            $this->db->execute();
+            $this->query($queryPayment);
+            $this->bind(':booking_id', $bookingId);
+            $this->bind(':amount', $booking['total_price']);
+            $this->bind(':bank_name', $bankName);
+            $this->bind(':proof', $proofFile);
+            $this->bind(':account_detail', "Sender: " . $fullAccountDetail); // Simpan detail pengirim
+            $this->execute();
 
             // 3. Update Status Booking
             $queryBooking = "UPDATE {$this->table} SET booking_status = 'pending_verification' WHERE id = :id";
-            $this->db->query($queryBooking);
-            $this->db->bind(':id', $bookingId);
-            $this->db->execute();
+            $this->query($queryBooking);
+            $this->bind(':id', $bookingId);
+            $this->execute();
 
-            $this->db->commit();
+            $this->commit();
             return true;
 
         } catch (PDOException $e) {
-            $this->db->rollBack();
+            $this->rollBack();
             error_log("Submit Payment Error: " . $e->getMessage());
             return false;
         }
@@ -179,8 +179,8 @@ class Booking extends Model {
 
     public function sumTotalRevenue(): float {
         try {
-            $this->db->query("SELECT SUM(total_price) as total FROM {$this->table} WHERE booking_status IN ('confirmed', 'completed', 'checked_in')");
-            $result = $this->db->single();
+            $this->query("SELECT SUM(total_price) as total FROM {$this->table} WHERE booking_status IN ('confirmed', 'completed', 'checked_in')");
+            $result = $this->single();
             return $result ? (float)$result['total'] : 0.0;
         } catch (PDOException $e) {
             return 0.0;
@@ -189,9 +189,9 @@ class Booking extends Model {
 
     public function countByStatus(string $status): int {
         try {
-            $this->db->query("SELECT COUNT(*) as total FROM {$this->table} WHERE booking_status = :status");
-            $this->db->bind(':status', $status);
-            $result = $this->db->single();
+            $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE booking_status = :status");
+            $this->bind(':status', $status);
+            $result = $this->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
             return 0;
@@ -200,9 +200,9 @@ class Booking extends Model {
 
     public function countRefundsByStatus(string $status): int {
         try {
-            $this->db->query("SELECT COUNT(*) as total FROM refunds WHERE refund_status = :status");
-            $this->db->bind(':status', $status);
-            $result = $this->db->single();
+            $this->query("SELECT COUNT(*) as total FROM refunds WHERE refund_status = :status");
+            $this->bind(':status', $status);
+            $result = $this->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
             return 0;
@@ -211,13 +211,13 @@ class Booking extends Model {
 
     public function getRecentBookings(int $limit = 5): array {
         try {
-            $this->db->query("SELECT b.*, u.name as customer_name, h.name as hotel_name 
+            $this->query("SELECT b.*, u.name as customer_name, h.name as hotel_name 
                               FROM {$this->table} b
                               JOIN users u ON b.customer_id = u.id
                               JOIN hotels h ON b.hotel_id = h.id
                               ORDER BY b.created_at DESC LIMIT :limit");
-            $this->db->bind(':limit', $limit);
-            return $this->db->resultSet();
+            $this->bind(':limit', $limit);
+            return $this->resultSet();
         } catch (PDOException $e) {
             return [];
         }
@@ -235,9 +235,9 @@ class Booking extends Model {
                   AND b.booking_status IN ('confirmed', 'checked_in', 'pending_verification')";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':owner_id', $ownerId);
-            $result = $this->db->single();
+            $this->query($query);
+            $this->bind(':owner_id', $ownerId);
+            $result = $this->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
             return 0;
@@ -254,10 +254,10 @@ class Booking extends Model {
                   AND b.booking_status = 'confirmed'";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':owner_id', $ownerId);
-            $this->db->bind(':today', $today);
-            $result = $this->db->single();
+            $this->query($query);
+            $this->bind(':owner_id', $ownerId);
+            $this->bind(':today', $today);
+            $result = $this->single();
             return $result ? (int)$result['total'] : 0;
         } catch (PDOException $e) {
             return 0;
@@ -274,11 +274,11 @@ class Booking extends Model {
                   AND b.booking_status IN ('confirmed', 'completed', 'checked_in')";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':owner_id', $ownerId);
-            $this->db->bind(':month', $month);
-            $this->db->bind(':year', $year);
-            $result = $this->db->single();
+            $this->query($query);
+            $this->bind(':owner_id', $ownerId);
+            $this->bind(':month', $month);
+            $this->bind(':year', $year);
+            $result = $this->single();
             return $result ? (float)$result['total'] : 0.0;
         } catch (PDOException $e) {
             return 0.0;
@@ -295,9 +295,9 @@ class Booking extends Model {
                   ORDER BY date ASC";
         
         try {
-            $this->db->query($query);
-            $this->db->bind(':owner_id', $ownerId);
-            return $this->db->resultSet();
+            $this->query($query);
+            $this->bind(':owner_id', $ownerId);
+            return $this->resultSet();
         } catch (PDOException $e) {
             return [];
         }
@@ -342,14 +342,14 @@ class Booking extends Model {
                   ORDER BY b.created_at DESC";
 
         try {
-            $this->db->query($query);
+            $this->query($query);
             
             // Bind parameter dinamis
             foreach ($params as $key => $value) {
-                $this->db->bind($key, $value);
+                $this->bind($key, $value);
             }
             
-            return $this->db->resultSet();
+            return $this->resultSet();
         } catch (PDOException $e) {
             error_log("Get Customer Bookings Error: " . $e->getMessage());
             return [];
