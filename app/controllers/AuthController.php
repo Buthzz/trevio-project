@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Controllers;
 
 use App\Core\Controller;
@@ -10,12 +9,10 @@ class AuthController extends Controller {
 
     public function __construct() {
         $this->userModel = new User();
-        // Rate limiting removed
     }
 
     public function login() {
         $this->checkGuest();
-        // Generate CSRF Token
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
@@ -37,6 +34,9 @@ class AuthController extends Controller {
         $this->view('auth/register', $data);
     }
 
+    /**
+     * ✅ FIXED: Login Authentication (Debug Code Removed)
+     */
     public function authenticate() {
         $this->validateRequest();
         $this->validateCsrf();
@@ -44,37 +44,78 @@ class AuthController extends Controller {
         $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
         $password = $_POST['password'] ?? '';
 
+        // Validation
         if (!$email || empty($password)) {
             $this->redirectWithError('/auth/login', "Email tidak valid atau password kosong.");
         }
 
+        // Get user from database
         $user = $this->userModel->findByEmail($email);
 
-        if ($user && $user['auth_provider'] === 'email' && password_verify($password, $user['password'])) {
-            $this->loginUser($user);
-        } else {
-            $this->redirectWithError('/auth/login', "Kredensial tidak cocok.");
+        // Check user exists
+        if (!$user) {
+            error_log("Login failed: User not found - Email: {$email}");
+            $this->redirectWithError('/auth/login', "Email atau password salah.");
         }
+
+        // Check auth provider (only email/password login allowed here)
+        if ($user['auth_provider'] !== 'email') {
+            error_log("Login failed: Wrong auth provider - User: {$email}, Provider: {$user['auth_provider']}");
+            $this->redirectWithError('/auth/login', "Akun ini terdaftar dengan " . ucfirst($user['auth_provider']) . ". Silakan gunakan metode login tersebut.");
+        }
+
+        // Check account status
+        if (!$user['is_active']) {
+            error_log("Login failed: Account inactive - User: {$email}");
+            $this->redirectWithError('/auth/login', "Akun Anda tidak aktif. Silakan hubungi administrator.");
+        }
+
+        // Verify password
+        if (!password_verify($password, $user['password'])) {
+            error_log("Login failed: Wrong password - User: {$email}");
+            $this->redirectWithError('/auth/login', "Email atau password salah.");
+        }
+
+        // ✅ SUCCESS: Login user
+        $this->loginUser($user);
     }
 
+    /**
+     * ✅ FIXED: Registration Handler (Consistent Password Hashing)
+     */
     public function store() {
         $this->validateRequest();
         $this->validateCsrf();
 
-        // Sanitize & Validate
-        $fullName = strip_tags(trim($_POST['full_name']));
+        $fullName = strip_tags(trim($_POST['full_name'] ?? ''));
         $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
         $password = $_POST['password'] ?? '';
+        $passwordConfirmation = $_POST['password_confirmation'] ?? '';
         $role = ($_POST['user_type'] === 'host') ? 'owner' : 'customer';
 
-        if (!$email || empty($fullName) || strlen($password) < 8) {
-            $this->redirectWithError('/auth/register', "Data tidak valid. Password minimal 8 karakter.");
+        // Validation
+        if (empty($fullName) || strlen($fullName) < 3) {
+            $this->redirectWithError('/auth/register', "Nama lengkap minimal 3 karakter.");
         }
 
+        if (!$email) {
+            $this->redirectWithError('/auth/register', "Email tidak valid.");
+        }
+
+        if (strlen($password) < 8) {
+            $this->redirectWithError('/auth/register', "Password minimal 8 karakter.");
+        }
+
+        if ($password !== $passwordConfirmation) {
+            $this->redirectWithError('/auth/register', "Konfirmasi password tidak cocok.");
+        }
+
+        // Check email duplicate
         if ($this->userModel->findByEmail($email)) {
-            $this->redirectWithError('/auth/register', "Email sudah terdaftar.");
+            $this->redirectWithError('/auth/register', "Email sudah terdaftar. Silakan gunakan email lain atau login.");
         }
 
+        // Create user with hashed password
         $hashedPassword = password_hash($password, PASSWORD_BCRYPT);
         $data = [
             'name' => $fullName,
@@ -82,17 +123,23 @@ class AuthController extends Controller {
             'password' => $hashedPassword,
             'role' => $role,
             'auth_provider' => 'email',
-            'is_verified' => 1, // In prod, set to 0 and send email verification
+            'is_verified' => 1, 
             'is_active' => 1
         ];
 
-        if ($this->userModel->create($data)) {
-            $_SESSION['flash_success'] = "Registrasi berhasil! Silakan login.";
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
-        }
+        $userId = $this->userModel->create($data);
         
-        $this->redirectWithError('/auth/register', "Terjadi kesalahan sistem.");
+        if ($userId) {
+            // Get full user data for login
+            $user = $this->userModel->find($userId);
+            
+            // Auto login after registration
+            $_SESSION['flash_success'] = "Registrasi berhasil! Selamat datang di Trevio.";
+            $this->loginUser($user);
+        } else {
+            error_log("Registration failed: Database error - Email: {$email}");
+            $this->redirectWithError('/auth/register', "Terjadi kesalahan sistem. Silakan coba lagi.");
+        }
     }
 
     public function logout() {
@@ -102,18 +149,14 @@ class AuthController extends Controller {
         exit;
     }
 
-    // --- Helpers ---
-
     private function loginUser($user) {
-        // Security: Prevent Session Fixation
         session_regenerate_id(true);
-        
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_email'] = $user['email'];
         $_SESSION['user_name'] = $user['name'];
         $_SESSION['user_role'] = $user['role'];
 
-        // Redirect based on role
+        // Role-based redirect
         if ($user['role'] === 'admin') {
             header('Location: ' . BASE_URL . '/admin/dashboard');
         } elseif ($user['role'] === 'owner') {
@@ -150,8 +193,6 @@ class AuthController extends Controller {
         exit;
     }
 
-    // --- Google OAuth (Secured) ---
-
     private function getGoogleAuthUrl() {
         $params = [
             'client_id'     => getenv('GOOGLE_CLIENT_ID'),
@@ -182,7 +223,6 @@ class AuthController extends Controller {
         curl_setopt($ch, CURLOPT_POST, 1);
         curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($postData));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        // Security: Verify SSL Peer (MITM Prevention)
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true); 
         
         $response = curl_exec($ch);
@@ -196,7 +236,6 @@ class AuthController extends Controller {
             $this->redirectWithError('/auth/login', "Invalid Google Token.");
         }
 
-        // Get User Info
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, 'https://www.googleapis.com/oauth2/v2/userinfo?access_token=' . $tokenData['access_token']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
