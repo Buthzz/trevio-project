@@ -1,7 +1,5 @@
 <?php
 
-//version2
-
 namespace App\Core;
 
 class App {
@@ -35,7 +33,6 @@ class App {
             
             // Special handling for admin prefix routes
             // /admin/hotels -> AdminHotelController
-            // /admin/payments -> AdminPaymentController
             if ($url[0] === 'admin' && isset($url[1])) {
                 $u_controller = 'Admin' . ucfirst($url[1]) . 'Controller';
                 
@@ -51,15 +48,15 @@ class App {
                 $u_controller = ucfirst($url[0]) . 'Controller';
                 
                 // Cek keberadaan file di folder lowercase (app/controllers) DAN Capital (app/Controllers)
-                // Ini penting untuk kompatibilitas VPS Linux
                 $pathLower = '../app/controllers/' . $u_controller . '.php';
                 $pathCap   = '../app/Controllers/' . $u_controller . '.php';
 
-            if (file_exists($pathLower) || file_exists($pathCap)) {
-                $this->controller = $u_controller;
-                unset($url[0]);
+                if (file_exists($pathLower) || file_exists($pathCap)) {
+                    $this->controller = $u_controller;
+                    unset($url[0]);
+                }
             }
-        }
+        } // <--- Penutup IF isset($url[0]) yang sebelumnya hilang
 
         // 2. Require File Controller yang Benar
         $pathLower = '../app/controllers/' . $this->controller . '.php';
@@ -70,17 +67,16 @@ class App {
         } elseif (file_exists($pathCap)) {
             require_once $pathCap;
         } else {
-            // Fallback darurat jika controller default tidak ketemu (misal salah nama file)
+            // Fallback darurat jika controller default tidak ketemu
             die("Controller file not found: " . $this->controller);
         }
         
         // Instansiasi Controller
-        // Pastikan namespace sesuai (biasanya App\Controllers\...)
         $controllerClass = "\\App\\Controllers\\" . $this->controller;
         if (class_exists($controllerClass)) {
             $this->controller = new $controllerClass;
         } else {
-            // Fallback jika namespace salah (misal App\controllers\)
+            // Fallback namespace lowercase
             $controllerClass = "\\App\\controllers\\" . $this->controller;
             $this->controller = new $controllerClass;
         }
@@ -111,7 +107,6 @@ class App {
         }
 
         // Opsi 2: Ambil langsung dari REQUEST_URI (Fix untuk Nginx VPS)
-        // Ini menangani kasus dimana Nginx tidak otomatis mengisi parameter ?url=
         $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
         $scriptName = dirname($_SERVER['SCRIPT_NAME']);
         
