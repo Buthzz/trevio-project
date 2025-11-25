@@ -55,10 +55,9 @@ class App {
                 $pathLower = '../app/controllers/' . $u_controller . '.php';
                 $pathCap   = '../app/Controllers/' . $u_controller . '.php';
 
-                if (file_exists($pathLower) || file_exists($pathCap)) {
-                    $this->controller = $u_controller;
-                    unset($url[0]);
-                }
+            if (file_exists($pathLower) || file_exists($pathCap)) {
+                $this->controller = $u_controller;
+                unset($url[0]);
             }
         }
 
