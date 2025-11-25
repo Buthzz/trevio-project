@@ -1,5 +1,5 @@
 <?php
-
+//v5
 // Mulai session jika belum ada
 if(session_status() === PHP_SESSION_NONE) {
     session_start();
