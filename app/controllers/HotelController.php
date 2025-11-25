@@ -15,10 +15,7 @@ class HotelController extends Controller {
         $this->roomModel = new Room();
     }
     
-    /**
-     * Search hotels with filters
-     * URL: /hotel/search?city=Jakarta&price=1-2juta&rating=4+
-     */
+    // ... method search() biarkan tetap sama ...
     public function search() {
         // Get filters from query string
         $filters = [
@@ -51,15 +48,21 @@ class HotelController extends Controller {
         
         $this->view('hotel/search', $data);
     }
-    
+
     /**
      * Show hotel detail with rooms
-     * URL: /hotel/detail/1
+     * Supports: /hotel/detail/1 OR /hotel/detail?id=1
      */
     public function detail($id = null) {
+        // PERBAIKAN: Cek $_GET['id'] jika parameter $id dari routing kosong
+        if ($id === null && isset($_GET['id'])) {
+            $id = $_GET['id'];
+        }
+
         // Validate hotel ID
         if (!$id || !filter_var($id, FILTER_VALIDATE_INT)) {
-            $_SESSION['flash_error'] = 'Hotel tidak ditemukan.';
+            // Opsional: Tambahkan logging atau session flash message di sini
+            // $_SESSION['flash_error'] = 'Hotel ID tidak valid.';
             header('Location: ' . BASE_URL . '/hotel/search');
             exit;
         }
@@ -68,18 +71,17 @@ class HotelController extends Controller {
         $hotel = $this->hotelModel->getDetailWithRooms($id);
         
         if (!$hotel) {
-            $_SESSION['flash_error'] = 'Hotel tidak ditemukan atau tidak aktif.';
+            // $_SESSION['flash_error'] = 'Hotel tidak ditemukan.';
             header('Location: ' . BASE_URL . '/hotel/search');
             exit;
         }
         
-        // Get gallery images (main + room images)
+        // Get gallery images logic (tetap sama)
         $galleryImages = [];
         if (!empty($hotel['main_image'])) {
             $galleryImages[] = $hotel['main_image'];
         }
         
-        // Add room images to gallery
         if (!empty($hotel['rooms'])) {
             foreach ($hotel['rooms'] as $room) {
                 if (!empty($room['main_image']) && !in_array($room['main_image'], $galleryImages)) {
@@ -88,23 +90,23 @@ class HotelController extends Controller {
             }
         }
         
-        // Limit to 5 images for gallery
         $galleryImages = array_slice($galleryImages, 0, 5);
         
+        // Pastikan facilities berbentuk array sebelum di-slice
+        $facilities = is_string($hotel['facilities']) ? json_decode($hotel['facilities'], true) : ($hotel['facilities'] ?? []);
+        if (!is_array($facilities)) $facilities = [];
+
         $data = [
             'title' => $hotel['name'] . ' - Trevio',
             'hotel' => $hotel,
             'galleryImages' => $galleryImages,
-            'galleryHighlights' => array_slice($hotel['facilities'], 0, count($galleryImages))
+            'galleryHighlights' => array_slice($facilities, 0, count($galleryImages))
         ];
         
         $this->view('hotel/detail', $data);
     }
     
-    /**
-     * Quick search from homepage
-     * POST: /hotel/quickSearch
-     */
+    // ... method quickSearch() biarkan tetap sama ...
     public function quickSearch() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . BASE_URL);
