@@ -6,7 +6,6 @@ use App\Core\Controller;
 use App\Models\Room;
 use App\Models\Hotel;
 
-// PERBAIKAN: Nama class harus sama dengan nama file (OwnerRoomController)
 class OwnerRoomController extends Controller {
     private $roomModel;
     private $hotelModel;
@@ -23,15 +22,9 @@ class OwnerRoomController extends Controller {
     }
 
     public function index() {
-        // Ambil filter hotel_id dari URL jika ada
         $hotelId = isset($_GET['hotel_id']) ? intval($_GET['hotel_id']) : null;
-        
-        // Jika hotel_id ada, ambil rooms khusus hotel itu. Jika tidak, ambil semua milik owner.
-        // Note: Anda mungkin perlu menyesuaikan method getByOwner di Model Room jika ingin support filter hotel spesifik
-        // Atau filter array hasilnya di sini.
         $allRooms = $this->roomModel->getByOwner($_SESSION['user_id']);
         
-        // Filter manual jika model belum support filter by hotel_id
         $rooms = $allRooms;
         if ($hotelId) {
             $rooms = array_filter($allRooms, function($room) use ($hotelId) {
@@ -42,7 +35,7 @@ class OwnerRoomController extends Controller {
         $data = [
             'title' => 'Manajemen Kamar',
             'rooms' => $rooms,
-            'hotels' => $this->hotelModel->getByOwner($_SESSION['user_id']), // Untuk dropdown filter
+            'hotels' => $this->hotelModel->getByOwner($_SESSION['user_id']),
             'selected_hotel' => $hotelId,
             'user' => $_SESSION
         ];
@@ -51,11 +44,10 @@ class OwnerRoomController extends Controller {
     }
 
     public function create() {
-        // Kirim data hotel agar bisa dipilih di dropdown
         $hotels = $this->hotelModel->getByOwner($_SESSION['user_id']);
         
         if (empty($hotels)) {
-            // Jika belum punya hotel, arahkan buat hotel dulu
+            $_SESSION['flash_error'] = "Anda harus membuat hotel terlebih dahulu.";
             header('Location: ' . BASE_URL . '/owner/hotels/create');
             exit;
         }
@@ -64,7 +56,6 @@ class OwnerRoomController extends Controller {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
-        // Pre-select hotel jika ada parameter hotel_id di URL
         $selectedHotelId = isset($_GET['hotel_id']) ? intval($_GET['hotel_id']) : null;
 
         $data = [
@@ -80,9 +71,9 @@ class OwnerRoomController extends Controller {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') exit;
         $this->validateCsrf();
 
-        // Validate required fields
-        if (empty($_POST['hotel_id']) || empty($_POST['room_type']) || empty($_POST['price']) || empty($_POST['capacity'])) {
-            $_SESSION['flash_error'] = "Semua kolom bertanda * wajib diisi.";
+        // Validasi Input Wajib
+        if (empty($_POST['hotel_id']) || empty($_POST['room_name']) || empty($_POST['price']) || empty($_POST['capacity'])) {
+            $_SESSION['flash_error'] = "Nama Kamar, Harga, dan Kapasitas wajib diisi.";
             header('Location: ' . BASE_URL . '/owner/rooms/create');
             exit;
         }
@@ -93,40 +84,44 @@ class OwnerRoomController extends Controller {
             die("Unauthorized: Hotel ini bukan milik Anda.");
         }
 
-        // Upload image logic
+        // Upload Image
         $imagePath = null;
         if (!empty($_FILES['room_photo']['name'])) {
             $imagePath = $this->uploadImage($_FILES['room_photo']);
         }
-        // Fallback placeholder jika gagal/kosong
         $imagePath = $imagePath ?: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400&h=300&fit=crop';
 
-        // Validate numeric inputs
-        $price = max(0, (float)$_POST['price']);
-        $capacity = max(1, (int)$_POST['capacity']);
-        $totalRooms = max(1, (int)($_POST['total_rooms'] ?? 1));
+        // Format Data
+        // PERBAIKAN: Menggunakan 'room_name' sebagai 'room_type' di DB agar nama spesifik (misal "Deluxe 101") tersimpan
+        // 'room_type' dari dropdown (Single/Double) bisa digabung ke deskripsi atau diabaikan jika DB cuma punya 1 kolom
+        $roomName = strip_tags($_POST['room_name']);
+        $category = strip_tags($_POST['room_type'] ?? '');
+        
+        // Opsional: Gabungkan kategori ke deskripsi jika perlu
+        $description = strip_tags($_POST['description'] ?? '');
+        if ($category) {
+            $description = "Tipe: $category. " . $description;
+        }
 
         $data = [
             'hotel_id' => (int)$_POST['hotel_id'],
-            'room_name' => strip_tags($_POST['room_name'] ?? ''), // Opsional
-            'room_type' => strip_tags($_POST['room_type']),
-            'price_per_night' => $price,
-            'capacity' => $capacity,
-            'total_slots' => $totalRooms, 
-            'available_slots' => $totalRooms, // Default available = total saat create
-            'description' => strip_tags($_POST['description'] ?? ''),
-            'facilities' => json_encode($_POST['facilities'] ?? []),
-            'main_image' => $imagePath,
-            'is_available' => 1
+            'room_type' => $roomName, // Simpan nama kamar di kolom room_type
+            'price_per_night' => max(0, (float)$_POST['price']),
+            'capacity' => max(1, (int)$_POST['capacity']),
+            'total_slots' => max(1, (int)($_POST['total_rooms'] ?? 1)),
+            'description' => $description,
+            'amenities' => json_encode($_POST['facilities'] ?? []), // Map form 'facilities' ke 'amenities'
+            'main_image' => $imagePath
         ];
 
         if ($this->roomModel->create($data)) {
             $_SESSION['flash_success'] = "Kamar berhasil ditambahkan!";
             header('Location: ' . BASE_URL . '/owner/rooms/index');
         } else {
-            $_SESSION['flash_error'] = "Gagal menyimpan kamar.";
+            $_SESSION['flash_error'] = "Gagal menyimpan data kamar. Silakan coba lagi.";
             header('Location: ' . BASE_URL . '/owner/rooms/create');
         }
+        exit;
     }
 
     public function edit($id) {
@@ -138,9 +133,7 @@ class OwnerRoomController extends Controller {
             exit;
         }
 
-        // Validasi room milik hotel owner
         $hotel = $this->hotelModel->find($room['hotel_id']);
-        
         if (!$hotel || $hotel['owner_id'] != $_SESSION['user_id']) {
             $_SESSION['flash_error'] = "Akses ditolak.";
             header('Location: ' . BASE_URL . '/owner/rooms/index');
@@ -151,10 +144,15 @@ class OwnerRoomController extends Controller {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
-        // Decode facilities jika masih string JSON
-        if (is_string($room['facilities'])) {
-            $room['facilities'] = json_decode($room['facilities'], true) ?? [];
+        // Mapping amenities (DB) ke facilities (View)
+        if (isset($room['amenities']) && is_string($room['amenities'])) {
+            $room['facilities'] = json_decode($room['amenities'], true) ?? [];
+        } else {
+             $room['facilities'] = [];
         }
+
+        // Agar view edit.php bisa menampilkan nama kamar dengan benar
+        $room['room_name'] = $room['room_type']; 
 
         $data = [
             'title' => 'Edit Kamar',
@@ -173,7 +171,9 @@ class OwnerRoomController extends Controller {
         $room = $this->roomModel->find($id);
         
         if (!$room) {
-            die("Room not found");
+            $_SESSION['flash_error'] = "Kamar tidak ditemukan.";
+            header('Location: ' . BASE_URL . '/owner/rooms/index');
+            exit;
         }
 
         // Verifikasi kepemilikan
@@ -188,20 +188,19 @@ class OwnerRoomController extends Controller {
             if ($newImage) $imagePath = $newImage;
         }
 
-        // Validate numeric inputs
-        $price = max(0, (float)$_POST['price']);
-        $capacity = max(1, (int)$_POST['capacity']);
-        $totalRooms = max(1, (int)$_POST['total_rooms']);
-
+        // Logic Nama Kamar vs Tipe
+        $roomName = strip_tags($_POST['room_name']);
+        $category = strip_tags($_POST['room_type'] ?? '');
+        
+        $description = strip_tags($_POST['description'] ?? '');
+        
         $data = [
-            'hotel_id' => (int)$_POST['hotel_id'],
-            'room_name' => strip_tags($_POST['room_name'] ?? ''),
-            'room_type' => strip_tags($_POST['room_type']),
-            'price_per_night' => $price,
-            'capacity' => $capacity,
-            'total_slots' => $totalRooms,
-            'description' => strip_tags($_POST['description'] ?? ''),
-            'facilities' => json_encode($_POST['facilities'] ?? []),
+            'room_type' => $roomName, // Update nama kamar
+            'price_per_night' => max(0, (float)$_POST['price']),
+            'capacity' => max(1, (int)$_POST['capacity']),
+            'total_slots' => max(1, (int)$_POST['total_rooms']),
+            'description' => $description,
+            'amenities' => json_encode($_POST['facilities'] ?? []), // Facilities -> Amenities
             'main_image' => $imagePath
         ];
 
@@ -212,14 +211,13 @@ class OwnerRoomController extends Controller {
         }
 
         header('Location: ' . BASE_URL . '/owner/rooms/index');
+        exit;
     }
 
     public function delete($id) {
-        // Cek kepemilikan sebelum hapus
         $room = $this->roomModel->find($id);
         if ($room) {
             $hotel = $this->hotelModel->find($room['hotel_id']);
-            
             if ($hotel && $hotel['owner_id'] == $_SESSION['user_id']) {
                 $this->roomModel->delete($id);
                 $_SESSION['flash_success'] = "Kamar berhasil dihapus.";
@@ -251,12 +249,8 @@ class OwnerRoomController extends Controller {
 
         $allowTypes = array('jpg', 'png', 'jpeg', 'webp');
         if (in_array($fileType, $allowTypes)) {
-            $check = getimagesize($file["tmp_name"]);
-            if ($check !== false) {
-                if (move_uploaded_file($file["tmp_name"], $targetFilePath)) {
-                    // Return path relative to public
-                    return '/uploads/rooms/' . $fileName;
-                }
+            if (move_uploaded_file($file["tmp_name"], $targetFilePath)) {
+                return '/uploads/rooms/' . $fileName;
             }
         }
         return false;

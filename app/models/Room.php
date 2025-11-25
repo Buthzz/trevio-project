@@ -29,39 +29,45 @@ class Room extends Model {
     }
 
     public function create($data) {
-        // SLOT LOGIC: available_slots di-set sama dengan total_slots saat pembuatan
+        // PERBAIKAN: Menggunakan kolom 'amenities' (bukan facilities) sesuai database
+        // PERBAIKAN: Menggunakan total_slots untuk available_slots awal
         $query = "INSERT INTO {$this->table} 
-                  (hotel_id, room_type, description, capacity, price_per_night, total_slots, available_slots, main_image, facilities, is_available) 
+                  (hotel_id, room_type, description, capacity, price_per_night, total_slots, available_slots, main_image, amenities, is_available) 
                   VALUES 
-                  (:hotel_id, :room_type, :description, :capacity, :price_per_night, :total_slots, :total_slots, :main_image, :facilities, 1)";
+                  (:hotel_id, :room_type, :description, :capacity, :price_per_night, :total_slots, :available_slots, :main_image, :amenities, 1)";
         
         try {
             $this->query($query);
-            // Bind parameter manual karena kita menggunakan total_slots dua kali
+            
             $this->bind(':hotel_id', $data['hotel_id']);
-            $this->bind(':room_type', $data['room_type']);
+            $this->bind(':room_type', $data['room_type']); // Disimpan dari input 'room_name'
             $this->bind(':description', $data['description']);
             $this->bind(':capacity', $data['capacity']);
             $this->bind(':price_per_night', $data['price_per_night']);
             $this->bind(':total_slots', $data['total_slots']);
+            $this->bind(':available_slots', $data['total_slots']); // Available = Total saat baru
             $this->bind(':main_image', $data['main_image']);
-            $this->bind(':facilities', $data['facilities']);
+            $this->bind(':amenities', $data['amenities']); // JSON amenities
             
-            $this->execute();
-            return $this->lastInsertId();
+            if ($this->execute()) {
+                return $this->lastInsertId();
+            }
+            return false;
         } catch (PDOException $e) {
-            error_log($e->getMessage());
+            error_log("Room Create Error: " . $e->getMessage());
             return false;
         }
     }
 
     public function update($id, $data) {
-        // Logic update slot bisa lebih kompleks (misal ada booking aktif), 
-        // tapi untuk MVP kita update slot dan sesuaikan availability
+        // PERBAIKAN: Menggunakan kolom 'amenities'
         $query = "UPDATE {$this->table} SET 
-                  room_type = :room_type, price_per_night = :price, 
-                  capacity = :capacity, total_slots = :total_slots,
-                  description = :description, facilities = :facilities,
+                  room_type = :room_type, 
+                  price_per_night = :price, 
+                  capacity = :capacity, 
+                  total_slots = :total_slots,
+                  description = :description, 
+                  amenities = :amenities,
                   main_image = :main_image
                   WHERE id = :id";
 
@@ -72,20 +78,25 @@ class Room extends Model {
             $this->bind(':capacity', $data['capacity']);
             $this->bind(':total_slots', $data['total_slots']);
             $this->bind(':description', $data['description']);
-            $this->bind(':facilities', $data['facilities']);
+            $this->bind(':amenities', $data['amenities']);
             $this->bind(':main_image', $data['main_image']);
             $this->bind(':id', $id);
+            
             return $this->execute();
         } catch (PDOException $e) {
-            error_log($e->getMessage());
+            error_log("Room Update Error: " . $e->getMessage());
             return false;
         }
     }
 
     public function delete($id) {
-        // Pastikan hanya menghapus jika tidak ada booking aktif (opsional validation)
-        $this->query("DELETE FROM {$this->table} WHERE id = :id");
-        $this->bind(':id', $id);
-        return $this->execute();
+        try {
+            $this->query("DELETE FROM {$this->table} WHERE id = :id");
+            $this->bind(':id', $id);
+            return $this->execute();
+        } catch (PDOException $e) {
+            error_log("Room Delete Error: " . $e->getMessage());
+            return false;
+        }
     }
 }
