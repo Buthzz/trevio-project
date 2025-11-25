@@ -1,178 +1,109 @@
 <?php
-// Gunakan helper routing agar link antar view konsisten.
+// Helper global untuk fungsi routing antar view.
 require_once __DIR__ . '/../../../helpers/functions.php';
 trevio_start_session();
 
-// Data dummy lengkap untuk semua hotel
-$hotelsDummy = [
-    101 => [
-        'id' => 101,
-        'name' => 'Padma Hotel Bandung',
-        'location' => 'Ciumbuleuit, Bandung',
-        'rating' => 4.9,
-        'reviews' => 1250,
-        'price' => 'Rp 2.100.000 / malam',
-        'description' => 'Hotel mewah dengan pemandangan lembah hijau yang menakjubkan. Nikmati udara sejuk Bandung dengan fasilitas kolam renang air hangat infinity dan layanan bintang lima.',
-        'amenities' => ['Infinity Pool Air Hangat', 'Kids Club', 'Fitness Center', 'Restoran Pemandangan Alam', 'Wifi Cepat', 'Adventure Park'],
-        'images' => [
-            'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-            'https://images.unsplash.com/photo-1573788708929-dbaf65667488?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3Dauto=format&fit=crop&w=1200&q=80', // Placeholder additional image
-            'https://images.unsplash.com/photo-1582719508461-905c673771fd?auto=format&fit=crop&w=1200&q=80'  // Placeholder additional image
-        ],
-        'rooms' => [
-            [
-                'name' => 'Premier Room',
-                'size' => '38 m²',
-                'bed' => '1 King / 2 Twin',
-                'guests' => '2 dewasa',
-                'price' => 'Rp 2.100.000 / malam',
-                'inclusive' => ['Sarapan Buffet', 'Afternoon Tea', 'Akses Kolam Renang']
-            ],
-            [
-                'name' => 'Hillside Studio',
-                'size' => '45 m²',
-                'bed' => '1 King Bed',
-                'guests' => '2 dewasa + 1 anak',
-                'price' => 'Rp 3.500.000 / malam',
-                'inclusive' => ['Sarapan', 'Balkon Pribadi', 'Minibar Gratis']
-            ]
-        ]
-    ],
-    102 => [
-        'id' => 102,
-        'name' => 'The Langham Jakarta',
-        'location' => 'SCBD, Jakarta Selatan',
-        'rating' => 4.8,
-        'reviews' => 890,
-        'price' => 'Rp 3.500.000 / malam',
-        'description' => 'Epitome kemewahan Inggris di jantung Jakarta. Menawarkan pemandangan kota yang spektakuler, restoran kelas dunia, dan akses mudah ke pusat bisnis SCBD.',
-        'amenities' => ['Sky Pool', 'Chuan Spa', 'Tom\'s by Tom Aikens', 'Ballroom', 'Concierge 24 Jam', 'Akses Mall'],
-        'images' => [
-            'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?auto=format&fit=crop&w=1200&q=80',
-            'https://plus.unsplash.com/premium_photo-1683134297492-cce5fc6dae31?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D?auto=format&fit=crop&w=1200&q=80',
-            'https://exquisite-taste-magazine.com/wp-content/uploads/2021/12/tljkt-dining-toms-by-1680-945.jpg?auto=format&fit=crop&w=1200&q=80'
-        ],
-        'rooms' => [
-            [
-                'name' => 'Deluxe City View',
-                'size' => '45 m²',
-                'bed' => '1 King Bed',
-                'guests' => '2 dewasa',
-                'price' => 'Rp 3.500.000 / malam',
-                'inclusive' => ['Akses Gym', 'Wifi High Speed', 'Nespresso Machine']
-            ],
-            [
-                'name' => 'Executive Club',
-                'size' => '52 m²',
-                'bed' => '1 King Bed',
-                'guests' => '2 dewasa',
-                'price' => 'Rp 5.200.000 / malam',
-                'inclusive' => ['Akses Langham Club', 'Cocktail Hour', 'Meeting Room 2 Jam']
-            ]
-        ]
-    ],
-    103 => [
-        'id' => 103,
-        'name' => 'Amanjiwo Resort',
-        'location' => 'Magelang, Yogyakarta',
-        'rating' => 5.0,
-        'reviews' => 450,
-        'price' => 'Rp 8.500.000 / malam',
-        'description' => 'Resor yang terinspirasi oleh Candi Borobudur, menawarkan ketenangan spiritual dan pemandangan langsung ke situs warisan dunia UNESCO.',
-        'amenities' => ['Private Pool', 'Cultural Tour', 'Spa Tradisional', 'Library', 'Yoga Pavilion', 'Fine Dining'],
-        'images' => [
-            'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?auto=format&fit=crop&w=1200&q=80',
-            'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-            'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80'
-        ],
-        'rooms' => [
-            [
-                'name' => 'Garden Suite',
-                'size' => '243 m²',
-                'bed' => '1 King Bed',
-                'guests' => '2 dewasa',
-                'price' => 'Rp 8.500.000 / malam',
-                'inclusive' => ['Antar Jemput Bandara', 'Sarapan A la Carte', 'Sesi Yoga']
-            ],
-            [
-                'name' => 'Borobudur Pool Suite',
-                'size' => '243 m²',
-                'bed' => '1 King Bed',
-                'guests' => '2 dewasa',
-                'price' => 'Rp 12.000.000 / malam',
-                'inclusive' => ['Private Pool', 'Pemandangan Borobudur', 'Butler Service']
-            ]
-        ]
-    ],
-    104 => [
-        'id' => 104,
-        'name' => 'The Apurva Kempinski',
-        'location' => 'Nusa Dua, Bali',
-        'rating' => 4.9,
-        'reviews' => 2100,
-        'price' => 'Rp 4.200.000 / malam',
-        'description' => 'Teater terbuka yang megah di tebing Nusa Dua. Menawarkan pengalaman Bali yang otentik dengan arsitektur spektakuler dan pemandangan Samudra Hindia.',
-        'amenities' => ['Koral Restaurant (Aquarium)', 'Pantai Pribadi', 'Spa Mewah', 'Chapel Pernikahan', 'Kolam Renang Luas', 'Kids Club'],
-        'images' => [
-            'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80',
-            'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=1200&q=80',
-            'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80'
-        ],
-        'rooms' => [
-            [
-                'name' => 'Grand Deluxe Room',
-                'size' => '65 m²',
-                'bed' => '1 King / 2 Twin',
-                'guests' => '2 dewasa',
-                'price' => 'Rp 4.200.000 / malam',
-                'inclusive' => ['Sarapan Buffet', 'Akses Gym', 'Welcome Drink']
-            ],
-            [
-                'name' => 'Cliff Private Pool Junior Suite',
-                'size' => '100 m²',
-                'bed' => '1 King Bed',
-                'guests' => '2 dewasa',
-                'price' => 'Rp 7.800.000 / malam',
-                'inclusive' => ['Private Pool', 'Akses Cliff Lounge', 'Afternoon Tea']
-            ]
-        ]
-    ],
-];
+// ==========================================================================
+// LOGIC PENGAMBILAN DATA (INTEGRASI DATABASE)
+// ==========================================================================
 
-// [BACKEND NOTE]: Logic untuk mengambil detail hotel berdasarkan ID dari URL
-// Parameter 'id' dikirim dari home page atau search page melalui query string
-// Contoh: hotel/detail.php?id=101
-// Jika ID tidak ditemukan atau tidak valid, gunakan default hotel ID 101
-$hotelId = isset($_GET['id']) ? intval($_GET['id']) : 101;
-
-// [BACKEND NOTE]: Cek apakah hotel dengan ID tersebut ada di array dummy
-// Jika tidak ada, redirect ke halaman 404 (untuk production, bisa redirect ke search page)
-if (!isset($hotelsDummy[$hotelId])) {
-    // TODO Backend: Ganti dengan redirect ke 404.php atau search.php
-    // header('Location: ../errors/404.php');
-    // exit;
-    // Sementara gunakan default hotel
-    $hotelId = 101;
+// Pastikan variabel $hotel tersedia (dikirim dari HotelController)
+// Jika file ini diakses langsung tanpa melalui Controller, redirect ke halaman pencarian
+if (!isset($hotel) || !is_array($hotel)) {
+    $searchUrl = defined('BASE_URL') ? BASE_URL . '/hotel/search' : 'search.php';
+    header("Location: " . $searchUrl);
+    exit;
 }
 
-// [BACKEND NOTE]: Ambil data hotel lengkap dari array dummy berdasarkan ID
-// Untuk production: query ke database SELECT * FROM hotels WHERE id = $hotelId
-$hotel = $hotelsDummy[$hotelId];
+// --- 1. Normalisasi Data Hotel (DB -> View Structure) ---
 
-// [BACKEND NOTE]: Ambil daftar room/kamar yang tersedia di hotel ini
-// Untuk production: query ke database SELECT * FROM rooms WHERE hotel_id = $hotelId
-$rooms = $hotel['rooms'] ?? [];
+// Siapkan array baru untuk view agar tidak mengubah variabel asli sembarangan
+$viewHotel = $hotel;
 
-// Judul halaman detail hotel untuk ditampilkan di browser tab.
+// Lokasi: Gabungkan City dan Province
+$city = $hotel['city'] ?? '';
+$province = $hotel['province'] ?? '';
+$viewHotel['location'] = $city . ($province ? ', ' . $province : '');
+
+// Rating & Reviews
+// Gunakan nilai default jika null
+$viewHotel['rating'] = isset($hotel['average_rating']) ? (float)$hotel['average_rating'] : 4.5;
+$viewHotel['reviews'] = isset($hotel['total_reviews']) ? (int)$hotel['total_reviews'] : 0;
+
+// Amenities / Fasilitas (Mapping dari kolom 'facilities' di DB)
+$viewHotel['amenities'] = [];
+if (isset($hotel['facilities'])) {
+    // Jika formatnya JSON string, decode dulu
+    $viewHotel['amenities'] = is_string($hotel['facilities']) 
+        ? (json_decode($hotel['facilities'], true) ?? []) 
+        : $hotel['facilities'];
+}
+
+// Images
+// Gunakan $galleryImages dari controller, atau fallback ke main_image
+$viewHotel['images'] = isset($galleryImages) ? $galleryImages : [];
+if (empty($viewHotel['images']) && !empty($hotel['main_image'])) {
+    $viewHotel['images'][] = $hotel['main_image'];
+}
+// Fallback jika tidak ada gambar sama sekali
+if (empty($viewHotel['images'])) {
+    $viewHotel['images'][] = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
+}
+
+// --- 2. Normalisasi Data Kamar ---
+
+$viewRooms = [];
+$minPrice = PHP_INT_MAX; // Untuk mencari harga "Mulai dari"
+
+if (!empty($hotel['rooms']) && is_array($hotel['rooms'])) {
+    foreach ($hotel['rooms'] as $r) {
+        $price = (float) $r['price_per_night'];
+        
+        // Cari harga terendah untuk ditampilkan di header
+        if ($price < $minPrice) {
+            $minPrice = $price;
+        }
+
+        // Parse amenities kamar
+        $rInc = $r['amenities'] ?? [];
+        if (is_string($rInc)) {
+            $rInc = json_decode($rInc, true) ?? [];
+        }
+
+        // Struktur data kamar untuk view
+        $viewRooms[] = [
+            'id' => $r['id'], // Penting untuk link booking
+            'name' => $r['room_type'],
+            'size' => ($r['room_size'] ?? '0') . ' m²',
+            'bed' => $r['bed_type'] ?? 'Standard Bed',
+            'guests' => ($r['capacity'] ?? 2) . ' dewasa',
+            'price_raw' => $price,
+            'price_formatted' => 'Rp ' . number_format($price, 0, ',', '.') . ' / malam',
+            'inclusive' => array_slice((array)$rInc, 0, 3) // Ambil 3 fasilitas utama
+        ];
+    }
+}
+
+// Set harga hotel (mulai dari)
+if ($minPrice === PHP_INT_MAX) $minPrice = 0;
+$viewHotel['price'] = 'Rp ' . number_format($minPrice, 0, ',', '.') . ' / malam';
+
+// Highlights untuk slider galeri
+$galleryHighlightsData = isset($galleryHighlights) 
+    ? $galleryHighlights 
+    : array_slice($viewHotel['amenities'], 0, count($viewHotel['images']));
+
+// Override variabel lama dengan data yang sudah dinormalisasi
+$hotel = $viewHotel;
+$rooms = $viewRooms;
+$galleryHighlights = $galleryHighlightsData;
+
+// Judul halaman
 $pageTitle = 'Trevio | ' . $hotel['name'];
 
-// Ambil highlight singkat untuk ditampilkan di indikator slider galeri.
-$galleryHighlights = array_slice($hotel['amenities'], 0, count($hotel['images']));
-
-
-// Header khusus halaman hotel agar style tetap seragam.
 require __DIR__ . '/../layouts/header.php';
 ?>
+
 <style>
     /* Fallback styling untuk hero detail supaya foto dummy tampil rapi */
     .detail-hero {
@@ -253,12 +184,9 @@ require __DIR__ . '/../layouts/header.php';
         }
     }
 </style>
-<!-- Hero detail hotel + slider foto -->
 
-<!-- Hero foto dan info hotel, layout lebih modern dan responsif -->
 <section class="relative w-full bg-white">
     <div class="mx-auto max-w-6xl px-4 pt-6 pb-0 grid grid-cols-1 md:grid-cols-5 gap-0 md:gap-8">
-        <!-- Foto slider -->
         <div class="md:col-span-3 flex flex-col justify-center">
             <div class="detail-hero" data-detail-gallery>
                 <?php foreach ($hotel['images'] as $index => $image): ?>
@@ -277,7 +205,6 @@ require __DIR__ . '/../layouts/header.php';
                 </div>
             </div>
         </div>
-        <!-- Info utama hotel -->
         <div class="md:col-span-2 flex flex-col justify-center items-start md:items-start pt-8 md:pt-0">
             <nav class="mb-2 text-xs text-slate-400">
                 <a class="hover:text-primary" href="<?= htmlspecialchars(trevio_view_route('home/index.php')) ?>">Beranda</a>
@@ -303,7 +230,7 @@ require __DIR__ . '/../layouts/header.php';
         </div>
     </div>
 </section>
-<!-- Section informasi kamar dan sidebar booking -->
+
 <section class="bg-white py-16">
     <div class="mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[2fr,1fr]">
         <article class="space-y-8">
@@ -321,68 +248,74 @@ require __DIR__ . '/../layouts/header.php';
                     <?php endforeach; ?>
                 </div>
             </div>
+            
             <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
                 <h2 class="text-lg font-semibold text-primary">Highlight pengalaman</h2>
                 <div class="mt-6 grid gap-4 sm:grid-cols-2">
                     <div class="rounded-2xl border border-slate-200 p-5">
-                        <h3 class="text-sm font-semibold text-primary">Aurora Lounge</h3>
-                        <p class="mt-2 text-sm text-slate-500">Nikmati panorama langit malam melalui dome kaca dengan live music setiap malam.</p>
+                        <h3 class="text-sm font-semibold text-primary">Fasilitas Lengkap</h3>
+                        <p class="mt-2 text-sm text-slate-500">Menyediakan berbagai fasilitas terbaik untuk kenyamanan menginap Anda.</p>
                     </div>
                     <div class="rounded-2xl border border-slate-200 p-5">
-                        <h3 class="text-sm font-semibold text-primary">Private Onsen</h3>
-                        <p class="mt-2 text-sm text-slate-500">Onsen outdoor hangat dengan view pegunungan, tersedia untuk pasangan maupun keluarga.</p>
+                        <h3 class="text-sm font-semibold text-primary">Lokasi Strategis</h3>
+                        <p class="mt-2 text-sm text-slate-500">Akses mudah ke berbagai destinasi wisata dan pusat perbelanjaan.</p>
                     </div>
                     <div class="rounded-2xl border border-slate-200 p-5">
-                        <h3 class="text-sm font-semibold text-primary">Culinary Journey</h3>
-                        <p class="mt-2 text-sm text-slate-500">Chef bintang Michelin menghadirkan menu lokal musiman dan pairing sake curated.</p>
+                        <h3 class="text-sm font-semibold text-primary">Layanan 24 Jam</h3>
+                        <p class="mt-2 text-sm text-slate-500">Staf profesional kami siap membantu kebutuhan Anda kapan saja.</p>
                     </div>
                     <div class="rounded-2xl border border-slate-200 p-5">
-                        <h3 class="text-sm font-semibold text-primary">Concierge aktif</h3>
-                        <p class="mt-2 text-sm text-slate-500">Tim Trevio membantu itinerary ski, transportasi, hingga rekomendasi hidden gem.</p>
+                        <h3 class="text-sm font-semibold text-primary">Kebersihan Terjamin</h3>
+                        <p class="mt-2 text-sm text-slate-500">Protokol kebersihan ketat untuk keamanan dan kesehatan tamu.</p>
                     </div>
                 </div>
             </div>
+
             <div class="space-y-5" id="rooms">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Ketersediaan kamar</p>
                         <h2 class="text-2xl font-semibold text-primary">Pilih tipe kamar</h2>
                     </div>
-                    <button class="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-600 transition hover:border-accent hover:text-accent" type="button">Filter tanggal</button>
                 </div>
+                
                 <div class="space-y-4">
-                    <?php foreach ($rooms as $room): ?>
-                        <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <h3 class="text-lg font-semibold text-primary"><?= htmlspecialchars($room['name']) ?></h3>
-                                    <p class="text-sm text-slate-500">Ukuran <?= htmlspecialchars($room['size']) ?> • <?= htmlspecialchars($room['bed']) ?> • Kapasitas <?= htmlspecialchars($room['guests']) ?></p>
-                                    <ul class="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-                                        <?php foreach ($room['inclusive'] as $include): ?>
-                                            <li class="rounded-full bg-slate-100 px-3 py-1"><?= htmlspecialchars($include) ?></li>
-                                        <?php endforeach; ?>
-                                    </ul>
+                    <?php if (empty($rooms)): ?>
+                        <div class="p-8 text-center text-gray-500 border border-dashed border-gray-300 rounded-xl">
+                            Belum ada kamar yang tersedia untuk hotel ini.
+                        </div>
+                    <?php else: ?>
+                        <?php foreach ($rooms as $room): ?>
+                            <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                                <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                    <div>
+                                        <h3 class="text-lg font-semibold text-primary"><?= htmlspecialchars($room['name']) ?></h3>
+                                        <p class="text-sm text-slate-500">Ukuran <?= htmlspecialchars($room['size']) ?> • <?= htmlspecialchars($room['bed']) ?> • Kapasitas <?= htmlspecialchars($room['guests']) ?></p>
+                                        <ul class="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+                                            <?php foreach ($room['inclusive'] as $include): ?>
+                                                <li class="rounded-full bg-slate-100 px-3 py-1"><?= htmlspecialchars($include) ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-xs uppercase tracking-wide text-slate-400">Harga per malam</p>
+                                        <p class="text-base font-semibold text-primary"><?= htmlspecialchars($room['price_formatted']) ?></p>
+                                        <?php
+                                        // Link ke booking form dengan parameter ID yang valid
+                                        $bookingUrl = defined('BASE_URL') 
+                                            ? BASE_URL . '/booking/create?hotel_id=' . urlencode($hotel['id']) . '&room_id=' . urlencode($room['id'])
+                                            : trevio_view_route('booking/form.php') . '?hotel_id=' . urlencode($hotel['id']) . '&room_id=' . urlencode($room['id']);
+                                        ?>
+                                        <a class="mt-3 inline-flex items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:bg-accentLight" href="<?= htmlspecialchars($bookingUrl) ?>">Pesan Sekarang</a>
+                                    </div>
                                 </div>
-                                <div class="text-right">
-                                    <p class="text-xs uppercase tracking-wide text-slate-400">Harga per malam</p>
-                                    <p class="text-base font-semibold text-primary"><?= htmlspecialchars($room['price']) ?></p>
-                                    <?php
-                                    // [BACKEND NOTE]: Link ke booking form dengan membawa data hotel dan room
-                                    // Parameter yang dikirim: hotel_id, room_name, room_price
-                                    // Data ini akan digunakan untuk pre-fill form pemesanan
-                                    $bookingUrl = trevio_view_route('booking/form.php') . 
-                                                  '?hotel_id=' . urlencode($hotel['id']) . 
-                                                  '&room_name=' . urlencode($room['name']) .
-                                                  '&room_price=' . urlencode($room['price']);
-                                    ?>
-                                    <a class="mt-3 inline-flex items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:bg-accentLight" href="<?= htmlspecialchars($bookingUrl) ?>">Pesan Sekarang</a>
-                                </div>
-                            </div>
-                        </article>
-                    <?php endforeach; ?>
+                            </article>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </article>
+        
         <aside class="space-y-6">
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 class="text-base font-semibold text-primary">Ringkasan singkat</h3>
@@ -399,7 +332,7 @@ require __DIR__ . '/../layouts/header.php';
                             <path d="M12 2c3.5 0 6 2.5 6 7 0 6-6 13-6 13S6 15 6 9c0-4.5 2.5-7 6-7z"></path>
                             <circle cx="12" cy="9" r="2"></circle>
                         </svg>
-                        20 menit dari Bandara • Shuttle gratis
+                        Lokasi Strategis
                     </li>
                     <li class="flex items-center gap-2">
                         <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -407,7 +340,7 @@ require __DIR__ . '/../layouts/header.php';
                             <path d="M12 17v4"></path>
                             <rect width="18" height="12" x="3" y="3" rx="2"></rect>
                         </svg>
-                        Pembatalan gratis hingga 48 jam sebelum check-in
+                        Pembatalan gratis (S&K Berlaku)
                     </li>
                 </ul>
             </div>
@@ -415,7 +348,7 @@ require __DIR__ . '/../layouts/header.php';
                 <h3 class="text-base font-semibold text-primary">Lokasi</h3>
                 <p class="mt-2 text-sm text-slate-500"><?= htmlspecialchars($hotel['location']) ?></p>
                 <div class="mt-4 h-48 overflow-hidden rounded-2xl bg-slate-100">
-                    <iframe class="h-full w-full" src="https://maps.google.com/maps?q=<?= urlencode($hotel['location']) ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" loading="lazy"></iframe>
+                    <iframe class="h-full w-full" src="https://maps.google.com/maps?q=<?= urlencode($hotel['location']) ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" loading="lazy" frameborder="0"></iframe>
                 </div>
             </div>
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -429,6 +362,7 @@ require __DIR__ . '/../layouts/header.php';
         </aside>
     </div>
 </section>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     // Kendalikan rotasi foto hero agar pengguna bisa melihat ringkasan dari tiga gambar.
@@ -481,6 +415,7 @@ document.addEventListener('DOMContentLoaded', function () {
     startAutoRotate();
 });
 </script>
+
 <?php
 // Footer khusus hotel untuk menutup konten.
 require __DIR__ . '/../layouts/footer.php';
