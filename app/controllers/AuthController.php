@@ -161,7 +161,7 @@ class AuthController extends Controller {
         } elseif ($user['role'] === 'owner') {
             header('Location: ' . BASE_URL . '/owner');
         } else {
-            header('Location: ' . BASE_URL . '/dashboard');
+            header('Location: ' . BASE_URL . '/');
         }
         exit;
     }
