@@ -66,7 +66,7 @@ class User extends Model {
 
     /**
      * Membuat user baru.
-     * Password akan di-hash otomatis di sini.
+     * Password akan di-hash otomatis di sini, tapi mencegah double-hash.
      * @param array $data Data user (key => value)
      * @return int|false ID user baru atau false jika gagal
      */
@@ -74,9 +74,25 @@ class User extends Model {
         // 1. Filter data hanya untuk kolom yang diizinkan (Whitelist)
         $data = array_intersect_key($data, array_flip($this->allowedFields));
 
-        // 2. Security: Hash Password jika ada input password
-        if (isset($data['password']) && !empty($data['password'])) {
-            $data['password'] = password_hash($data['password'], PASSWORD_BCRYPT);
+        // 2. Security: Jika field password ada tetapi kosong/spasi, hapus supaya tidak tersimpan kosong
+        if (isset($data['password']) && empty(trim((string)$data['password']))) {
+            unset($data['password']);
+        }
+
+        // 3. Hash Password jika diperlukan (CEK agar tidak double-hash)
+        if (isset($data['password'])) {
+            $pw = $data['password'];
+            // Cek apakah input sudah merupakan hash yang dibuat password_hash
+            $info = password_get_info($pw);
+            if ($info['algo'] === 0) {
+                // bukan hash -> hash dulu
+                $data['password'] = password_hash($pw, PASSWORD_BCRYPT);
+            } else {
+                // sudah hash -> jika perlu rehash sesuai policy, lakukan rehash
+                if (password_needs_rehash($pw, PASSWORD_BCRYPT)) {
+                    $data['password'] = password_hash($pw, PASSWORD_BCRYPT);
+                } // else biarkan hash apa adanya (tidak double-hash)
+            }
         }
 
         $params = [];
@@ -119,14 +135,15 @@ class User extends Model {
     /**
      * Mengupdate data user dengan aman.
      * FIX: Mencegah password kosong menimpa password lama.
+     * Menghindari double-hashing.
      * @param int $id User ID
      * @param array $data Data update (key => value)
      * @return bool Status keberhasilan
      */
     public function update(int $id, array $data): bool {
-        // 1. FIX PENTING: Jika field password dikirim tapi kosong/spasi saja, 
+        // 1. Jika field password dikirim tapi kosong/spasi saja, 
         // hapus dari array agar password lama di database TIDAK tertimpa hash kosong.
-        if (isset($data['password']) && empty(trim($data['password']))) {
+        if (isset($data['password']) && empty(trim((string)$data['password']))) {
             unset($data['password']); 
         }
 
@@ -139,9 +156,18 @@ class User extends Model {
         }
 
         // 3. Hash Password baru (jika user benar-benar menginput password baru)
-        // Dilakukan terpisah dari loop query builder agar logic lebih bersih
         if (isset($filteredData['password'])) {
-            $filteredData['password'] = password_hash($filteredData['password'], PASSWORD_BCRYPT);
+            $pw = $filteredData['password'];
+            $info = password_get_info($pw);
+            if ($info['algo'] === 0) {
+                // plain text -> hash
+                $filteredData['password'] = password_hash($pw, PASSWORD_BCRYPT);
+            } else {
+                // sudah hash -> cek apakah perlu rehash sesuai policy
+                if (password_needs_rehash($pw, PASSWORD_BCRYPT)) {
+                    $filteredData['password'] = password_hash($pw, PASSWORD_BCRYPT);
+                } // else tidak diubah
+            }
         }
 
         // 4. Bangun Query Update Dinamis
