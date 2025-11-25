@@ -12,7 +12,7 @@
                 <h1 class="text-2xl md:text-3xl font-bold text-gray-800 tracking-tight">Dashboard Owner</h1>
                 <p class="text-gray-500 text-sm mt-1">Ringkasan performa bisnis dan manajemen properti.</p>
             </div>
-            <a href="<?= BASE_URL ?>/owner/hotels/create" class="group bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2 transform hover:-translate-y-0.5">
+            <a href="<?= BASE_URL ?>/owner/hotels/" class="group bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 flex items-center gap-2 transform hover:-translate-y-0.5">
                 <span class="bg-blue-500 group-hover:bg-blue-600 rounded-lg p-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
                 </span>
