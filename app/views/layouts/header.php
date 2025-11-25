@@ -2,6 +2,9 @@
 // Helper global agar fungsi routing tersedia di seluruh header.
 require_once __DIR__ . '/../../../helpers/functions.php';
 
+// Pastikan session dimulai untuk akses data user
+trevio_start_session();
+
 // Backend bisa mengisi variabel ini sebelum require header.
 $manualAuthOverrides = [];
 if (isset($isAuthenticated)) {
@@ -17,56 +20,37 @@ if (isset($profileLink)) {
     $manualAuthOverrides['profileLink'] = $profileLink;
 }
 
-// [SIMULASI LOGIN - UNTUK TESTING TAMPILAN HEADER]
-// Ubah nilai-nilai di bawah untuk melihat tampilan header sesuai role:
-// - 'admin' untuk Dashboard Admin
-// - 'host' untuk Dashboard Owner
-// - 'guest' untuk customer biasa (hanya logout)
-// Set environment variable TREVIO_SIMULATE_LOGIN=true untuk enable simulasi
+// [PERBAIKAN]: Hapus/Komentari Simulasi Login agar menggunakan AuthController asli
+/*
 $SIMULATE_LOGIN = filter_var(getenv('TREVIO_SIMULATE_LOGIN'), FILTER_VALIDATE_BOOLEAN);
-$SIMULATE_ROLE = getenv('TREVIO_SIMULATE_ROLE') ?: 'guest'; // 'admin', 'host', atau 'guest'
-$SIMULATE_NAME = getenv('TREVIO_SIMULATE_NAME') ?: 'M. Hendrik Purwanto';
-$SIMULATE_AVATAR = getenv('TREVIO_SIMULATE_AVATAR') ?: 'https://tugas.animenesia.site/uploads/1762854705_0ffb45e7b7.jpg';
-
-// Terapkan simulasi jika diaktifkan
 if ($SIMULATE_LOGIN) {
-    $_SESSION['user_id'] = 999;
-    $_SESSION['user_name'] = $SIMULATE_NAME;
-    $_SESSION['user_role'] = $SIMULATE_ROLE;
-    $_SESSION['user_avatar'] = $SIMULATE_AVATAR;
+    // ... code simulasi ...
 }
+*/
 
 // Pakai helper agar header selalu memiliki context terbaru (override + sesi).
-$authContext    = trevio_get_auth_context($manualAuthOverrides);
+$authContext     = trevio_get_auth_context($manualAuthOverrides);
 $isAuthenticated = $authContext['isAuthenticated'];
-$profileName    = $authContext['profileName'];
-$profilePhoto   = $authContext['profilePhoto'];
-$profileInitial = $authContext['profileInitial'];
-$profileLink    = $authContext['profileLink'];
+$profileName     = $authContext['profileName'];
+$profilePhoto    = $authContext['profilePhoto'];
+$profileInitial  = $authContext['profileInitial'];
+$profileLink     = $authContext['profileLink'];
 
-// Nama script aktif dipakai untuk menentukan base asset.
-$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
-// Basis path asset bisa dioverride dari view, fallback ke lokasi script.
-// Basis path asset bisa dioverride dari view, fallback ke lokasi script.
-$assetBase  = $assetBase ?? rtrim(dirname($scriptName), '/');
-// Pastikan base path tidak kosong supaya link CSS tetap valid.
-// Pastikan base path tidak kosong supaya link CSS tetap valid.
-$assetBase  = ($assetBase === '' || $assetBase === '/') ? '.' : $assetBase;
 // Judul default ketika view tidak memberikan $pageTitle.
 $pageTitle  = $pageTitle ?? 'Trevio';
 
-// Deteksi project base URL untuk routing
-if (preg_match('#^(.*)/app/#', $scriptName, $matches)) {
-    $projectBaseUrl = $matches[1];
-} else {
-    $projectBaseUrl = '';
+// [PERBAIKAN ROUTING]: Gunakan BASE_URL untuk link bersih (MVC Friendly)
+// Pastikan BASE_URL didefinisikan di app/config/app.php
+if (!defined('BASE_URL')) {
+    // Fallback basic jika config belum terload sempurna
+    $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
+    define('BASE_URL', $protocol . '://' . $_SERVER['HTTP_HOST'] . '/trevio-project/public'); 
 }
 
-// Default tautan navigasi utama yang bisa dioverride dari view.
-$homeLink = defined('BASE_URL') ? BASE_URL : trevio_view_route('.');
-$logoUrl  = defined('BASE_URL') ? BASE_URL . '/images/trevio.svg' : trevio_view_route('../../public/images/trevio.svg');
-$loginUrl = defined('BASE_URL') ? BASE_URL . '/auth/login' : trevio_view_route('auth/login');
-$registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_route('auth/register');
+$homeLink = BASE_URL . '/home'; // Ke HomeController@index
+$logoUrl  = BASE_URL . '/images/trevio.svg'; // Asset publik
+$loginUrl = BASE_URL . '/auth/login'; // Ke AuthController@login
+$registerUrl = BASE_URL . '/auth/register'; // Ke AuthController@register
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -75,12 +59,10 @@ $registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_r
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= htmlspecialchars($pageTitle) ?></title>
 
-    <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <!-- Tailwind via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script>
         tailwind.config = {
@@ -100,15 +82,12 @@ $registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_r
         };
     </script>
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="../../public/css/custom.css">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/custom.css">
 
-    <!-- SweetAlert (kalau mau dipakai di page) -->
-    <script src="../../public/js/sweetalert2.min.js"></script>
+    <script src="<?= BASE_URL ?>/js/sweetalert2.min.js"></script>
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-900">
 
-<!-- Header global + nav utama -->
 <header class="bg-white border-b border-slate-200">
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:gap-6 sm:px-6 sm:py-4">
         <a class="inline-flex items-center gap-3" href="<?= htmlspecialchars($homeLink) ?>">
@@ -117,31 +96,29 @@ $registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_r
         </a>
 
         <div class="hidden items-center gap-3 sm:gap-4 md:flex">
-        <div class="hidden items-center gap-3 sm:gap-4 md:flex">
-            <button type="button"
-                    class="inline-flex items-center gap-2 rounded-2xl bg-slate-100 px-3 py-1 text-[11px] font-semibold text-slate-600 sm:px-4 sm:py-1.5 sm:text-xs">
-                <span class="relative inline-flex h-5 w-5 overflow-hidden rounded-full border border-slate-300 bg-white">
-                    <span class="absolute inset-x-0 top-0 h-1/2 bg-red-600"></span>
-                    <span class="absolute inset-x-0 bottom-0 h-1/2 bg-white"></span>
-                </span>
-                ID
-            </button>
             <?php // Jika sudah login, tampilkan tombol profil saja ?>
             <?php if ($isAuthenticated): ?>
                 <?php
-                // Tentukan dashboard link berdasarkan role
+                // [PERBAIKAN ROUTING]: Hapus .php dari URL dashboard
                 $dashboardLink = '#';
                 $dashboardLabel = '';
                 $userRole = $authContext['userRole'] ?? 'guest';
 
                 if ($userRole === 'admin') {
-                    $dashboardLink = trevio_view_route('admin/dashboard.php');
+                    // Ke AdminController@index (atau dashboard)
+                    $dashboardLink = BASE_URL . '/admin'; 
                     $dashboardLabel = 'Dashboard Admin';
-                } elseif ($userRole === 'host') { // Asumsi 'host' adalah owner
-                    $dashboardLink = trevio_view_route('owner/dashboard.php');
+                } elseif ($userRole === 'owner') { // Sesuai database role 'owner' (bukan host)
+                    // Ke OwnerController@index
+                    $dashboardLink = BASE_URL . '/owner'; 
                     $dashboardLabel = 'Dashboard Owner';
+                } elseif ($userRole === 'customer') {
+                    // Ke DashboardController@index (Customer Dashboard)
+                    $dashboardLink = BASE_URL . '/dashboard';
+                    $dashboardLabel = 'Dashboard Saya';
                 }
-                $logoutLink = trevio_view_route('auth/logout') . '?csrf_token=' . trevio_csrf_token();
+                
+                $logoutLink = BASE_URL . '/auth/logout?csrf_token=' . trevio_csrf_token();
                 ?>
                 
                 <div class="relative" data-profile-dropdown>
@@ -159,7 +136,6 @@ $registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_r
                         <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </button>
 
-                    <!-- Dropdown Menu -->
                     <div class="hidden absolute right-0 mt-2 w-48 origin-top-right rounded-xl border border-slate-100 bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
                         <?php if ($dashboardLabel): ?>
                             <a href="<?= htmlspecialchars($dashboardLink) ?>" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">
@@ -197,11 +173,9 @@ $registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_r
         </button>
     </div>
 
-    <!-- Nav mobile: cuma IDR, Masuk, Daftar -->
     <div class="mobile-nav hidden border-t border-slate-200 bg-white px-4 pb-6 pt-4 shadow-lg md:hidden"
          data-mobile-panel>
         <div class="flex flex-col gap-4">
-            <!-- Language/Region Selector -->
             <div>
                 <button type="button"
                         class="inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200">
@@ -214,7 +188,6 @@ $registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_r
             </div>
 
             <?php if ($isAuthenticated): ?>
-                <!-- Authenticated User Mobile -->
                 <div class="border-t border-slate-100 pt-4">
                     <div class="flex items-center gap-3 rounded-xl p-2">
                         <?php if ($profilePhoto): ?>
@@ -242,7 +215,6 @@ $registerUrl = defined('BASE_URL') ? BASE_URL . '/auth/register' : trevio_view_r
                     </div>
                 </div>
             <?php else: ?>
-                <!-- Guest Mobile -->
                 <div class="flex flex-col gap-3 border-t border-slate-100 pt-4">
                     <a href="<?= htmlspecialchars($loginUrl) ?>"
                        class="flex w-full items-center justify-center rounded-xl border border-slate-200 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 hover:text-primary">
