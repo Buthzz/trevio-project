@@ -6,8 +6,8 @@ trevio_start_session();
 // Judul halaman utama landing.
 $pageTitle = $data['title'] ?? 'Trevio | Temukan Hotel Favoritmu';
 
-// Data dari controller (database)
-$hotels = $data['hotels'] ?? [];
+// Data dari controller (sudah dari DATABASE via HomeController)
+$hotels = $data['hotels'] ?? []; 
 $benefits = $data['benefits'] ?? [];
 $destinations = $data['destinations'] ?? ['🔥 Semua'];
 $testimonials = $data['testimonials'] ?? [];
@@ -59,8 +59,6 @@ $prefillValues = [
 ];
 
 // Tangani submit form search dari hero section.
-// [BACKEND NOTE]: Logika ini menangani pengiriman form pencarian dari halaman utama.
-// Jika user mengklik tombol "Cari", parameter akan dikumpulkan dan user akan diarahkan ke halaman hasil pencarian (hotel/search.php).
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['home_search'])) {
     // Susun parameter pencarian yang akan dilempar ke halaman hotel/search.
     $searchPayload = [
@@ -77,22 +75,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['home_search'])) {
     }));
     $searchUrl = $searchBaseUrl . ($searchQueryString !== '' ? '?' . $searchQueryString : '');
 
+    // Opsional: Jika ingin memaksa login sebelum search, uncomment baris di bawah.
+    // Saat ini dibiarkan agar guest bisa mencari hotel.
+    /*
     if (!$isAuthenticated) {
-        // Wajib login sebelum diarahkan ke hasil pencarian.
-        // [BACKEND NOTE]: Ubah logika ini jika pencarian diperbolehkan untuk guest (tanpa login).
         $loginRedirect = $loginUrl . '?redirect=' . urlencode($searchUrl);
         header('Location: ' . $loginRedirect);
         exit;
     }
+    */
 
     header('Location: ' . $searchUrl);
     exit;
 }
+
 // Render header umum agar nav dan asset konsisten.
 require __DIR__ . '/../layouts/header.php';
 ?>
 
-<!-- Hero landing + form pencarian cepat -->
 <div class="relative h-[60vh] min-h-[400px] w-full overflow-hidden">
     <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[1200ms] hover:scale-105" style="background-image: url('https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070&auto=format&fit=crop');"></div>
     <div class="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-black/40 to-transparent"></div>
@@ -101,7 +101,7 @@ require __DIR__ . '/../layouts/header.php';
     <div class="absolute bottom-1/3 right-1/4 h-40 w-40 rounded-full bg-blue-400/10 blur-xl animate-pulse-slow animation-delay-500"></div>
     <div class="absolute top-1/2 left-1/2 h-24 w-24 rounded-full bg-white/5 blur-xl animate-pulse-slow animation-delay-1000"></div>
 
-    <div class="relative z-10 flex h-full flex-col items-center justify-center px-4 pb-12 text-center text-white"   >
+    <div class="relative z-10 flex h-full flex-col items-center justify-center px-4 pb-12 text-center text-white">
         <h1 class="mb-5 text-4xl font-extrabold leading-tight tracking-tight drop-shadow-lg md:text-6xl" style="user-select: none;">
             Temukan Petualangan <br> Penginapan Impianmu
         </h1>
@@ -121,7 +121,6 @@ require __DIR__ . '/../layouts/header.php';
     </style>
 </div>
 
-<!-- Kartu pencarian + destinasi populer -->
 <div class="relative z-20 -mt-20 mb-16 mx-auto max-w-6xl px-4 md:-mt-24 md:mb-24 md:px-6">
     <div class="rounded-2xl border border-gray-100 bg-white p-5 shadow-xl md:p-8">
         <div class="mb-6 flex items-center gap-2 border-b border-gray-100 pb-4 text-blue-600">
@@ -177,7 +176,6 @@ require __DIR__ . '/../layouts/header.php';
     </div>
 </div>
 
-<!-- Section benefit Trevio -->
 <div class="mx-auto mb-20 text-center md:mb-28">
     <div class="mx-auto max-w-5xl px-6">
         <h2 class="mb-12 text-2xl font-bold text-gray-800 md:mb-16 md:text-3xl" style="user-select: none;">Kenapa Booking di Trevio?</h2>
@@ -198,7 +196,6 @@ require __DIR__ . '/../layouts/header.php';
     </div>
 </div>
 
-<!-- Listing hotel populer (dummy) -->
 <div id="popular-destinations" class="mx-auto mb-24 max-w-7xl px-4 md:px-6">
     <div class="mb-8 flex flex-col items-start gap-4 md:flex-row md:items-end md:justify-between">
         <div>
@@ -225,19 +222,18 @@ require __DIR__ . '/../layouts/header.php';
         <div id="hotel-grid" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <?php foreach ($hotels as $hotel): ?>
                 <?php 
-                // Use main_image from database, fallback to placeholder
+                // Ambil gambar dari database, fallback jika kosong
                 $thumbnail = !empty($hotel['main_image']) 
                     ? htmlspecialchars($hotel['main_image']) 
                     : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
                 
-                // Use average_rating from database
+                // Ambil rating dari database
                 $ratingValue = number_format((float)($hotel['average_rating'] ?? 0), 1);
                 
-                // Use min_price from JOIN query
+                // Ambil harga minimum (min_price) yang dikirim dari Controller/Model
                 $startPrice = (float)($hotel['min_price'] ?? 0);
                 ?>
                 <a class="group relative block h-[320px] cursor-pointer overflow-hidden rounded-2xl border border-gray-100 bg-slate-900/5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl md:h-[360px]" href="<?= htmlspecialchars($hotelDetailUrl) ?>?id=<?= urlencode($hotel['id'] ?? '') ?>" data-city="<?= htmlspecialchars($hotel['city']) ?>">
-                    <!-- Rating Badge di Pojok Kanan Atas -->
                     <div class="absolute top-4 right-4 z-20 inline-flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 text-xs font-bold text-slate-800 shadow-sm backdrop-blur-sm">
                         <svg class="h-3 w-3 text-yellow-500" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .8 15 8l7 .9-5.2 4.9 1.3 7.2L12 17.8 5 21l1.3-7.2L1 8.9 8 8z"/></svg>
                         <?= htmlspecialchars($ratingValue) ?>
@@ -265,16 +261,14 @@ require __DIR__ . '/../layouts/header.php';
             <?php endforeach; ?>
         </div>
         
-        <!-- Pesan jika tidak ada hasil filter -->
         <div id="no-results-message" class="hidden rounded-3xl border-2 border-dashed border-gray-200 bg-gray-50 p-12 text-center">
             <svg class="mx-auto mb-4 h-16 w-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-            <h3 class="text-lg font-bold text-gray-600">Slot Hotel Tidak Tersedia di lokasi ini</h3>
+            <h3 class="text-lg font-bold text-gray-600">Hotel Tidak Tersedia di lokasi ini</h3>
             <p class="text-gray-400">Coba pilih destinasi lain atau lihat semua hotel.</p>
         </div>
     <?php endif; ?>
 </div>
 
-<!-- Testimoni rating tinggi -->
 <div class="bg-gray-50 py-20">
     <div class="mx-auto max-w-6xl px-6">
         <div class="text-center">
@@ -320,8 +314,8 @@ require __DIR__ . '/../layouts/header.php';
     </div>
 </div>
 
-<!-- Banner CTA floating (ganti copywriting via array) -->
-<div class="fixed bottom-4 left-4 right-4 z-40 md:left-1/2 md:right-auto md:w-auto md:-translate-x-1/2">
+<?php if (!$isAuthenticated): ?>
+<div class="fixed bottom-4 left-4 right-4 z-40 md:left-1/2 md:right-auto md:w-auto md:-translate-x-1/2 animate-in slide-in-from-bottom-4 duration-500">
     <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-gray-900/90 px-4 py-3 text-white backdrop-blur-md shadow-2xl md:px-6">
         <div class="hidden text-sm font-medium md:block">Dapatkan diskon pengguna baru hingga 50%</div>
         <div class="flex w-full items-center gap-3 md:w-auto">
@@ -332,8 +326,8 @@ require __DIR__ . '/../layouts/header.php';
         </div>
     </div>
 </div>
+<?php endif; ?>
 
-<!-- Scroll to Top Button -->
 <button id="scrollToTopBtn" class="fixed bottom-24 right-4 z-50 hidden rounded-full bg-blue-600 p-3 text-white shadow-lg transition hover:bg-blue-700 hover:-translate-y-1 focus:outline-none md:bottom-8 md:right-8" aria-label="Scroll to top">
     <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
 </button>
@@ -389,7 +383,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     // [BACKEND NOTE]: Logic Scroll to Top
-    // Tombol ini sekarang selalu muncul sesuai permintaan user untuk memudahkan navigasi.
     if (scrollToTopBtn) {
         scrollToTopBtn.classList.remove('hidden');
 
@@ -402,7 +395,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // [BACKEND NOTE]: Logic filter destinasi
-    // Ketika user mengklik tombol destinasi, filter hotel berdasarkan kota yang dipilih.
     destinationButtons.forEach(function (button) {
         button.addEventListener('click', function () {
             const selectedCity = button.getAttribute('data-destination') || '';
@@ -432,7 +424,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const cardCity = card.getAttribute('data-city');
                 // Logika filter: Tampilkan jika 'Semua' atau jika kota cocok (case insensitive/partial match)
                 if (selectedCity === '🔥 Semua' || cardCity.toLowerCase().includes(selectedCity.toLowerCase())) {
-                    card.style.display = ''; // Reset display (block/flex)
+                    card.style.display = ''; 
                     visibleCount++;
                 } else {
                     card.style.display = 'none';
