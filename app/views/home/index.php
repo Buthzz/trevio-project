@@ -75,16 +75,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['home_search'])) {
     }));
     $searchUrl = $searchBaseUrl . ($searchQueryString !== '' ? '?' . $searchQueryString : '');
 
-    // Opsional: Jika ingin memaksa login sebelum search, uncomment baris di bawah.
-    // Saat ini dibiarkan agar guest bisa mencari hotel.
-    /*
-    if (!$isAuthenticated) {
-        $loginRedirect = $loginUrl . '?redirect=' . urlencode($searchUrl);
-        header('Location: ' . $loginRedirect);
-        exit;
-    }
-    */
-
     header('Location: ' . $searchUrl);
     exit;
 }
