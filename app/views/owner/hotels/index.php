@@ -2,13 +2,13 @@
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
 <div class="flex h-screen bg-gray-50 overflow-hidden">
-    <div class="flex-shrink-0">
+    <div class="flex-shrink-0 hidden md:block">
         <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     </div>
     
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden overflow-x-hidden">
         
-        <main class="flex-1 overflow-y-auto p-8">
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8">
             
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
                 <div>

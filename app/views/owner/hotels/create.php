@@ -6,11 +6,11 @@
         <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     </div>
     
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden overflow-x-hidden">
         
-        <main class="flex-1 overflow-y-auto bg-gray-50">
+        <main class="flex-1 overflow-y-auto bg-gray-50 overflow-x-hidden">
             
-            <div class="bg-white border-b border-gray-200 px-8 py-6 flex items-center justify-between sticky top-0 z-10 shadow-sm">
+            <div class="bg-white border-b border-gray-200 px-4 md:px-8 py-6 flex items-center justify-between sticky top-0 z-10 shadow-sm">
                 <div class="flex items-center gap-4">
                     <a href="<?= BASE_URL ?>/owner/hotels" class="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
@@ -30,7 +30,7 @@
                 </div>
             </div>
 
-            <div class="p-8 max-w-5xl mx-auto">
+            <div class="p-4 md:p-8 max-w-5xl mx-auto">
                 <form id="createHotelForm" action="/owner/hotels/store" method="POST" enctype="multipart/form-data" class="space-y-8">
                     <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
                     

@@ -6,7 +6,7 @@
         <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     </div>
     
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden overflow-x-hidden">
         
         <header class="bg-white border-b border-gray-200 shadow-sm z-20 flex-shrink-0">
             <div class="px-8 py-6 flex items-center justify-between">
@@ -21,7 +21,7 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto bg-gray-50 p-8">
+        <main class="flex-1 overflow-y-auto bg-gray-50 overflow-x-hidden p-4 md:p-8">
             
             <?php if (isset($_SESSION['flash_success'])): ?>
                 <div class="mb-6 rounded-lg bg-green-50 p-4 border border-green-200 flex items-center gap-3">
