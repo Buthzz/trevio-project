@@ -5,68 +5,63 @@
     <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     
     <div class="flex-1 flex flex-col">
-        <!-- Top Navbar -->
         <div class="bg-white shadow-sm p-6 flex justify-between items-center">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Manajemen Hotel</h1>
                 <p class="text-gray-500 text-sm mt-1">Kelola semua hotel Anda di sini.</p>
             </div>
-            <button class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg flex items-center gap-2">
+            <a href="<?= BASE_URL ?>/owner/hotels/create" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-6 rounded-lg flex items-center gap-2 transition">
                 <span>+</span> Tambah Hotel
-            </button>
+            </a>
         </div>
 
-        <!-- Main Content -->
         <div class="flex-1 overflow-auto p-6">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <!-- Hotel Card -->
-                <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden">
-                    <div class="relative h-48 bg-gray-200">
-                        <img src="https://images.unsplash.com/photo-1564501049351-005e2b3e547d?w=400&h=300&fit=crop" alt="Aria Centra Surabaya" class="w-full h-full object-cover">
-                        <span class="absolute top-3 right-3 bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">ACTIVE</span>
-                    </div>
-                    
-                    <div class="p-4">
-                        <h3 class="text-lg font-bold text-gray-800 mb-1">Aria Centra Surabaya</h3>
-                        <p class="text-gray-600 text-sm flex items-center gap-1 mb-3">
-                            <span>📍</span> Surabaya
-                        </p>
-                        <p class="text-gray-600 text-sm line-clamp-2 mb-4">Aria Centra Surabaya terletak di Surabaya dan menawarkan akomodasi dengan akses Wi-Fi gratis.</p>
-                        
-                        <div class="grid grid-cols-3 gap-2 mb-4 py-3 border-t border-b border-gray-200">
-                            <div class="text-center">
-                                <p class="text-2xl font-bold text-gray-800">0</p>
-                                <p class="text-xs text-gray-600">Kamar</p>
+            <?php if (isset($_SESSION['flash_success'])): ?>
+                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                    <?= $_SESSION['flash_success']; unset($_SESSION['flash_success']); ?>
+                </div>
+            <?php endif; ?>
+
+            <?php if (empty($data['hotels'])): ?>
+                <div class="bg-white rounded-lg shadow p-12 text-center border-2 border-dashed border-gray-300">
+                    <div class="text-6xl mb-4">🏨</div>
+                    <h3 class="text-xl font-bold text-gray-700">Belum ada hotel</h3>
+                    <p class="text-gray-500 mb-6">Anda belum mendaftarkan properti apapun.</p>
+                    <a href="<?= BASE_URL ?>/owner/hotels/create" class="text-blue-600 font-semibold hover:underline">Mulai Tambah Hotel</a>
+                </div>
+            <?php else: ?>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <?php foreach ($data['hotels'] as $hotel): ?>
+                        <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow overflow-hidden border border-gray-200">
+                            <div class="relative h-48 bg-gray-200">
+                                <img src="<?= htmlspecialchars($hotel['main_image']) ?>" 
+                                     alt="<?= htmlspecialchars($hotel['name']) ?>" 
+                                     class="w-full h-full object-cover"
+                                     onerror="this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'">
+                                <span class="absolute top-3 right-3 bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase">
+                                    <?= $hotel['is_active'] ? 'Active' : 'Inactive' ?>
+                                </span>
                             </div>
-                            <div class="text-center">
-                                <p class="text-2xl font-bold text-gray-800">0</p>
-                                <p class="text-xs text-gray-600">Pemesanan</p>
-                            </div>
-                            <div class="text-center">
-                                <p class="text-2xl font-bold text-gray-800">0</p>
-                                <p class="text-xs text-gray-600">Review</p>
+                            
+                            <div class="p-4">
+                                <h3 class="text-lg font-bold text-gray-800 mb-1 truncate"><?= htmlspecialchars($hotel['name']) ?></h3>
+                                <p class="text-gray-600 text-sm flex items-center gap-1 mb-3">
+                                    <span>📍</span> <?= htmlspecialchars($hotel['city']) ?>
+                                </p>
+                                
+                                <div class="flex gap-2 mt-4">
+                                    <a href="#" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg font-semibold text-sm text-center transition">
+                                        Edit
+                                    </a>
+                                    <a href="<?= BASE_URL ?>/owner/rooms?hotel_id=<?= $hotel['id'] ?>" class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 py-2 px-3 rounded-lg font-semibold text-sm text-center transition">
+                                        Kamar
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                        
-                        <div class="flex gap-2">
-                            <button class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg font-semibold text-sm transition">
-                                Edit
-                            </button>
-                            <button class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg font-semibold text-sm transition">
-                                Hapus
-                            </button>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
-                
-                <!-- Add Hotel Card -->
-                <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow flex items-center justify-center min-h-80 border-2 border-dashed border-gray-300">
-                    <button class="flex flex-col items-center justify-center hover:opacity-75 transition">
-                        <div class="text-4xl text-gray-400 mb-2">+</div>
-                        <p class="text-gray-600 font-semibold">Tambah Hotel</p>
-                    </button>
-                </div>
-            </div>
+            <?php endif; ?>
         </div>
     </div>
 </div>
