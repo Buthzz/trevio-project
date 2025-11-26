@@ -138,7 +138,7 @@ if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true) {
             </section>
 
             <section id="auth-hero" class="md:w-[46%] relative min-h-[280px] md:min-h-[560px] order-1 md:order-2 bg-gray-900">
-                <div id="auth-hero-bg" class="absolute inset-0 bg-cover bg-center transition-all duration-700" style="background-image: url('https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&h=1000&fit=crop');"></div>
+                <div id="auth-hero-bg" class="absolute inset-0 bg-cover bg-center transition-all duration-700" style="background-image: url('<?= BASE_URL ?>/images/photo-1526778548025-fa2f459cd5c1.jpg');"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
                 <div class="relative z-10 h-full flex flex-col justify-end p-8 text-white">
                     <div class="absolute top-4 right-4 flex gap-2">
@@ -203,9 +203,9 @@ if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true) {
 
             // Slider Logic
             const slides = [
-                { title: 'Mulai Perjalanan Anda', quote: '"Dunia adalah buku, dan mereka yang tidak melakukan perjalanan hanya membaca satu halaman."', image: 'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&h=1000&fit=crop' },
-                { title: 'Temukan Perspektif Baru', quote: '"Perjalanan bukan soal tempat yang Anda kunjungi, tetapi cerita yang Anda bawa pulang."', image: 'https://images.unsplash.com/photo-1489515217757-5fd1be406fef?w=800&h=1000&fit=crop' },
-                { title: 'Rayakan Setiap Langkah', quote: '"Jangan menunggu momen yang sempurna, jelajahilah dunia dan ciptakan momen itu sendiri."', image: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=800&h=1000&fit=crop' }
+                { title: 'Mulai Perjalanan Anda', quote: '"Dunia adalah buku, dan mereka yang tidak melakukan perjalanan hanya membaca satu halaman."', image: '<?= BASE_URL ?>/images/photo-1526778548025-fa2f459cd5c1.jpg' },
+                { title: 'Temukan Perspektif Baru', quote: '"Perjalanan bukan soal tempat yang Anda kunjungi, tetapi cerita yang Anda bawa pulang."', image: '<?= BASE_URL ?>/images/photo-1489515217757-5fd1be406fef.jpg' },
+                { title: 'Rayakan Setiap Langkah', quote: '"Jangan menunggu momen yang sempurna, jelajahilah dunia dan ciptakan momen itu sendiri."', image: '<?= BASE_URL ?>/images/photo-1469854523086-cc02fe5d8800.jpg' }
             ];
 
             const heroBackground = document.getElementById('auth-hero-bg');

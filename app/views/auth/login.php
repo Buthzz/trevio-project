@@ -51,7 +51,7 @@ if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true) {
         <div class="bg-white rounded-[24px] shadow-[0px_4px_24px_0px_rgba(0,0,0,0.08)] max-w-[840px] w-full md:w-auto mx-auto flex flex-col md:flex-row md:max-h-[520px] md:overflow-hidden">
             
             <section class="md:w-[46%] relative min-h-[280px] md:min-h-[440px] order-1 md:order-none">
-                <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&h=1000&fit=crop');"></div>
+                <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('<?= BASE_URL ?>/images/photo-1571896349842-33c89424de2d.jpg');"></div>
                 <div class="absolute inset-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent"></div>
                 <div class="relative z-10 h-full flex flex-col justify-end p-7 text-white">
                     <span class="inline-flex bg-white/15 backdrop-blur-md px-4 py-1.5 rounded-full mb-5 border border-white/25 text-xs tracking-widest" style="user-select: none;">
