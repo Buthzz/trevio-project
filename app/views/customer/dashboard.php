@@ -6,10 +6,8 @@ require_once __DIR__ . '/../../../helpers/format.php';
 require __DIR__ . '/../layouts/header.php';
 ?>
 
-<!-- Customer Dashboard -->
 <section class="bg-slate-100/70 py-16">
     <div class="mx-auto max-w-6xl space-y-8 px-6">
-        <!-- Header Section -->
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-500">Dashboard</p>
@@ -23,7 +21,6 @@ require __DIR__ . '/../layouts/header.php';
             </div>
         </div>
 
-        <!-- Active Bookings Section -->
         <?php if (!empty($data['active_bookings'])): ?>
         <div class="space-y-4">
             <h2 class="text-xl font-semibold text-primary">Booking Aktif</h2>
@@ -50,11 +47,14 @@ require __DIR__ . '/../layouts/header.php';
                     </div>
                     <div class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 text-sm sm:flex-row sm:items-center sm:justify-between">
                         <?php
+                        // PERBAIKAN 1: Menggunakan 'booking_status' bukan 'status'
+                        $statusRaw = $booking['booking_status'] ?? 'unknown';
                         $statusClass = 'bg-slate-100 text-slate-600';
-                        $statusText = ucfirst($booking['status'] ?? 'unknown');
+                        $statusText = ucfirst($statusRaw);
                         
-                        switch($booking['status'] ?? '') {
+                        switch($statusRaw) {
                             case 'confirmed':
+                            case 'checked_in': // Menambahkan status checked_in
                                 $statusClass = 'bg-emerald-50 text-emerald-700';
                                 $statusText = 'Terkonfirmasi';
                                 break;
@@ -72,12 +72,18 @@ require __DIR__ . '/../layouts/header.php';
                             <?= htmlspecialchars($statusText) ?>
                         </span>
                         <div class="flex flex-wrap gap-3 text-sm font-semibold">
-                            <?php $bookingId = htmlspecialchars($booking['id'] ?? ''); ?>
+                            <?php 
+                            $bookingId = htmlspecialchars($booking['id'] ?? '');
+                            // PERBAIKAN 2: Mengambil 'booking_code' untuk link detail
+                            $bookingCode = htmlspecialchars($booking['booking_code'] ?? ''); 
+                            ?>
+                            
                             <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-slate-600 transition hover:border-accent hover:text-accent" 
-                               href="<?= BASE_URL ?>/booking/detail/<?= $bookingId ?>">
+                               href="<?= BASE_URL ?>/booking/detail/<?= $bookingCode ?>">
                                 Lihat Detail
                             </a>
-                            <?php if (($booking['status'] ?? '') === 'pending_payment'): ?>
+
+                            <?php if ($statusRaw === 'pending_payment'): ?>
                             <a class="inline-flex items-center justify-center rounded-full bg-accent px-4 py-2 text-white transition hover:bg-accentLight" 
                                href="<?= BASE_URL ?>/payment/form/<?= $bookingId ?>">
                                 Bayar Sekarang
@@ -106,7 +112,6 @@ require __DIR__ . '/../layouts/header.php';
         </div>
         <?php endif; ?>
 
-        <!-- Past Bookings Section -->
         <?php if (!empty($data['past_bookings'])): ?>
         <div class="space-y-4">
             <h2 class="text-xl font-semibold text-primary">Riwayat Booking</h2>
@@ -133,10 +138,12 @@ require __DIR__ . '/../layouts/header.php';
                     </div>
                     <div class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 text-sm sm:flex-row sm:items-center sm:justify-between">
                         <?php
+                        // PERBAIKAN 1 (Bagian Riwayat): Menggunakan 'booking_status'
+                        $statusRaw = $booking['booking_status'] ?? 'unknown';
                         $statusClass = 'bg-slate-100 text-slate-600';
-                        $statusText = ucfirst($booking['status'] ?? 'unknown');
+                        $statusText = ucfirst($statusRaw);
                         
-                        switch($booking['status'] ?? '') {
+                        switch($statusRaw) {
                             case 'completed':
                                 $statusClass = 'bg-emerald-50 text-emerald-700';
                                 $statusText = 'Selesai';
@@ -158,12 +165,14 @@ require __DIR__ . '/../layouts/header.php';
                             <?php 
                             $bookingId = htmlspecialchars($booking['id'] ?? '');
                             $hotelId = htmlspecialchars($booking['hotel_id'] ?? '');
+                            // PERBAIKAN 2 (Bagian Riwayat): Menggunakan 'booking_code'
+                            $bookingCode = htmlspecialchars($booking['booking_code'] ?? '');
                             ?>
                             <a class="inline-flex items-center justify-center rounded-full border border-slate-200 px-4 py-2 text-slate-600 transition hover:border-accent hover:text-accent" 
-                               href="<?= BASE_URL ?>/booking/detail/<?= $bookingId ?>">
+                               href="<?= BASE_URL ?>/booking/detail/<?= $bookingCode ?>">
                                 Lihat Detail
                             </a>
-                            <?php if (($booking['status'] ?? '') === 'completed'): ?>
+                            <?php if ($statusRaw === 'completed'): ?>
                             <a class="inline-flex items-center justify-center rounded-full border border-accent px-4 py-2 text-accent transition hover:bg-accent hover:text-white" 
                                href="<?= BASE_URL ?>/hotel/detail/<?= $hotelId ?>">
                                 Pesan Lagi
