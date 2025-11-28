@@ -15,12 +15,12 @@ class Booking extends Model {
     protected $table = 'bookings';
 
     /**
-     * Membuat booking baru dengan keamanan Transaksi & Inventory
-     * Mencegah Race Condition dan mengurangi stok kamar secara otomatis.
+     * Membuat booking baru dengan keamanan Transaksi & Inventory.
+     * Method ini dipanggil oleh BookingController::store()
      * * @param array $data Data booking lengkap
      * @return int|false ID booking yang baru dibuat atau false jika gagal/penuh
      */
-    public function create(array $data): int|false {
+    public function createSecurely(array $data): int|false {
         // Whitelist field yang diizinkan untuk insert
         $allowedFields = [
             'booking_code', 'customer_id', 'hotel_id', 'room_id',
@@ -108,7 +108,7 @@ class Booking extends Model {
 
     /**
      * Mencari booking berdasarkan Kode Booking
-     * * @param string $code Kode booking (misal: BK2025...)
+     * @param string $code Kode booking (misal: BK2025...)
      * @return array|false Data booking atau false
      */
     public function findByCode(string $code): array|false {
@@ -130,7 +130,7 @@ class Booking extends Model {
 
     /**
      * Mencari booking berdasarkan ID
-     * * @param int $id Booking ID
+     * @param int $id Booking ID
      * @return array|false Data booking atau false
      */
     public function find(int $id): array|false {
@@ -153,12 +153,6 @@ class Booking extends Model {
     /**
      * Submit Pembayaran dengan Transaksi Atomik
      * Memisahkan info bank dan akun untuk data yang lebih rapi.
-     * * @param int $bookingId
-     * @param string $proofFile Nama file bukti transfer
-     * @param string $bankName Nama Bank Pengirim
-     * @param string $accountName Nama Pemilik Rekening
-     * @param string $accountNumber Nomor Rekening (Opsional)
-     * @return bool Status keberhasilan
      */
     public function submitPayment(int $bookingId, string $proofFile, string $bankName, string $accountName, string $accountNumber = ''): bool {
         try {

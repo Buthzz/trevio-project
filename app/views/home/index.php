@@ -52,10 +52,11 @@ if (defined('BASE_URL')) {
 // Normalisasi nilai default agar form tetap terisi saat reload.
 $prefillValues = [
     'query' => trevio_clean_query($_GET['q'] ?? ''),
-    'city' => trevio_clean_query($_GET['city'] ?? 'Semua Kota'),
+    'city' => trevio_clean_query($_GET['city'] ?? ''),
     'check_in' => trevio_clean_query($_GET['check_in'] ?? ''),
     'check_out' => trevio_clean_query($_GET['check_out'] ?? ''),
     'guests' => trevio_clean_query($_GET['guests'] ?? ''),
+    'num_rooms' => trevio_clean_query($_GET['num_rooms'] ?? '1'), // Tambahan untuk Booking Logic
 ];
 
 // Tangani submit form search dari hero section.
@@ -63,10 +64,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['home_search'])) {
     // Susun parameter pencarian yang akan dilempar ke halaman hotel/search.
     $searchPayload = [
         'q' => $prefillValues['query'],
-        'city' => $prefillValues['city'] !== '' ? $prefillValues['city'] : 'Semua Kota',
+        'city' => $prefillValues['city'], // Kirim apa adanya, search controller yang handle logic 'Semua'
         'check_in' => $prefillValues['check_in'],
         'check_out' => $prefillValues['check_out'],
         'guests' => $prefillValues['guests'],
+        'num_rooms' => $prefillValues['num_rooms'], // Pastikan ini terkirim
     ];
 
     // Buat query string hanya dari nilai yang tidak kosong supaya URL lebih rapi.
@@ -123,6 +125,7 @@ require __DIR__ . '/../layouts/header.php';
         <form action="" method="get" class="grid grid-cols-1 items-end gap-4 md:grid-cols-12" data-search-form>
             <input type="hidden" name="home_search" value="1">
             <input type="hidden" name="city" value="<?= htmlspecialchars($prefillValues['city']) ?>" data-city-input>
+            
             <div class="group relative md:col-span-4">
                 <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Destinasi</label>
                 <div class="flex h-[50px] items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 transition group-hover:bg-white group-hover:border-blue-500">
@@ -155,15 +158,17 @@ require __DIR__ . '/../layouts/header.php';
             </div>
 
             <div class="group relative md:col-span-2" id="guest-dropdown-container">
-                <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Tamu</label>
+                <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Tamu & Kamar</label>
                 <div class="relative">
                     <button type="button" id="guest-dropdown-trigger" class="flex h-[50px] w-full items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 text-left transition group-hover:bg-white group-hover:border-blue-500">
                         <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                         <span id="guest-summary" class="truncate text-sm font-bold text-gray-800">1 Kamar, 1 Dewasa, 0 Anak</span>
                     </button>
                     
-                    <!-- Hidden Input for Form Submission -->
+                    <!-- Hidden Inputs for Form Submission -->
+                    <!-- Ini yang penting: num_rooms terpisah agar bisa dibaca BookingController -->
                     <input type="hidden" name="guests" id="guest-input" value="<?= htmlspecialchars($prefillValues['guests'] ?: '1 Kamar, 1 Dewasa, 0 Anak') ?>">
+                    <input type="hidden" name="num_rooms" id="num_rooms_input" value="<?= htmlspecialchars($prefillValues['num_rooms']) ?>">
 
                     <!-- Dropdown Content -->
                     <div id="guest-dropdown-content" class="absolute top-full left-0 z-50 mt-2 hidden w-72 rounded-xl border border-gray-100 bg-white p-4 shadow-xl">
@@ -250,8 +255,12 @@ require __DIR__ . '/../layouts/header.php';
         </div>
         <div class="no-scrollbar flex w-full gap-3 overflow-x-auto pb-2 md:w-auto">
             <?php foreach ($destinations as $index => $label): ?>
-                <?php $isActive = $index === 0; ?>
-                <button class="whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition <?= $isActive ? 'bg-gray-900 text-white shadow-lg shadow-gray-900/20' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-800 hover:text-gray-900' ?>" type="button" data-destination="<?= htmlspecialchars($label) ?>">
+                <?php 
+                    $isActive = $index === 0; 
+                    // Tentukan value filter
+                    $filterVal = ($label === '🔥 Semua') ? '🔥 Semua' : $label;
+                ?>
+                <button class="whitespace-nowrap rounded-full px-5 py-2 text-sm font-medium transition <?= $isActive ? 'bg-gray-900 text-white shadow-lg shadow-gray-900/20' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-800 hover:text-gray-900' ?>" type="button" data-destination="<?= htmlspecialchars($filterVal) ?>">
                     <?= htmlspecialchars($label) ?>
                 </button>
             <?php endforeach; ?>
@@ -396,7 +405,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
 
     // [BACKEND NOTE]: Cek parameter URL untuk notifikasi login sukses.
-    // Jika ada parameter 'login_success', tampilkan notifikasi toast kepada user.
     const urlParams = new URLSearchParams(window.location.search);
     const loginSuccess = urlParams.get('login_success');
     
@@ -423,29 +431,25 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
         
-        // Bersihkan URL tanpa reload
         const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
         window.history.replaceState({path: newUrl}, '', newUrl);
     }
     
-    // [BACKEND NOTE]: Logic Scroll to Top
     if (scrollToTopBtn) {
         scrollToTopBtn.classList.remove('hidden');
-
         scrollToTopBtn.addEventListener('click', function() {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
 
-    // [BACKEND NOTE]: Logic filter destinasi
+    // [BACKEND NOTE]: Logic filter destinasi yang disinkronkan dengan form
     destinationButtons.forEach(function (button) {
         button.addEventListener('click', function () {
             const selectedCity = button.getAttribute('data-destination') || '';
-            
-            // Update UI tombol aktif
+            const isAll = (selectedCity === '🔥 Semua');
+            const searchCity = isAll ? '' : selectedCity;
+
+            // 1. Update UI tombol aktif
             destinationButtons.forEach(btn => {
                 btn.classList.remove('bg-gray-900', 'text-white', 'shadow-lg');
                 btn.classList.add('bg-white', 'text-gray-600', 'border', 'border-gray-200');
@@ -453,23 +457,28 @@ document.addEventListener('DOMContentLoaded', function () {
             button.classList.remove('bg-white', 'text-gray-600', 'border', 'border-gray-200');
             button.classList.add('bg-gray-900', 'text-white', 'shadow-lg');
 
-            // Update form search (opsional, agar sinkron)
+            // 2. Update FORM SEARCH (Sinkronisasi Filter dengan Input)
             if (queryInput && cityInput) {
-                if (selectedCity === '🔥 Semua') {
-                    queryInput.value = '';
-                    cityInput.value = 'Semua Kota';
-                } else {
-                    queryInput.value = selectedCity;
-                    cityInput.value = selectedCity;
+                // Set nilai select 'q' (destinasi)
+                // Kita coba set value, jika option tidak ada maka browser akan set ke kosong/default
+                queryInput.value = searchCity;
+                
+                // Jika selectedCity tidak ada di option (misal user klik 'Semua' atau kota unik), 
+                // pastikan kita reset jika itu 'Semua', atau paksa set jika kota valid.
+                if (queryInput.value !== searchCity && !isAll) {
+                    // Opsional: Handle jika kota di filter tidak ada di dropdown
+                    // queryInput.value = ''; 
                 }
+                
+                // Set hidden input 'city'
+                cityInput.value = isAll ? 'Semua Kota' : selectedCity;
             }
 
-            // Filter kartu hotel secara client-side
+            // 3. Filter kartu hotel secara client-side (Visual only)
             let visibleCount = 0;
             hotelCards.forEach(card => {
                 const cardCity = card.getAttribute('data-city');
-                // Logika filter: Tampilkan jika 'Semua' atau jika kota cocok (case insensitive/partial match)
-                if (selectedCity === '🔥 Semua' || cardCity.toLowerCase().includes(selectedCity.toLowerCase())) {
+                if (isAll || cardCity.toLowerCase().includes(selectedCity.toLowerCase())) {
                     card.style.display = ''; 
                     visibleCount++;
                 } else {
@@ -477,50 +486,53 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             });
 
-            // Tampilkan pesan jika tidak ada hasil
             if (visibleCount === 0) {
                 if (noResultsMessage) noResultsMessage.classList.remove('hidden');
                 if (hotelGrid) hotelGrid.classList.add('hidden');
             } else {
-                if (noResultsMessage) noResultsMessage.classList.remove('hidden');
+                if (noResultsMessage) noResultsMessage.classList.add('hidden');
                 if (hotelGrid) hotelGrid.classList.remove('hidden');
             }
         });
     });
 
-    // [BACKEND NOTE]: Logic Guest Dropdown
+    // [BACKEND NOTE]: Logic Guest Dropdown & Room Sync
     const guestTrigger = document.getElementById('guest-dropdown-trigger');
     const guestContent = document.getElementById('guest-dropdown-content');
     const guestInput = document.getElementById('guest-input');
+    const numRoomsInput = document.getElementById('num_rooms_input'); // Input hidden baru
     const guestSummary = document.getElementById('guest-summary');
     const guestDoneBtn = document.getElementById('guest-dropdown-done');
     
+    // Inisialisasi nilai awal
     let counts = {
         room: 1,
         adult: 1,
         child: 0
     };
 
-    // Parse initial value if exists
-    if (guestInput && guestInput.value) {
-        const parts = guestInput.value.split(',');
-        parts.forEach(part => {
-            part = part.trim().toLowerCase();
-            if (part.includes('kamar')) counts.room = parseInt(part) || 1;
-            if (part.includes('dewasa')) counts.adult = parseInt(part) || 1;
-            if (part.includes('anak')) counts.child = parseInt(part) || 0;
-        });
-        updateGuestUI();
+    // Parsing nilai awal dari PHP jika ada (untuk pre-fill)
+    if (numRoomsInput && numRoomsInput.value) {
+        counts.room = parseInt(numRoomsInput.value) || 1;
     }
+    // Opsional: Parsing string guests jika ingin persis (misal '2 Dewasa')
+    // Tapi logic di atas sudah cukup untuk menangkap jumlah kamar
+
+    updateGuestUI(); // Render awal
 
     function updateGuestUI() {
+        // Update angka di dropdown
         document.getElementById('count-room').textContent = counts.room;
         document.getElementById('count-adult').textContent = counts.adult;
         document.getElementById('count-child').textContent = counts.child;
         
+        // Update teks ringkasan tombol
         const summary = `${counts.room} Kamar, ${counts.adult} Dewasa, ${counts.child} Anak`;
         if (guestSummary) guestSummary.textContent = summary;
+        
+        // Update Input Hidden (PENTING untuk form submission)
         if (guestInput) guestInput.value = summary;
+        if (numRoomsInput) numRoomsInput.value = counts.room; // Update jumlah kamar untuk BookingController
     }
 
     if (guestTrigger && guestContent) {
@@ -544,7 +556,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.querySelectorAll('.guest-counter-btn').forEach(btn => {
         btn.addEventListener('click', function(e) {
-            e.stopPropagation(); // Prevent closing dropdown
+            e.stopPropagation();
             const type = this.getAttribute('data-type');
             const action = this.getAttribute('data-action');
             

@@ -28,18 +28,36 @@ class BookingController extends Controller {
             exit;
         }
 
+        // Ambil Parameter Pencarian dari URL untuk Pre-fill Form (Logika Baru)
+        $checkIn = filter_input(INPUT_GET, 'check_in', FILTER_SANITIZE_SPECIAL_CHARS);
+        $checkOut = filter_input(INPUT_GET, 'check_out', FILTER_SANITIZE_SPECIAL_CHARS);
+        $numRooms = filter_input(INPUT_GET, 'num_rooms', FILTER_VALIDATE_INT);
+
         // Generate CSRF Token if not exists
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             $_SESSION['csrf_token_time'] = time();
         }
 
+        $room = $this->roomModel->find($roomId);
+        if (!$room) {
+            $_SESSION['flash_error'] = "Kamar tidak ditemukan.";
+            header('Location: ' . BASE_URL);
+            exit;
+        }
+
         $data = [
             'title' => 'Booking Hotel',
-            'room' => $this->roomModel->find($roomId),
-            'hotel' => $this->hotelModel->find($this->roomModel->find($roomId)['hotel_id']),
+            'room' => $room,
+            'hotel' => $this->hotelModel->find($room['hotel_id']),
             'user' => ['name' => $_SESSION['user_name'], 'email' => $_SESSION['user_email']],
-            'csrf_token' => $_SESSION['csrf_token']
+            'csrf_token' => $_SESSION['csrf_token'],
+            // Kirim parameter pencarian ke view agar form terisi otomatis
+            'search_params' => [
+                'check_in' => $checkIn,
+                'check_out' => $checkOut,
+                'num_rooms' => $numRooms ?? 1
+            ]
         ];
 
         $this->view('booking/create', $data);
@@ -356,7 +374,16 @@ class BookingController extends Controller {
 
     private function redirectBack(int $roomId, string $msg): void {
         $_SESSION['flash_error'] = $msg;
-        header("Location: " . BASE_URL . "/booking/create?room_id=$roomId");
+        
+        // Pertahankan input user saat redirect error
+        $params = [];
+        if (isset($_POST['check_in'])) $params['check_in'] = $_POST['check_in'];
+        if (isset($_POST['check_out'])) $params['check_out'] = $_POST['check_out'];
+        if (isset($_POST['num_rooms'])) $params['num_rooms'] = $_POST['num_rooms'];
+        
+        $queryString = http_build_query($params);
+        
+        header("Location: " . BASE_URL . "/booking/create?room_id=$roomId&" . $queryString);
         exit;
     }
     
