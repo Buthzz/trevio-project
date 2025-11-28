@@ -55,45 +55,16 @@ $registerUrl = BASE_URL . '/auth/register';
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'ui-sans-serif', 'system-ui']
-                    },
-                    colors: {
-                        primary: '#111827',
-                        accent: '#2563eb',      /* Blue-600 */
-                        accentLight: '#1d4ed8', /* Blue-700 */
-                        slateSoft: '#64748b'
-                    }
-                }
-            }
-        };
-    </script>
-
-    <link rel="stylesheet" href="<?= BASE_URL ?>/css/custom.css">
+    <!-- Cache busting for Tailwind CSS -->
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/tailwind.min.css?v=<?= time() ?>">
+    <link rel="stylesheet" href="<?= BASE_URL ?>/css/custom.css?v=<?= time() ?>">
     <script src="<?= BASE_URL ?>/js/sweetalert2.min.js"></script>
 
-    <style>
-        /* Transisi halus untuk efek glass header */
-        #main-header {
-            transition: all 0.3s ease-in-out;
-        }
-        .glass-effect {
-            background-color: rgba(255, 255, 255, 0.85) !important;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(226, 232, 240, 0.6);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
-        }
-    </style>
+
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-900">
 
-<header id="main-header" class="sticky top-0 z-50 w-full bg-white border-b border-slate-200">
+<header id="main-header" class="relative z-50 w-full bg-white border-b border-slate-200">
     <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:gap-6 sm:px-6 sm:py-4">
         
         <a class="inline-flex items-center gap-3" href="<?= htmlspecialchars($homeLink) ?>">
@@ -107,7 +78,7 @@ $registerUrl = BASE_URL . '/auth/register';
                     <span class="absolute inset-x-0 top-0 h-1/2 bg-red-600"></span>
                     <span class="absolute inset-x-0 bottom-0 h-1/2 bg-white"></span>
                 </span>
-                IDR
+                IDN
             </button>
 
             <?php if ($isAuthenticated): ?>
@@ -201,7 +172,7 @@ $registerUrl = BASE_URL . '/auth/register';
                         <span class="absolute inset-x-0 top-0 h-1/2 bg-red-600"></span>
                         <span class="absolute inset-x-0 bottom-0 h-1/2 bg-white"></span>
                     </span>
-                    <span>Indonesia (IDR)</span>
+                    <span>Indonesia (IDN)</span>
                 </button>
             </div>
 
@@ -269,22 +240,6 @@ $registerUrl = BASE_URL . '/auth/register';
             }
         });
 
-        // -- Glassmorphism Header on Scroll --
-        const header = document.getElementById('main-header');
-        const scrollThreshold = 10; // px
 
-        function updateHeader() {
-            if (window.scrollY > scrollThreshold) {
-                header.classList.add('glass-effect');
-                header.classList.remove('bg-white');
-            } else {
-                header.classList.remove('glass-effect');
-                header.classList.add('bg-white');
-            }
-        }
-
-        window.addEventListener('scroll', updateHeader);
-        // Jalankan sekali saat load untuk handle refresh di tengah halaman
-        updateHeader();
     });
 </script>

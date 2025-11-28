@@ -3,9 +3,57 @@
 require_once __DIR__ . '/../../../helpers/functions.php';
 trevio_start_session();
 
-// ==========================================================================
-// LOGIC PENGAMBILAN DATA (INTEGRASI DATABASE)
-// ==========================================================================
+// zekk: DATA DUMMY START - Hapus blok ini saat integrasi backend
+if (!isset($hotel)) {
+    $hotel = [
+        'id' => 1,
+        'name' => 'Grand Luxury Hotel Jakarta',
+        'city' => 'Jakarta Pusat',
+        'province' => 'DKI Jakarta',
+        'average_rating' => 4.8,
+        'total_reviews' => 1250,
+        'main_image' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+        'description' => 'Nikmati pengalaman menginap mewah di jantung kota Jakarta. Hotel kami menawarkan pemandangan kota yang menakjubkan, layanan kelas dunia, dan fasilitas lengkap untuk memanjakan Anda. Terletak strategis dekat pusat perbelanjaan dan bisnis.',
+        'facilities' => ['Kolam Renang', 'Spa', 'Gym', 'Wi-Fi', 'Restoran', 'Bar', 'Layanan Kamar 24 Jam', 'Parkir Valet'],
+        'images' => [
+             'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
+             'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
+             'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80'
+        ],
+        'rooms' => [
+            [
+                'id' => 101,
+                'room_type' => 'Deluxe Room',
+                'price_per_night' => 1500000,
+                'room_size' => 32,
+                'bed_type' => 'King Bed',
+                'capacity' => 2,
+                'amenities' => ['AC', 'Wi-Fi', 'TV Kabel', 'Minibar', 'Shower', 'Brankas']
+            ],
+            [
+                'id' => 102,
+                'room_type' => 'Executive Suite',
+                'price_per_night' => 2500000,
+                'room_size' => 45,
+                'bed_type' => 'King Bed',
+                'capacity' => 2,
+                'amenities' => ['AC', 'Wi-Fi', 'TV Kabel', 'Minibar', 'Bathtub', 'Ruang Tamu', 'View Kota']
+            ],
+            [
+                'id' => 103,
+                'room_type' => 'Family Room',
+                'price_per_night' => 3200000,
+                'room_size' => 60,
+                'bed_type' => '2 Queen Beds',
+                'capacity' => 4,
+                'amenities' => ['AC', 'Wi-Fi', 'TV Kabel', 'Kulkas', 'Bathtub', 'Ruang Makan']
+            ]
+        ]
+    ];
+    // zekk: Simulasi variabel tambahan dari controller
+    $galleryImages = $hotel['images']; 
+}
+// zekk: DATA DUMMY END
 
 // Pastikan variabel $hotel tersedia (dikirim dari HotelController)
 // Jika file ini diakses langsung tanpa melalui Controller, redirect ke halaman pencarian
@@ -138,49 +186,91 @@ require __DIR__ . '/../layouts/header.php';
     }
     .detail-hero__indicator {
         position: absolute;
-        bottom: 24px;
+        bottom: 32px;
         left: 50%;
         transform: translateX(-50%);
-        display: flex;
-        gap: 0.75rem;
-        flex-wrap: wrap;
-        justify-content: center;
-        width: calc(100% - 64px);
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 16px;
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(12px);
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        z-index: 10;
     }
     .detail-hero__dot {
-        display: inline-flex;
+        display: flex;
         flex-direction: column;
         align-items: center;
-        gap: 0.15rem;
-        padding: 0.5rem 0.75rem;
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,0.4);
-        background: rgba(15,23,42,0.55);
-        color: rgba(255,255,255,0.8);
-        font-size: 0.65rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
+        justify-content: center;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.8);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
     }
     .detail-hero__dot span {
-        font-size: 0.75rem;
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 2px;
+        letter-spacing: -0.02em;
+    }
+    .detail-hero__dot small {
+        font-size: 8px;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        max-width: 90%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        opacity: 0.9;
+    }
+    .detail-hero__dot:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.5);
+        color: #fff;
+        transform: translateY(-2px);
     }
     .detail-hero__dot.is-active {
-        background: rgba(255,255,255,0.95);
+        background: #ffffff;
         color: #0f172a;
-        border-color: transparent;
+        border-color: #ffffff;
+        transform: scale(1.15);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        z-index: 1;
     }
     @media (max-width: 640px) {
         .detail-hero {
-            height: 420px;
+            height: 400px;
             border-radius: 0 0 24px 24px;
         }
         .detail-hero__indicator {
-            bottom: 16px;
-            width: calc(100% - 32px);
+            bottom: 20px;
+            padding: 6px 10px;
+            gap: 8px;
+            width: auto;
+            max-width: 95%;
         }
         .detail-hero__dot {
-            padding: 0.4rem 0.6rem;
+            width: 52px;
+            height: 52px;
+        }
+        .detail-hero__dot span {
+            font-size: 13px;
+            margin-bottom: 0;
+        }
+        .detail-hero__dot small {
+            font-size: 7px;
+            max-width: 100%;
         }
     }
 </style>
@@ -232,7 +322,55 @@ require __DIR__ . '/../layouts/header.php';
 </section>
 
 <section class="bg-white py-16">
-    <div class="mx-auto grid max-w-6xl gap-10 px-6 lg:grid-cols-[2fr,1fr]">
+    <div class="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[300px_1fr]">
+        
+        <aside class="relative">
+            <div class="sticky top-24 space-y-6">
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="text-base font-semibold text-primary">Ringkasan singkat</h3>
+                    <ul class="mt-4 space-y-3 text-sm text-slate-600">
+                        <li class="flex items-center gap-2">
+                            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <path d="m12 6 4 8H8z"></path>
+                            </svg>
+                            Check-in 15:00 • Check-out 12:00
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2c3.5 0 6 2.5 6 7 0 6-6 13-6 13S6 15 6 9c0-4.5 2.5-7 6-7z"></path>
+                                <circle cx="12" cy="9" r="2"></circle>
+                            </svg>
+                            Lokasi Strategis
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M8 21h8"></path>
+                                <path d="M12 17v4"></path>
+                                <rect width="18" height="12" x="3" y="3" rx="2"></rect>
+                            </svg>
+                            Pembatalan gratis (S&K Berlaku)
+                        </li>
+                    </ul>
+                </div>
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="text-base font-semibold text-primary">Lokasi</h3>
+                    <p class="mt-2 text-sm text-slate-500"><?= htmlspecialchars($hotel['location']) ?></p>
+                    <div class="mt-4 h-48 overflow-hidden rounded-2xl bg-slate-100">
+                        <iframe class="h-full w-full" src="https://maps.google.com/maps?q=<?= urlencode($hotel['location']) ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" loading="lazy" frameborder="0"></iframe>
+                    </div>
+                </div>
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="text-base font-semibold text-primary">Kebijakan penting</h3>
+                    <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-500">
+                        <li>Deposit keamanan dibutuhkan saat check-in.</li>
+                        <li>Tidak diperbolehkan merokok di kamar. Area merokok tersedia di lounge.</li>
+                        <li>Hewan peliharaan diperbolehkan di kamar tertentu (hubungi concierge).</li>
+                    </ul>
+                </div>
+            </div>
+        </aside>
+
         <article class="space-y-8">
             <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
                 <h2 class="text-lg font-semibold text-primary">Tentang hotel</h2>
@@ -315,51 +453,6 @@ require __DIR__ . '/../layouts/header.php';
                 </div>
             </div>
         </article>
-        
-        <aside class="space-y-6">
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-base font-semibold text-primary">Ringkasan singkat</h3>
-                <ul class="mt-4 space-y-3 text-sm text-slate-600">
-                    <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="10"></circle>
-                            <path d="m12 6 4 8H8z"></path>
-                        </svg>
-                        Check-in 15:00 • Check-out 12:00
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 2c3.5 0 6 2.5 6 7 0 6-6 13-6 13S6 15 6 9c0-4.5 2.5-7 6-7z"></path>
-                            <circle cx="12" cy="9" r="2"></circle>
-                        </svg>
-                        Lokasi Strategis
-                    </li>
-                    <li class="flex items-center gap-2">
-                        <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M8 21h8"></path>
-                            <path d="M12 17v4"></path>
-                            <rect width="18" height="12" x="3" y="3" rx="2"></rect>
-                        </svg>
-                        Pembatalan gratis (S&K Berlaku)
-                    </li>
-                </ul>
-            </div>
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-base font-semibold text-primary">Lokasi</h3>
-                <p class="mt-2 text-sm text-slate-500"><?= htmlspecialchars($hotel['location']) ?></p>
-                <div class="mt-4 h-48 overflow-hidden rounded-2xl bg-slate-100">
-                    <iframe class="h-full w-full" src="https://maps.google.com/maps?q=<?= urlencode($hotel['location']) ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" loading="lazy" frameborder="0"></iframe>
-                </div>
-            </div>
-            <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h3 class="text-base font-semibold text-primary">Kebijakan penting</h3>
-                <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-500">
-                    <li>Deposit keamanan dibutuhkan saat check-in.</li>
-                    <li>Tidak diperbolehkan merokok di kamar. Area merokok tersedia di lounge.</li>
-                    <li>Hewan peliharaan diperbolehkan di kamar tertentu (hubungi concierge).</li>
-                </ul>
-            </div>
-        </aside>
     </div>
 </section>
 
