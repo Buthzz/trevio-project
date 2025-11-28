@@ -2,165 +2,130 @@
 
 namespace App\Controllers;
 
-use App\Models\Payment;
+use App\Core\Controller;
 use App\Models\Booking;
+use App\Models\Payment;
+use App\Models\Room; // Penting untuk restore slot
 
-class AdminPaymentController extends BaseAdminController {
-    private $paymentModel;
+class AdminPaymentController extends Controller {
     private $bookingModel;
+    private $paymentModel;
+    private $roomModel;
 
     public function __construct() {
-        parent::__construct();
-        $this->paymentModel = new Payment();
+        // Cek Login Admin
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
+            header('Location: ' . BASE_URL . '/auth/login');
+            exit;
+        }
+
         $this->bookingModel = new Booking();
+        $this->paymentModel = new Payment();
+        $this->roomModel = new Room(); // Model room diperlukan
     }
 
-    /**
-     * Display list of all payments
-     */
     public function index() {
-        $status = $this->sanitizeGet('status', 'pending');
-        
         $data = [
-            'title' => 'Manage Payments',
-            'payments' => $this->paymentModel->getAll($status),
-            'pending_count' => $this->paymentModel->countPending(),
-            'current_status' => $status,
-            'user' => $_SESSION
+            'title' => 'Verifikasi Pembayaran',
+            'payments' => $this->paymentModel->getPendingPayments()
         ];
-        
         $this->view('admin/payments/index', $data);
     }
 
-    /**
-     * Display payment verification page
-     */
-    public function verify($id) {
-        $payment = $this->paymentModel->find($id);
-        
+    public function process() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '/admin/payments');
+            exit;
+        }
+
+        // CSRF Protection (Sederhana)
+        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+            die("CSRF Error");
+        }
+
+        $paymentId = filter_input(INPUT_POST, 'payment_id', FILTER_VALIDATE_INT);
+        $action = $_POST['action'] ?? '';
+        $adminNote = strip_tags(trim($_POST['admin_note'] ?? ''));
+
+        if (!$paymentId || !in_array($action, ['approve', 'reject'])) {
+            $_SESSION['flash_error'] = "Data tidak valid.";
+            header('Location: ' . BASE_URL . '/admin/payments');
+            exit;
+        }
+
+        // Ambil data payment dan booking terkait
+        $payment = $this->paymentModel->find($paymentId);
         if (!$payment) {
-            $_SESSION['flash_error'] = "Payment not found.";
+            $_SESSION['flash_error'] = "Data pembayaran tidak ditemukan.";
             header('Location: ' . BASE_URL . '/admin/payments');
             exit;
         }
 
-        // Generate CSRF token
-        if (empty($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-        }
-
-        $data = [
-            'title' => 'Verify Payment',
-            'payment' => $payment,
-            'csrf_token' => $_SESSION['csrf_token'],
-            'user' => $_SESSION
-        ];
-        
-        $this->view('admin/payments/verify', $data);
-    }
-
-    /**
-     * Process payment verification (approve)
-     */
-    public function processVerify() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        $booking = $this->bookingModel->find($payment['booking_id']);
+        if (!$booking) {
+            $_SESSION['flash_error'] = "Data booking terkait tidak ditemukan.";
             header('Location: ' . BASE_URL . '/admin/payments');
             exit;
         }
 
-        $this->validateCsrf();
+        // --- LOGIC APPROVE / REJECT ---
+        try {
+            $db = new \App\Core\Database();
+            $db->beginTransaction();
 
-        $paymentId = filter_input(INPUT_POST, 'payment_id', FILTER_VALIDATE_INT);
-        $notes = strip_tags($_POST['notes'] ?? '');
-        
-        if (!$paymentId) {
-            $_SESSION['flash_error'] = "Invalid payment ID.";
-            header('Location: ' . BASE_URL . '/admin/payments');
-            exit;
-        }
+            if ($action === 'approve') {
+                // 1. Update Payment Status
+                $q1 = "UPDATE payments SET payment_status = 'verified', admin_note = :note, verified_at = NOW(), verified_by = :admin WHERE id = :pid";
+                $db->query($q1);
+                $db->bind(':note', $adminNote ?: 'Payment Accepted');
+                $db->bind(':admin', $_SESSION['user_id']);
+                $db->bind(':pid', $paymentId);
+                $db->execute();
 
-        // Verify payment (atomic transaction in model)
-        if ($this->paymentModel->verify($paymentId, $_SESSION['user_id'], $notes)) {
-            $_SESSION['flash_success'] = "Payment verified successfully. Booking confirmed and room slots updated.";
-            
-            // TODO: Send notification to customer (email/whatsapp)
-            
-        } else {
-            $_SESSION['flash_error'] = "Failed to verify payment. Please check room availability.";
+                // 2. Update Booking Status
+                $q2 = "UPDATE bookings SET booking_status = 'confirmed', updated_at = NOW() WHERE id = :bid";
+                $db->query($q2);
+                $db->bind(':bid', $payment['booking_id']);
+                $db->execute();
+
+                $msg = "Pembayaran berhasil diverifikasi. Booking dikonfirmasi.";
+
+            } elseif ($action === 'reject') {
+                // 1. Update Payment Status
+                $q1 = "UPDATE payments SET payment_status = 'failed', admin_note = :note, verified_at = NOW(), verified_by = :admin WHERE id = :pid";
+                $db->query($q1);
+                $db->bind(':note', $adminNote ?: 'Payment Rejected');
+                $db->bind(':admin', $_SESSION['user_id']);
+                $db->bind(':pid', $paymentId);
+                $db->execute();
+
+                // 2. Update Booking Status -> Cancelled
+                $q2 = "UPDATE bookings SET booking_status = 'cancelled', updated_at = NOW() WHERE id = :bid";
+                $db->query($q2);
+                $db->bind(':bid', $payment['booking_id']);
+                $db->execute();
+
+                // 3. RESTORE ROOM SLOT (PENTING!)
+                // Mengembalikan slot kamar karena booking batal
+                $q3 = "UPDATE rooms SET available_slots = available_slots + :num WHERE id = :rid";
+                $db->query($q3);
+                $db->bind(':num', $booking['num_rooms']);
+                $db->bind(':rid', $booking['room_id']);
+                $db->execute();
+
+                $msg = "Pembayaran ditolak. Slot kamar telah dikembalikan.";
+            }
+
+            $db->commit();
+            $_SESSION['flash_success'] = $msg;
+
+        } catch (\PDOException $e) {
+            $db->rollBack();
+            error_log("Payment Process Error: " . $e->getMessage());
+            $_SESSION['flash_error'] = "Terjadi kesalahan sistem: " . $e->getMessage();
         }
 
         header('Location: ' . BASE_URL . '/admin/payments');
         exit;
     }
-
-    /**
-     * Process payment rejection
-     */
-    public function processReject() {
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '/admin/payments');
-            exit;
-        }
-
-        $this->validateCsrf();
-
-        $paymentId = filter_input(INPUT_POST, 'payment_id', FILTER_VALIDATE_INT);
-        $reason = strip_tags($_POST['rejection_reason'] ?? '');
-        
-        if (!$paymentId) {
-            $_SESSION['flash_error'] = "Invalid payment ID.";
-            header('Location: ' . BASE_URL . '/admin/payments');
-            exit;
-        }
-
-        if (empty($reason)) {
-            $_SESSION['flash_error'] = "Please provide rejection reason.";
-            header('Location: ' . BASE_URL . '/admin/payments/verify/' . $paymentId);
-            exit;
-        }
-
-        // Reject payment (atomic transaction in model)
-        if ($this->paymentModel->reject($paymentId, $_SESSION['user_id'], $reason)) {
-            $_SESSION['flash_success'] = "Payment rejected. Customer can re-upload payment proof.";
-            
-            // TODO: Send rejection notification to customer
-            
-        } else {
-            $_SESSION['flash_error'] = "Failed to reject payment.";
-        }
-
-        header('Location: ' . BASE_URL . '/admin/payments');
-        exit;
-    }
-
-    /**
-     * Quick approve payment (from list page)
-     */
-    public function quickApprove($id) {
-        // Security: Use POST for state-changing actions
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . BASE_URL . '/admin/payments');
-            exit;
-        }
-
-        $this->validateCsrf();
-
-        $paymentId = filter_var($id, FILTER_VALIDATE_INT);
-        
-        if (!$paymentId) {
-            $_SESSION['flash_error'] = "Invalid payment ID.";
-            header('Location: ' . BASE_URL . '/admin/payments');
-            exit;
-        }
-
-        if ($this->paymentModel->verify($paymentId, $_SESSION['user_id'], 'Quick approval')) {
-            $_SESSION['flash_success'] = "Payment verified successfully.";
-        } else {
-            $_SESSION['flash_error'] = "Failed to verify payment.";
-        }
-
-        header('Location: ' . BASE_URL . '/admin/payments');
-        exit;
-    }
-
 }

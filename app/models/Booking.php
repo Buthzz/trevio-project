@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Core\Model;
 use PDO;
 use PDOException;
+use Exception;
 
 class Booking extends Model {
     
@@ -14,9 +15,10 @@ class Booking extends Model {
     protected $table = 'bookings';
 
     /**
-     * Membuat booking baru
+     * Membuat booking baru dengan keamanan Transaksi & Inventory
+     * Mencegah Race Condition dan mengurangi stok kamar secara otomatis.
      * * @param array $data Data booking lengkap
-     * @return int|false ID booking yang baru dibuat atau false jika gagal
+     * @return int|false ID booking yang baru dibuat atau false jika gagal/penuh
      */
     public function create(array $data): int|false {
         // Whitelist field yang diizinkan untuk insert
@@ -27,40 +29,78 @@ class Booking extends Model {
             'guest_name', 'guest_email', 'guest_phone', 'booking_status'
         ];
 
-        // Filter data
-        $data = array_intersect_key($data, array_flip($allowedFields));
+        // Filter data agar hanya field yang diizinkan yang masuk
+        $insertData = array_intersect_key($data, array_flip($allowedFields));
 
-        $params = [];
-        $values = [];
-        
-        foreach ($data as $field => $value) {
-            $params[] = $field;
-            $values[] = ":{$field}";
-        }
-
-        if (empty($params)) {
-            error_log("Booking Create Error: No valid fields provided");
+        // Validasi data penting untuk inventory
+        if (empty($insertData['room_id']) || empty($insertData['num_rooms'])) {
+            error_log("Booking Create Error: room_id or num_rooms missing");
             return false;
         }
 
-        $columns = implode(", ", $params);
-        $placeholders = implode(", ", $values);
-
-        $query = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
-
         try {
-            $this->query($query);
+            // 1. Mulai Transaksi Database
+            $this->beginTransaction();
+
+            // 2. LOCK & CHECK: Cek ketersediaan kamar & kunci baris agar tidak dibaca proses lain
+            // 'FOR UPDATE' akan menahan proses booking lain sampai transaksi ini selesai
+            $queryCheck = "SELECT available_slots FROM rooms WHERE id = :room_id FOR UPDATE";
+            $this->query($queryCheck);
+            $this->bind(':room_id', $insertData['room_id']);
+            $room = $this->single();
+
+            // Validasi ketersediaan
+            if (!$room) {
+                throw new Exception("Kamar tidak ditemukan.");
+            }
+
+            if ($room['available_slots'] < $insertData['num_rooms']) {
+                // Batalkan transaksi jika stok tidak cukup
+                $this->rollBack();
+                error_log("Booking Failed: Not enough slots for Room ID " . $insertData['room_id']);
+                return false; 
+            }
+
+            // 3. Insert Data Booking
+            $params = [];
+            $values = [];
             
-            foreach ($data as $field => $value) {
+            foreach ($insertData as $field => $value) {
+                $params[] = $field;
+                $values[] = ":{$field}";
+            }
+
+            $columns = implode(", ", $params);
+            $placeholders = implode(", ", $values);
+
+            $queryInsert = "INSERT INTO {$this->table} ({$columns}) VALUES ({$placeholders})";
+            $this->query($queryInsert);
+            
+            foreach ($insertData as $field => $value) {
                 $this->bind(":{$field}", $value);
             }
             
-            if ($this->execute()) {
-                return (int) $this->lastInsertId();
+            if (!$this->execute()) {
+                throw new Exception("Gagal menyimpan data booking.");
             }
-            return false;
+            
+            $bookingId = (int) $this->lastInsertId();
 
-        } catch (PDOException $e) {
+            // 4. KURANGI STOK KAMAR (UPDATE INVENTORY)
+            $queryUpdateSlot = "UPDATE rooms SET available_slots = available_slots - :num WHERE id = :rid";
+            $this->query($queryUpdateSlot);
+            $this->bind(':num', $insertData['num_rooms']);
+            $this->bind(':rid', $insertData['room_id']);
+            $this->execute();
+
+            // 5. Commit Transaksi (Simpan Permanen)
+            $this->commit();
+            
+            return $bookingId;
+
+        } catch (Exception $e) {
+            // Rollback jika terjadi error apapun
+            $this->rollBack();
             error_log("Booking Create Error: " . $e->getMessage());
             return false;
         }
@@ -134,9 +174,6 @@ class Booking extends Model {
             }
 
             // 2. Insert ke tabel payments
-            // Catatan: Idealnya tabel payments memiliki kolom 'transfer_from_account' dan 'transfer_from_number'.
-            // Jika schema database belum update, kita simpan detail akun di 'payment_notes' atau kolom relevan.
-            
             $fullAccountDetail = $accountName . ($accountNumber ? " ({$accountNumber})" : "");
 
             $queryPayment = "INSERT INTO payments (
@@ -154,7 +191,7 @@ class Booking extends Model {
             $this->bind(':amount', $booking['total_price']);
             $this->bind(':bank_name', $bankName);
             $this->bind(':proof', $proofFile);
-            $this->bind(':account_detail', "Sender: " . $fullAccountDetail); // Simpan detail pengirim
+            $this->bind(':account_detail', "Sender: " . $fullAccountDetail); 
             $this->execute();
 
             // 3. Update Status Booking
@@ -307,12 +344,6 @@ class Booking extends Model {
     // CUSTOMER DASHBOARD METHODS
     // =================================================================
 
-    /**
-     * Mengambil data booking customer (Perbaikan Binding Parameter)
-     * * @param int $customerId
-     * @param array $statusArray
-     * @return array
-     */
     public function getByCustomer(int $customerId, array $statusArray): array {
         $validStatuses = ['pending_payment', 'pending_verification', 'confirmed', 'checked_in', 'completed', 'cancelled', 'refunded'];
         $statusArray = array_filter($statusArray, fn($s) => in_array($s, $validStatuses));
@@ -321,7 +352,6 @@ class Booking extends Model {
             return [];
         }
         
-        // Generate Named Placeholders untuk binding yang aman (:status_0, :status_1, ...)
         $placeholders = [];
         $params = [':customer_id' => $customerId];
         
@@ -344,7 +374,6 @@ class Booking extends Model {
         try {
             $this->query($query);
             
-            // Bind parameter dinamis
             foreach ($params as $key => $value) {
                 $this->bind($key, $value);
             }
