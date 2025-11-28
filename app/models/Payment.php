@@ -1,5 +1,8 @@
 <?php
 
+// IMPORT PENTING: Mengimpor class Model dari namespace App\Core
+use App\Core\Model;
+
 class Payment extends Model {
     private $table = 'payments';
 
