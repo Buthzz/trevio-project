@@ -8,6 +8,8 @@ if (!function_exists('formatRupiah')) {
         return 'Rp ' . number_format($angka, 0, ',', '.');
     }
 }
+
+require_once __DIR__ . '../layouts/header.php';
 ?>
 
 <div class="flex min-h-[calc(100vh-var(--header-height,4rem))] bg-slate-50">
