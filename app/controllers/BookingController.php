@@ -125,6 +125,8 @@ class BookingController extends Controller {
             $this->redirectBack($roomId, "Kamar tidak ditemukan.");
         }
         
+        // UX Pre-check: Cek awal untuk user experience. 
+        // Pengecekan *sebenarnya* yang atomic ada di dalam createSecurely().
         if ($room['available_slots'] < $numRooms) {
             $this->redirectBack($roomId, "Slot kamar tidak mencukupi. Tersedia: {$room['available_slots']}");
         }
@@ -144,7 +146,7 @@ class BookingController extends Controller {
             $exists = $this->bookingModel->findByCode($code);
             $retryCount++;
             if ($retryCount > $maxRetries) {
-                $this->redirectBack($roomId, "Terjadi kesalahan sistem. Silakan coba lagi.");
+                $this->redirectBack($roomId, "Terjadi kesalahan sistem saat generate kode. Silakan coba lagi.");
             }
         } while ($exists);
 
@@ -168,11 +170,13 @@ class BookingController extends Controller {
             'booking_status' => 'pending_payment'
         ];
 
-        // Insert Booking (transaction handled in model if needed)
-        $bookingId = $this->bookingModel->create($bookingData);
+        // --- UPDATE PENTING: Menggunakan createSecurely ---
+        // Ini memastikan penggunaan transaksi database dan locking
+        $bookingId = $this->bookingModel->createSecurely($bookingData);
         
         if (!$bookingId) {
-            $this->redirectBack($roomId, "Gagal membuat booking. Silakan coba lagi.");
+            // Jika gagal di sini, berarti slot diambil orang lain sepersekian detik yang lalu
+            $this->redirectBack($roomId, "Mohon maaf, kamar baru saja penuh atau terjadi kesalahan sistem.");
         }
 
         $_SESSION['flash_success'] = "Booking berhasil! Silakan upload bukti pembayaran.";
