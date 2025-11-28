@@ -6,72 +6,68 @@ trevio_start_session();
 // Judul halaman utama landing.
 $pageTitle = $data['title'] ?? 'Trevio | Temukan Hotel Favoritmu';
 
-// Data dari controller (sudah dari DATABASE via HomeController)
+// Data dari controller
 $hotels = $data['hotels'] ?? []; 
 $benefits = $data['benefits'] ?? [];
 $destinations = $data['destinations'] ?? ['🔥 Semua'];
 $testimonials = $data['testimonials'] ?? [];
 
-// Mulai sesi lebih awal agar pengecekan login dapat berjalan aman.
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-// Tandai status login untuk dipakai di form search maupun CTA lain.
 $isAuthenticated = !empty($_SESSION['user_id']);
 
-// Beritahu header mengenai context user yang sedang aktif.
 trevio_share_auth_context([
     'isAuthenticated' => $isAuthenticated,
     'profileName' => $_SESSION['user_name'] ?? 'Traveler Trevio',
     'profilePhoto' => $_SESSION['user_avatar'] ?? null,
 ]);
 
-// Helper sederhana supaya nilai input bersih sebelum dipakai dalam redirect.
 if (!function_exists('trevio_clean_query')) {
-    function trevio_clean_query(string $value): string
-    {
+    function trevio_clean_query(string $value): string {
         return trim($value);
     }
 }
 
-// Siapkan URL penting dengan helper agar path konsisten.
 if (defined('BASE_URL')) {
     $loginUrl = BASE_URL . '/auth/login';
     $registerUrl = BASE_URL . '/auth/register';
     $searchBaseUrl = BASE_URL . '/hotel/search';
     $hotelDetailUrl = BASE_URL . '/hotel/detail';
 } else {
-    // Fallback manual jika BASE_URL tidak tersedia
     $loginUrl = trevio_view_route('auth/login');
     $registerUrl = trevio_view_route('auth/register');
     $searchBaseUrl = trevio_view_route('hotel/search');
     $hotelDetailUrl = trevio_view_route('hotel/detail');
 }
 
-// Normalisasi nilai default agar form tetap terisi saat reload.
+// [UPDATE]: Tambahkan prefill untuk adults & children
 $prefillValues = [
     'query' => trevio_clean_query($_GET['q'] ?? ''),
     'city' => trevio_clean_query($_GET['city'] ?? ''),
     'check_in' => trevio_clean_query($_GET['check_in'] ?? ''),
     'check_out' => trevio_clean_query($_GET['check_out'] ?? ''),
     'guests' => trevio_clean_query($_GET['guests'] ?? ''),
-    'num_rooms' => trevio_clean_query($_GET['num_rooms'] ?? '1'), // Tambahan untuk Booking Logic
+    'num_rooms' => trevio_clean_query($_GET['num_rooms'] ?? '1'),
+    'guest_adults' => trevio_clean_query($_GET['guest_adults'] ?? '1'), // Default 1 Dewasa
+    'guest_children' => trevio_clean_query($_GET['guest_children'] ?? '0'), // Default 0 Anak
 ];
 
 // Tangani submit form search dari hero section.
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['home_search'])) {
-    // Susun parameter pencarian yang akan dilempar ke halaman hotel/search.
+    // [UPDATE]: Sertakan adults & children dalam payload redirect
     $searchPayload = [
         'q' => $prefillValues['query'],
-        'city' => $prefillValues['city'], // Kirim apa adanya, search controller yang handle logic 'Semua'
+        'city' => $prefillValues['city'],
         'check_in' => $prefillValues['check_in'],
         'check_out' => $prefillValues['check_out'],
         'guests' => $prefillValues['guests'],
-        'num_rooms' => $prefillValues['num_rooms'], // Pastikan ini terkirim
+        'num_rooms' => $prefillValues['num_rooms'],
+        'guest_adults' => $prefillValues['guest_adults'],
+        'guest_children' => $prefillValues['guest_children'],
     ];
 
-    // Buat query string hanya dari nilai yang tidak kosong supaya URL lebih rapi.
     $searchQueryString = http_build_query(array_filter($searchPayload, static function ($value) {
         return $value !== '';
     }));
@@ -81,12 +77,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['home_search'])) {
     exit;
 }
 
-// Render header umum agar nav dan asset konsisten.
 require __DIR__ . '/../layouts/header.php';
 ?>
 
 <div class="relative h-[60vh] min-h-[400px] w-full overflow-hidden">
-    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[1200ms] hover:scale-105" style="background-image: url('<?= BASE_URL ?>/images/photo-1618773928121-c32242e63f39.avif');"></div>
+    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[1200ms] hover:scale-105" style="background-image: url('<?= BASE_URL ?>/public/images/photo-1618773928121-c32242e63f39.avif');"></div>
     <div class="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-black/40 to-transparent"></div>
 
     <div class="absolute top-1/4 left-1/4 h-32 w-32 rounded-full bg-white/5 blur-xl animate-pulse-slow"></div>
@@ -165,14 +160,12 @@ require __DIR__ . '/../layouts/header.php';
                         <span id="guest-summary" class="truncate text-sm font-bold text-gray-800">1 Kamar, 1 Dewasa, 0 Anak</span>
                     </button>
                     
-                    <!-- Hidden Inputs for Form Submission -->
-                    <!-- Ini yang penting: num_rooms terpisah agar bisa dibaca BookingController -->
                     <input type="hidden" name="guests" id="guest-input" value="<?= htmlspecialchars($prefillValues['guests'] ?: '1 Kamar, 1 Dewasa, 0 Anak') ?>">
                     <input type="hidden" name="num_rooms" id="num_rooms_input" value="<?= htmlspecialchars($prefillValues['num_rooms']) ?>">
+                    <input type="hidden" name="guest_adults" id="input_guest_adults" value="<?= htmlspecialchars($prefillValues['guest_adults']) ?>">
+                    <input type="hidden" name="guest_children" id="input_guest_children" value="<?= htmlspecialchars($prefillValues['guest_children']) ?>">
 
-                    <!-- Dropdown Content -->
                     <div id="guest-dropdown-content" class="absolute top-full left-0 z-50 mt-2 hidden w-72 rounded-xl border border-gray-100 bg-white p-4 shadow-xl">
-                        <!-- Kamar -->
                         <div class="mb-4 flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-bold text-gray-800">Kamar</p>
@@ -184,7 +177,6 @@ require __DIR__ . '/../layouts/header.php';
                                 <button type="button" class="guest-counter-btn flex h-8 w-8 items-center justify-center rounded-full border border-blue-600 text-blue-600 hover:bg-blue-50" data-type="room" data-action="increase">+</button>
                             </div>
                         </div>
-                        <!-- Dewasa -->
                         <div class="mb-4 flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-bold text-gray-800">Dewasa</p>
@@ -196,7 +188,6 @@ require __DIR__ . '/../layouts/header.php';
                                 <button type="button" class="guest-counter-btn flex h-8 w-8 items-center justify-center rounded-full border border-blue-600 text-blue-600 hover:bg-blue-50" data-type="adult" data-action="increase">+</button>
                             </div>
                         </div>
-                        <!-- Anak -->
                         <div class="flex items-center justify-between">
                             <div>
                                 <p class="text-sm font-bold text-gray-800">Anak</p>
@@ -280,7 +271,7 @@ require __DIR__ . '/../layouts/header.php';
                 // Ambil gambar dari database, fallback jika kosong
                 $thumbnail = !empty($hotel['main_image']) 
                     ? htmlspecialchars($hotel['main_image']) 
-                    : BASE_URL . '/images/photo-1618773928121-c32242e63f39.avif';
+                    : BASE_URL . '/public/images/photo-1618773928121-c32242e63f39.avif';
                 
                 // Ambil rating dari database
                 $ratingValue = number_format((float)($hotel['average_rating'] ?? 0), 1);
@@ -500,7 +491,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const guestTrigger = document.getElementById('guest-dropdown-trigger');
     const guestContent = document.getElementById('guest-dropdown-content');
     const guestInput = document.getElementById('guest-input');
-    const numRoomsInput = document.getElementById('num_rooms_input'); // Input hidden baru
+    
+    // [UPDATE]: Ambil referensi input hidden yang baru
+    const numRoomsInput = document.getElementById('num_rooms_input'); 
+    const inputAdults = document.getElementById('input_guest_adults');
+    const inputChildren = document.getElementById('input_guest_children');
+
     const guestSummary = document.getElementById('guest-summary');
     const guestDoneBtn = document.getElementById('guest-dropdown-done');
     
@@ -515,8 +511,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (numRoomsInput && numRoomsInput.value) {
         counts.room = parseInt(numRoomsInput.value) || 1;
     }
-    // Opsional: Parsing string guests jika ingin persis (misal '2 Dewasa')
-    // Tapi logic di atas sudah cukup untuk menangkap jumlah kamar
+    if (inputAdults && inputAdults.value) {
+        counts.adult = parseInt(inputAdults.value) || 1;
+    }
+    if (inputChildren && inputChildren.value) {
+        counts.child = parseInt(inputChildren.value) || 0;
+    }
 
     updateGuestUI(); // Render awal
 
@@ -532,7 +532,9 @@ document.addEventListener('DOMContentLoaded', function () {
         
         // Update Input Hidden (PENTING untuk form submission)
         if (guestInput) guestInput.value = summary;
-        if (numRoomsInput) numRoomsInput.value = counts.room; // Update jumlah kamar untuk BookingController
+        if (numRoomsInput) numRoomsInput.value = counts.room; 
+        if (inputAdults) inputAdults.value = counts.adult;
+        if (inputChildren) inputChildren.value = counts.child;
     }
 
     if (guestTrigger && guestContent) {
