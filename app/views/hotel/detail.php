@@ -3,57 +3,14 @@
 require_once __DIR__ . '/../../../helpers/functions.php';
 trevio_start_session();
 
-// zekk: DATA DUMMY START - Hapus blok ini saat integrasi backend
-if (!isset($hotel)) {
-    $hotel = [
-        'id' => 1,
-        'name' => 'Grand Luxury Hotel Jakarta',
-        'city' => 'Jakarta Pusat',
-        'province' => 'DKI Jakarta',
-        'average_rating' => 4.8,
-        'total_reviews' => 1250,
-        'main_image' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-        'description' => 'Nikmati pengalaman menginap mewah di jantung kota Jakarta. Hotel kami menawarkan pemandangan kota yang menakjubkan, layanan kelas dunia, dan fasilitas lengkap untuk memanjakan Anda. Terletak strategis dekat pusat perbelanjaan dan bisnis.',
-        'facilities' => ['Kolam Renang', 'Spa', 'Gym', 'Wi-Fi', 'Restoran', 'Bar', 'Layanan Kamar 24 Jam', 'Parkir Valet'],
-        'images' => [
-             'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-             'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-             'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80'
-        ],
-        'rooms' => [
-            [
-                'id' => 101,
-                'room_type' => 'Deluxe Room',
-                'price_per_night' => 1500000,
-                'room_size' => 32,
-                'bed_type' => 'King Bed',
-                'capacity' => 2,
-                'amenities' => ['AC', 'Wi-Fi', 'TV Kabel', 'Minibar', 'Shower', 'Brankas']
-            ],
-            [
-                'id' => 102,
-                'room_type' => 'Executive Suite',
-                'price_per_night' => 2500000,
-                'room_size' => 45,
-                'bed_type' => 'King Bed',
-                'capacity' => 2,
-                'amenities' => ['AC', 'Wi-Fi', 'TV Kabel', 'Minibar', 'Bathtub', 'Ruang Tamu', 'View Kota']
-            ],
-            [
-                'id' => 103,
-                'room_type' => 'Family Room',
-                'price_per_night' => 3200000,
-                'room_size' => 60,
-                'bed_type' => '2 Queen Beds',
-                'capacity' => 4,
-                'amenities' => ['AC', 'Wi-Fi', 'TV Kabel', 'Kulkas', 'Bathtub', 'Ruang Makan']
-            ]
-        ]
-    ];
-    // zekk: Simulasi variabel tambahan dari controller
-    $galleryImages = $hotel['images']; 
-}
-// zekk: DATA DUMMY END
+
+// Siapkan Query String untuk tombol booking
+// Kita merge room_id nanti di dalam loop
+$baseQueryParams = http_build_query([
+    'check_in' => $search_params['check_in'],
+    'check_out' => $search_params['check_out'],
+    'num_rooms' => $search_params['num_rooms']
+]);
 
 // Pastikan variabel $hotel tersedia (dikirim dari HotelController)
 // Jika file ini diakses langsung tanpa melalui Controller, redirect ke halaman pencarian
