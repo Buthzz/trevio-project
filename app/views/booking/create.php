@@ -9,7 +9,7 @@
             </li>
             <li>
                 <div class="flex items-center">
-                    <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                    <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 6 10">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
                     </svg>
                     <a href="<?= BASE_URL ?>/hotel/detail/<?= $hotel['id'] ?>" class="ml-1 text-sm font-medium text-gray-700 hover:text-blue-600 md:ml-2"><?= htmlspecialchars($hotel['name']) ?></a>
@@ -17,7 +17,7 @@
             </li>
             <li aria-current="page">
                 <div class="flex items-center">
-                    <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                    <svg class="w-3 h-3 text-gray-400 mx-1" aria-hidden="true" xmlns="[http://www.w3.org/2000/svg](http://www.w3.org/2000/svg)" fill="none" viewBox="0 0 6 10">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
                     </svg>
                     <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">Booking</span>
@@ -60,22 +60,27 @@
                                 <label for="check_in" class="block text-sm font-medium text-gray-700 mb-1">Check-in</label>
                                 <input type="date" name="check_in" id="check_in" required
                                     min="<?= date('Y-m-d') ?>"
+                                    value="<?= htmlspecialchars($search_params['check_in'] ?? '') ?>"
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
                             </div>
                             <div>
                                 <label for="check_out" class="block text-sm font-medium text-gray-700 mb-1">Check-out</label>
                                 <input type="date" name="check_out" id="check_out" required
                                     min="<?= date('Y-m-d', strtotime('+1 day')) ?>"
+                                    value="<?= htmlspecialchars($search_params['check_out'] ?? '') ?>"
                                     class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border">
                             </div>
                             <div>
                                 <label for="num_rooms" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Kamar</label>
                                 <select name="num_rooms" id="num_rooms" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border bg-white">
                                     <?php 
-                                    $maxSlots = min($room['available_slots'], 5); // Batasi max 5 per booking atau sisa slot
+                                    $maxSlots = min($room['available_slots'], 5); 
+                                    $selectedRooms = (int)($search_params['num_rooms'] ?? 1);
                                     for($i = 1; $i <= $maxSlots; $i++): 
                                     ?>
-                                        <option value="<?= $i ?>"><?= $i ?> Kamar</option>
+                                        <option value="<?= $i ?>" <?= ($i === $selectedRooms) ? 'selected' : '' ?>>
+                                            <?= $i ?> Kamar
+                                        </option>
                                     <?php endfor; ?>
                                 </select>
                                 <p class="text-xs text-gray-500 mt-1">Tersedia: <?= $room['available_slots'] ?> kamar</p>
@@ -139,7 +144,7 @@
                     <!-- Info Hotel -->
                     <div class="flex gap-3 mb-4">
                         <div class="w-20 h-20 bg-gray-200 rounded-md overflow-hidden flex-shrink-0">
-                            <!-- Placeholder Image if no main photo -->
+                            <!-- Placeholder Image -->
                             <img src="<?= BASE_URL ?>/public/images/placeholder.jpg" alt="Hotel" class="w-full h-full object-cover">
                         </div>
                         <div>
@@ -179,7 +184,6 @@
     </div>
 </div>
 
-<!-- Simple Vanilla JS for Price Calculation -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const checkInInput = document.getElementById('check_in');
@@ -199,7 +203,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         summaryRooms.textContent = rooms;
 
-        if (checkInDate && checkOutDate && checkOutDate > checkInDate) {
+        // Cek validitas tanggal
+        if (checkInInput.value && checkOutInput.value && checkOutDate > checkInDate) {
             const timeDiff = checkOutDate - checkInDate;
             const nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
             
@@ -208,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Base price
             const subtotal = pricePerNight * nights * rooms;
             
-            // Tax 10% + Service 5% = 15% (Sesuai Controller)
+            // Tax 10% + Service 5% = 15%
             const tax = subtotal * 0.10;
             const service = subtotal * 0.05;
             const total = subtotal + tax + service;
@@ -220,14 +225,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Auto-set check-out date to tomorrow when check-in is selected
+    // Auto-set check-out date to tomorrow when check-in is selected (hanya jika check-out belum dipilih)
     checkInInput.addEventListener('change', function() {
         if(this.value) {
             const date = new Date(this.value);
             date.setDate(date.getDate() + 1);
             const nextDay = date.toISOString().split('T')[0];
             checkOutInput.min = nextDay;
-            if(checkOutInput.value && checkOutInput.value <= this.value) {
+            
+            // Jika checkout kosong atau invalid, set otomatis ke besoknya
+            if(!checkOutInput.value || checkOutInput.value <= this.value) {
                 checkOutInput.value = nextDay;
             }
         }
@@ -236,6 +243,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     checkOutInput.addEventListener('change', calculateTotal);
     numRoomsInput.addEventListener('change', calculateTotal);
+
+    // Initial Calculation (Penting: agar harga langsung muncul saat load)
+    calculateTotal();
 });
 </script>
 
