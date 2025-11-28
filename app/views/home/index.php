@@ -84,7 +84,7 @@ require __DIR__ . '/../layouts/header.php';
 ?>
 
 <div class="relative h-[60vh] min-h-[400px] w-full overflow-hidden">
-    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[1200ms] hover:scale-105" style="background-image: url('https://images.unsplash.com/photo-1618773928121-c32242e63f39?q=80&w=2070&auto=format&fit=crop');"></div>
+    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[1200ms] hover:scale-105" style="background-image: url('<?= BASE_URL ?>/images/photo-1618773928121-c32242e63f39.avif');"></div>
     <div class="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-black/40 to-transparent"></div>
 
     <div class="absolute top-1/4 left-1/4 h-32 w-32 rounded-full bg-white/5 blur-xl animate-pulse-slow"></div>
@@ -127,7 +127,16 @@ require __DIR__ . '/../layouts/header.php';
                 <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Destinasi</label>
                 <div class="flex h-[50px] items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 transition group-hover:bg-white group-hover:border-blue-500">
                     <svg class="h-5 w-5 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"></path></svg>
-                    <input class="w-full bg-transparent text-sm font-bold text-gray-800 placeholder-gray-400 outline-none" name="q" placeholder="Mau nginep dimana?" type="text" value="<?= htmlspecialchars($prefillValues['query']) ?>" data-query-input>
+                    <select class="w-full appearance-none bg-transparent text-sm font-bold text-gray-800 outline-none cursor-pointer" name="q" data-query-input>
+                        <option value="" <?= empty($prefillValues['query']) ? 'selected' : '' ?>>Mau nginep dimana?</option>
+                        <?php foreach ($destinations as $dest): ?>
+                            <?php 
+                                $val = $dest === '🔥 Semua' ? '' : $dest;
+                                $isSelected = (trim($prefillValues['query']) === $val) ? 'selected' : '';
+                            ?>
+                            <option value="<?= htmlspecialchars($val) ?>" <?= $isSelected ?>><?= htmlspecialchars($dest) ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
 
@@ -145,12 +154,59 @@ require __DIR__ . '/../layouts/header.php';
                 </div>
             </div>
 
-            <div class="group relative md:col-span-2">
+            <div class="group relative md:col-span-2" id="guest-dropdown-container">
                 <label class="mb-1 block text-[10px] font-bold uppercase tracking-wider text-gray-400">Tamu</label>
-                <div class="flex h-[50px] items-center rounded-xl border border-gray-200 bg-gray-50 p-3 transition group-hover:bg-white group-hover:border-blue-500">
-                    <div class="flex items-center gap-2 truncate text-sm font-bold text-gray-800">
+                <div class="relative">
+                    <button type="button" id="guest-dropdown-trigger" class="flex h-[50px] w-full items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 p-3 text-left transition group-hover:bg-white group-hover:border-blue-500">
                         <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        <input class="w-full truncate bg-transparent text-sm font-bold text-gray-800 placeholder-gray-400 outline-none" name="guests" placeholder="1 Kamar, 2 Tamu" type="text" value="<?= htmlspecialchars($prefillValues['guests']) ?>">
+                        <span id="guest-summary" class="truncate text-sm font-bold text-gray-800">1 Kamar, 1 Dewasa, 0 Anak</span>
+                    </button>
+                    
+                    <!-- Hidden Input for Form Submission -->
+                    <input type="hidden" name="guests" id="guest-input" value="<?= htmlspecialchars($prefillValues['guests'] ?: '1 Kamar, 1 Dewasa, 0 Anak') ?>">
+
+                    <!-- Dropdown Content -->
+                    <div id="guest-dropdown-content" class="absolute top-full left-0 z-50 mt-2 hidden w-72 rounded-xl border border-gray-100 bg-white p-4 shadow-xl">
+                        <!-- Kamar -->
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">Kamar</p>
+                                <p class="text-xs text-gray-500">Jumlah kamar</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button type="button" class="guest-counter-btn flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100" data-type="room" data-action="decrease">-</button>
+                                <span class="w-4 text-center text-sm font-bold text-gray-800" id="count-room">1</span>
+                                <button type="button" class="guest-counter-btn flex h-8 w-8 items-center justify-center rounded-full border border-blue-600 text-blue-600 hover:bg-blue-50" data-type="room" data-action="increase">+</button>
+                            </div>
+                        </div>
+                        <!-- Dewasa -->
+                        <div class="mb-4 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">Dewasa</p>
+                                <p class="text-xs text-gray-500">Usia 13+</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button type="button" class="guest-counter-btn flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100" data-type="adult" data-action="decrease">-</button>
+                                <span class="w-4 text-center text-sm font-bold text-gray-800" id="count-adult">1</span>
+                                <button type="button" class="guest-counter-btn flex h-8 w-8 items-center justify-center rounded-full border border-blue-600 text-blue-600 hover:bg-blue-50" data-type="adult" data-action="increase">+</button>
+                            </div>
+                        </div>
+                        <!-- Anak -->
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-bold text-gray-800">Anak</p>
+                                <p class="text-xs text-gray-500">Usia 0-12</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button type="button" class="guest-counter-btn flex h-8 w-8 items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100" data-type="child" data-action="decrease">-</button>
+                                <span class="w-4 text-center text-sm font-bold text-gray-800" id="count-child">0</span>
+                                <button type="button" class="guest-counter-btn flex h-8 w-8 items-center justify-center rounded-full border border-blue-600 text-blue-600 hover:bg-blue-50" data-type="child" data-action="increase">+</button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 border-t border-gray-100 pt-3 text-right">
+                            <button type="button" id="guest-dropdown-done" class="text-sm font-bold text-blue-600 hover:text-blue-700">Selesai</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -215,7 +271,7 @@ require __DIR__ . '/../layouts/header.php';
                 // Ambil gambar dari database, fallback jika kosong
                 $thumbnail = !empty($hotel['main_image']) 
                     ? htmlspecialchars($hotel['main_image']) 
-                    : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
+                    : BASE_URL . '/images/photo-1618773928121-c32242e63f39.avif';
                 
                 // Ambil rating dari database
                 $ratingValue = number_format((float)($hotel['average_rating'] ?? 0), 1);
@@ -426,9 +482,81 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (noResultsMessage) noResultsMessage.classList.remove('hidden');
                 if (hotelGrid) hotelGrid.classList.add('hidden');
             } else {
-                if (noResultsMessage) noResultsMessage.classList.add('hidden');
+                if (noResultsMessage) noResultsMessage.classList.remove('hidden');
                 if (hotelGrid) hotelGrid.classList.remove('hidden');
             }
+        });
+    });
+
+    // [BACKEND NOTE]: Logic Guest Dropdown
+    const guestTrigger = document.getElementById('guest-dropdown-trigger');
+    const guestContent = document.getElementById('guest-dropdown-content');
+    const guestInput = document.getElementById('guest-input');
+    const guestSummary = document.getElementById('guest-summary');
+    const guestDoneBtn = document.getElementById('guest-dropdown-done');
+    
+    let counts = {
+        room: 1,
+        adult: 1,
+        child: 0
+    };
+
+    // Parse initial value if exists
+    if (guestInput && guestInput.value) {
+        const parts = guestInput.value.split(',');
+        parts.forEach(part => {
+            part = part.trim().toLowerCase();
+            if (part.includes('kamar')) counts.room = parseInt(part) || 1;
+            if (part.includes('dewasa')) counts.adult = parseInt(part) || 1;
+            if (part.includes('anak')) counts.child = parseInt(part) || 0;
+        });
+        updateGuestUI();
+    }
+
+    function updateGuestUI() {
+        document.getElementById('count-room').textContent = counts.room;
+        document.getElementById('count-adult').textContent = counts.adult;
+        document.getElementById('count-child').textContent = counts.child;
+        
+        const summary = `${counts.room} Kamar, ${counts.adult} Dewasa, ${counts.child} Anak`;
+        if (guestSummary) guestSummary.textContent = summary;
+        if (guestInput) guestInput.value = summary;
+    }
+
+    if (guestTrigger && guestContent) {
+        guestTrigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            guestContent.classList.toggle('hidden');
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!guestContent.contains(e.target) && !guestTrigger.contains(e.target)) {
+                guestContent.classList.add('hidden');
+            }
+        });
+        
+        if (guestDoneBtn) {
+            guestDoneBtn.addEventListener('click', function() {
+                guestContent.classList.add('hidden');
+            });
+        }
+    }
+
+    document.querySelectorAll('.guest-counter-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation(); // Prevent closing dropdown
+            const type = this.getAttribute('data-type');
+            const action = this.getAttribute('data-action');
+            
+            if (action === 'increase') {
+                counts[type]++;
+            } else if (action === 'decrease') {
+                if (type === 'room' && counts[type] > 1) counts[type]--;
+                if (type === 'adult' && counts[type] > 1) counts[type]--;
+                if (type === 'child' && counts[type] > 0) counts[type]--;
+            }
+            
+            updateGuestUI();
         });
     });
 });
