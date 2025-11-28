@@ -1,343 +1,201 @@
 <?php
-// Judul halaman supaya tab browser menampilkan konteks proses refund.
-$pageTitle = 'Process Refund - Trevio';
-// Link beranda admin untuk elemen navigasi global.
-$homeLink  = '../dashboard.php';
-// Sertakan header umum agar tampilan konsisten.
-include __DIR__ . '/../../layouts/header.php';
+$baseUrl = defined('BASE_URL') ? BASE_URL : '';
+$refund = $data['refund'] ?? null;
+$csrf_token = $data['csrf_token'] ?? '';
 
-// Ambil ID refund dari query atau gunakan default untuk demonstrasi.
-$refundId = $_GET['id'] ?? 'REF-001';
-// Data refund contoh; nantinya diganti data aktual dari database.
-$refund = [
-    'id' => $refundId,
-    'customer' => 'John Doe',
-    'email' => 'john@example.com',
-    'booking' => 'BK-001',
-    'hotel' => 'Grand Hotel Jakarta',
-    'amount' => 'Rp 2.500.000',
-    'amountNumeric' => 2500000,
-    'reason' => 'Cancelled due to personal reasons',
-    'requestDate' => '2024-01-15',
-    'requestTime' => '14:30:00',
-    'status' => 'pending',
-    'bookingDates' => '15 Jan 2024 - 17 Jan 2024',
-    'paymentMethod' => 'Bank Transfer',
-    'bankAccount' => 'BCA - 1234567890',
-    'originalTransaction' => 'TXN-001',
-    'notes' => 'Customer requested cancellation',
+if (!$refund) {
+    echo "Refund not found.";
+    exit;
+}
+
+$statusColors = [
+    'requested' => 'bg-yellow-100 text-yellow-700',
+    'approved' => 'bg-blue-100 text-blue-700',
+    'completed' => 'bg-green-100 text-green-700',
+    'rejected' => 'bg-red-100 text-red-700',
 ];
+
+require_once __DIR__ . '/../../layouts/header.php';
 ?>
 
-<!-- Layout proses refund admin -->
 <div class="flex min-h-[calc(100vh-var(--header-height,4rem))] bg-slate-50">
-    <!-- Sidebar Toggle Button (Mobile) -->
-    <button id="sidebarToggle" class="fixed top-4 left-4 z-50 lg:hidden rounded-lg bg-accent p-2 text-white shadow-lg hover:bg-accentLight transition" onclick="toggleSidebar()">
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-    </button>
-
-    <!-- Sidebar Overlay (Mobile) -->
-    <div id="sidebarOverlay" class="fixed inset-0 z-20 hidden bg-black/50 lg:hidden" onclick="closeSidebar()"></div>
-
-    <!-- Sidebar -->
-    <!-- Sidebar modul admin -->
-    <aside id="adminSidebar" class="fixed inset-y-0 left-0 z-30 w-64 border-r border-slate-200 bg-white overflow-y-auto transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:static lg:pt-0" style="top: var(--header-height, 4rem);">
-        <!-- Sidebar Header with Close Button (Mobile) -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 lg:hidden">
-            <h3 class="font-bold text-slate-900">Menu</h3>
-            <button class="rounded-lg p-1 hover:bg-slate-100 transition" onclick="closeSidebar()">
-                <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+    <main class="flex-1 container mx-auto p-6 md:p-8">
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <a href="<?= $baseUrl ?>/admin/refunds" class="text-accent hover:underline text-sm font-medium flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Kembali ke Daftar
+                </a>
+                <h1 class="mt-2 text-2xl font-bold text-slate-900">Proses Refund #<?= $refund['id'] ?></h1>
+            </div>
         </div>
-        <div class="p-6">
-            <nav class="space-y-2">
-                <a href="../dashboard.php" class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4"></path>
-                    </svg>
-                    Dashboard
-                </a>
-                <a href="../hotels/index.php" class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
-                    </svg>
-                    Hotels
-                </a>
-                <a href="../payments/index.php" class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                    </svg>
-                    Payments
-                </a>
-                <a href="index.php" class="flex items-center gap-3 rounded-lg bg-accent/10 px-4 py-3 text-accent font-semibold transition">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path>
-                    </svg>
-                    Refunds
-                </a>
-                <a href="../users/index.php" class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-2a6 6 0 0112 0v2zm6-11a4 4 0 110 5.292M21 21h-8v-2a6 6 0 018-5.73"></path>
-                    </svg>
-                    Users
-                </a>
-            </nav>
-        </div>
-    </aside>
 
-    <!-- Main Content -->
-    <!-- Konten form konfirmasi refund -->
-    <main class="flex-1 overflow-auto">
-        <div class="p-6 md:p-8">
-            <!-- Page Header -->
-            <div class="mb-8 flex items-center justify-between">
-                <div>
-                    <a href="index.php" class="text-accent hover:underline text-sm font-medium">← Back to Refunds</a>
-                    <h1 class="mt-2 text-3xl font-bold text-slate-900">Process Refund</h1>
-                    <p class="mt-1 text-slate-600">Refund ID: <?= htmlspecialchars($refund['id']) ?></p>
+        <?php if (isset($_SESSION['flash_success'])): ?>
+            <div class="mb-6 rounded-lg bg-emerald-50 p-4 text-sm text-emerald-700 border border-emerald-200">
+                <?= $_SESSION['flash_success']; unset($_SESSION['flash_success']); ?>
+            </div>
+        <?php endif; ?>
+        <?php if (isset($_SESSION['flash_error'])): ?>
+            <div class="mb-6 rounded-lg bg-red-50 p-4 text-sm text-red-700 border border-red-200">
+                <?= $_SESSION['flash_error']; unset($_SESSION['flash_error']); ?>
+            </div>
+        <?php endif; ?>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 space-y-6">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <div class="flex justify-between items-start mb-4">
+                        <h2 class="text-lg font-bold text-slate-900">Detail Permintaan</h2>
+                        <span class="px-3 py-1 rounded-full text-sm font-medium <?= $statusColors[$refund['refund_status']] ?>">
+                            <?= ucfirst($refund['refund_status']) ?>
+                        </span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p class="text-sm text-slate-500">Nominal Refund</p>
+                            <p class="text-xl font-bold text-slate-900">Rp <?= number_format($refund['refund_amount'], 0, ',', '.') ?></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">Alasan</p>
+                            <p class="text-base text-slate-900"><?= htmlspecialchars($refund['reason']) ?></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">Bank Tujuan</p>
+                            <p class="font-medium text-slate-900"><?= htmlspecialchars($refund['bank_name']) ?></p>
+                            <p class="text-sm"><?= htmlspecialchars($refund['account_number']) ?> a.n <?= htmlspecialchars($refund['account_name']) ?></p>
+                        </div>
+                        <div>
+                            <p class="text-sm text-slate-500">Tanggal Request</p>
+                            <p class="font-medium text-slate-900"><?= date('d M Y H:i', strtotime($refund['requested_at'])) ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                    <h2 class="text-lg font-bold text-slate-900 mb-4">Informasi Booking Asal</h2>
+                    <div class="space-y-3">
+                        <div class="flex justify-between border-b border-slate-100 pb-2">
+                            <span class="text-slate-500">Booking Code</span>
+                            <span class="font-medium text-accent">#<?= htmlspecialchars($refund['booking_code']) ?></span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-100 pb-2">
+                            <span class="text-slate-500">Hotel</span>
+                            <span class="font-medium"><?= htmlspecialchars($refund['hotel_name']) ?></span>
+                        </div>
+                        <div class="flex justify-between border-b border-slate-100 pb-2">
+                            <span class="text-slate-500">Tipe Kamar</span>
+                            <span class="font-medium"><?= htmlspecialchars($refund['room_type']) ?></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-slate-500">Customer</span>
+                            <span class="font-medium"><?= htmlspecialchars($refund['customer_name']) ?> (<?= htmlspecialchars($refund['customer_email']) ?>)</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                <!-- Left Column - Refund Details -->
-                <div class="lg:col-span-2 space-y-6">
-                    <!-- Refund Request Details -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-6 text-lg font-bold text-slate-900">Refund Request Details</h2>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Refund ID</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['id']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Status</p>
-                                    <p class="mt-1">
-                                        <span class="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700">
-                                            <?= ucfirst($refund['status']) ?>
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Refund Amount</p>
-                                    <p class="mt-1 text-xl font-bold text-slate-900"><?= htmlspecialchars($refund['amount']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Original Transaction</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['originalTransaction']) ?></p>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Request Date</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['requestDate']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Request Time</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['requestTime']) ?></p>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-slate-600">Reason for Refund</p>
-                                <p class="mt-1 text-slate-700"><?= htmlspecialchars($refund['reason']) ?></p>
-                            </div>
-                        </div>
+            <div class="space-y-6">
+                
+                <?php if ($refund['refund_status'] === 'requested'): ?>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h2 class="text-lg font-bold text-slate-900 mb-4">Aksi Admin</h2>
+                        
+                        <form action="<?= $baseUrl ?>/admin/refunds/approve" method="POST" class="mb-4">
+                            <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                            <input type="hidden" name="refund_id" value="<?= $refund['id'] ?>">
+                            
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Catatan Persetujuan (Opsional)</label>
+                            <textarea name="admin_notes" rows="2" class="w-full rounded-lg border border-slate-300 p-2 text-sm mb-3" placeholder="OK, data valid..."></textarea>
+                            
+                            <button type="submit" class="w-full flex justify-center items-center gap-2 bg-green-600 text-white px-4 py-2.5 rounded-lg hover:bg-green-700 transition font-medium" onclick="return confirm('Setujui permintaan refund ini?')">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                Setujui Refund
+                            </button>
+                        </form>
+
+                        <hr class="my-4 border-slate-100">
+
+                        <form action="<?= $baseUrl ?>/admin/refunds/reject" method="POST">
+                            <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                            <input type="hidden" name="refund_id" value="<?= $refund['id'] ?>">
+                            
+                            <label class="block text-sm font-medium text-slate-700 mb-2">Alasan Penolakan <span class="text-red-500">*</span></label>
+                            <textarea name="rejection_reason" rows="2" class="w-full rounded-lg border border-slate-300 p-2 text-sm mb-3" required placeholder="Data tidak sesuai..."></textarea>
+                            
+                            <button type="submit" class="w-full flex justify-center items-center gap-2 bg-red-50 text-red-600 border border-red-200 px-4 py-2.5 rounded-lg hover:bg-red-100 transition font-medium" onclick="return confirm('Tolak permintaan refund ini?')">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                Tolak Refund
+                            </button>
+                        </form>
                     </div>
 
-                    <!-- Customer & Booking Information -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-6 text-lg font-bold text-slate-900">Customer & Booking Information</h2>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Customer Name</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['customer']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Email</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['email']) ?></p>
-                                </div>
+                <?php elseif ($refund['refund_status'] === 'approved'): ?>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 border-l-4 border-l-blue-500">
+                        <h2 class="text-lg font-bold text-slate-900 mb-2">Upload Bukti Transfer</h2>
+                        <p class="text-sm text-slate-600 mb-4">Permintaan telah disetujui. Silakan transfer dana ke rekening customer lalu upload bukti di sini untuk menyelesaikan proses.</p>
+                        
+                        <form action="<?= $baseUrl ?>/admin/refunds/complete" method="POST" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                            <input type="hidden" name="refund_id" value="<?= $refund['id'] ?>">
+                            
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-slate-700 mb-2">File Bukti (JPG/PNG/PDF)</label>
+                                <input type="file" name="refund_receipt" required class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                             </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Booking ID</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['booking']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Hotel</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['hotel']) ?></p>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-slate-600">Check-in & Check-out</p>
-                                <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['bookingDates']) ?></p>
-                            </div>
-                        </div>
+                            
+                            <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium">
+                                Selesaikan Refund
+                            </button>
+                        </form>
                     </div>
 
-                    <!-- Bank Information for Refund -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-6 text-lg font-bold text-slate-900">Refund Bank Account</h2>
+                <?php elseif ($refund['refund_status'] === 'completed'): ?>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h2 class="text-lg font-bold text-green-700 mb-4 flex items-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Refund Selesai
+                        </h2>
                         <div class="space-y-4">
                             <div>
-                                <p class="text-sm font-medium text-slate-600">Payment Method</p>
-                                <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['paymentMethod']) ?></p>
+                                <p class="text-sm text-slate-500">Diselesaikan Oleh</p>
+                                <p class="font-medium text-slate-900">Admin ID: <?= $refund['processed_by'] ?></p>
                             </div>
                             <div>
-                                <p class="text-sm font-medium text-slate-600">Bank Account</p>
-                                <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($refund['bankAccount']) ?></p>
+                                <p class="text-sm text-slate-500">Waktu Selesai</p>
+                                <p class="font-medium text-slate-900"><?= date('d M Y H:i', strtotime($refund['completed_at'])) ?></p>
                             </div>
-                            <div class="rounded-lg bg-blue-50 border border-blue-200 p-4">
-                                <p class="text-sm text-blue-900">
-                                    <span class="font-semibold">Note:</span> Refund akan ditransfer ke rekening bank pelanggan sesuai metode pembayaran original.
-                                </p>
-                            </div>
+                            <?php if (!empty($refund['refund_receipt'])): ?>
+                                <div class="pt-2">
+                                    <a href="<?= $baseUrl . '/' . $refund['refund_receipt'] ?>" target="_blank" class="block w-full text-center bg-slate-100 text-slate-700 py-2 rounded-lg text-sm hover:bg-slate-200">
+                                        Lihat Bukti Transfer
+                                    </a>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
 
-                    <!-- Admin Notes -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-4 text-lg font-bold text-slate-900">Notes</h2>
-                        <textarea placeholder="Tambahkan catatan atau komentar..." rows="4" class="w-full rounded-lg border border-slate-300 p-3 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"><?= htmlspecialchars($refund['notes']) ?></textarea>
-                    </div>
-                </div>
-
-                <!-- Right Column - Action Panel -->
-                <div class="space-y-6">
-                    <!-- Processing Status -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-6 text-lg font-bold text-slate-900">Processing Status</h2>
-                        <div class="space-y-4">
-                            <!-- Timeline -->
-                            <div class="space-y-4">
-                                <!-- Step 1: Review -->
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold">1</div>
-                                        <div class="w-0.5 h-12 bg-blue-200 mt-2"></div>
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-slate-900">Review Request</p>
-                                        <p class="text-xs text-slate-600">Completed</p>
-                                    </div>
-                                </div>
-
-                                <!-- Step 2: Process -->
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="h-8 w-8 rounded-full bg-yellow-500 flex items-center justify-center text-white text-xs font-bold">2</div>
-                                        <div class="w-0.5 h-12 bg-slate-300 mt-2"></div>
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-slate-900">Process Refund</p>
-                                        <p class="text-xs text-slate-600">Pending</p>
-                                    </div>
-                                </div>
-
-                                <!-- Step 3: Complete -->
-                                <div class="flex gap-4">
-                                    <div class="flex flex-col items-center">
-                                        <div class="h-8 w-8 rounded-full bg-slate-300 flex items-center justify-center text-slate-600 text-xs font-bold">3</div>
-                                    </div>
-                                    <div>
-                                        <p class="font-semibold text-slate-900">Confirm Completion</p>
-                                        <p class="text-xs text-slate-600">Waiting</p>
-                                    </div>
-                                </div>
-                            </div>
+                <?php elseif ($refund['refund_status'] === 'rejected'): ?>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+                        <h2 class="text-lg font-bold text-red-700 mb-4 flex items-center gap-2">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            Refund Ditolak
+                        </h2>
+                        <div class="p-4 bg-red-50 rounded-lg border border-red-100">
+                            <p class="text-sm text-red-800 font-medium">Alasan Penolakan:</p>
+                            <p class="text-sm text-red-700 mt-1"><?= htmlspecialchars($refund['rejection_reason']) ?></p>
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-sm text-slate-500">Ditolak Oleh</p>
+                            <p class="font-medium text-slate-900">Admin ID: <?= $refund['processed_by'] ?></p>
                         </div>
                     </div>
+                <?php endif; ?>
 
-                    <!-- Quick Actions -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-4 text-lg font-bold text-slate-900">Actions</h2>
-                        <div class="space-y-3">
-                            <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 transition">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                Approve Refund
-                            </button>
-                            <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-white font-semibold hover:bg-blue-700 transition">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                                </svg>
-                                Process Payment
-                            </button>
-                            <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-white font-semibold hover:bg-red-700 transition">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                                Reject Refund
-                            </button>
-                            <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-200 px-4 py-3 text-slate-700 font-semibold hover:bg-slate-300 transition">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Request More Info
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Important Info -->
-                    <div class="rounded-xl bg-red-50 border border-red-200 p-6">
-                        <h3 class="text-sm font-bold text-red-900 mb-3">Important Notes</h3>
-                        <ul class="text-xs text-red-800 space-y-2">
-                            <li class="flex gap-2">
-                                <span class="text-red-600 font-bold">•</span>
-                                <span>Pastikan data bank pelanggan sudah terverifikasi</span>
-                            </li>
-                            <li class="flex gap-2">
-                                <span class="text-red-600 font-bold">•</span>
-                                <span>Refund biasanya memerlukan waktu 3-5 hari kerja</span>
-                            </li>
-                            <li class="flex gap-2">
-                                <span class="text-red-600 font-bold">•</span>
-                                <span>Simpan bukti refund untuk laporan audit</span>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
             </div>
         </div>
     </main>
 </div>
 
-<script>
-    function toggleSidebar() {
-        // Mengatur buka/tutup sidebar saat tombol mobile dipakai.
-        const sidebar = document.getElementById('adminSidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        sidebar.classList.toggle('-translate-x-full');
-        overlay.classList.toggle('hidden');
-    }
-
-    function closeSidebar() {
-        // Menutup sidebar agar area kerja kembali luas.
-        const sidebar = document.getElementById('adminSidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        sidebar.classList.add('-translate-x-full');
-        overlay.classList.add('hidden');
-    }
-
-    // Saat link navigasi dipilih, tutup sidebar secara otomatis.
-    document.querySelectorAll('#adminSidebar a').forEach(link => {
-        link.addEventListener('click', closeSidebar);
-    });
-
-    // Untuk layar besar, pastikan sidebar tetap terlihat dan overlay hilang.
-    window.addEventListener('resize', () => {
-        if (window.innerWidth >= 1024) {
-            document.getElementById('adminSidebar').classList.remove('-translate-x-full');
-            document.getElementById('sidebarOverlay').classList.add('hidden');
-        }
-    });
-</script>
-
-<?php include __DIR__ . '/../../layouts/footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>

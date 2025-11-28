@@ -2,116 +2,106 @@
 
 namespace App\Controllers;
 
-use App\Core\Controller;
-use App\Models\Booking;
 use App\Models\Payment;
-use App\Models\Room;
 
-class AdminPaymentController extends Controller {
-    private $bookingModel;
+class AdminPaymentController extends BaseAdminController {
     private $paymentModel;
-    private $roomModel;
 
     public function __construct() {
-        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'admin') {
-            header('Location: ' . BASE_URL . '/auth/login');
-            exit;
-        }
-        $this->bookingModel = new Booking();
+        parent::__construct();
         $this->paymentModel = new Payment();
-        $this->roomModel = new Room();
-        $this->ensureCsrfToken();
     }
 
-    // HALAMAN LIST
+    // Helper aman untuk GET request
+    private function getQuery($key, $default = null) {
+        return isset($_GET[$key]) && $_GET[$key] !== '' ? htmlspecialchars($_GET[$key], ENT_QUOTES, 'UTF-8') : $default;
+    }
+
     public function index() {
-        $statusFilter = filter_input(INPUT_GET, 'status', FILTER_SANITIZE_SPECIAL_CHARS);
+        // Default status 'pending' agar sesuai dengan tab "Menunggu Verifikasi"
+        $status = $this->getQuery('status', 'pending');
 
         $data = [
-            'title' => 'Verifikasi Pembayaran',
-            'payments' => $this->paymentModel->getAll($statusFilter ?: null),
-            'stats' => [
-                'revenue'  => $this->paymentModel->getTotalRevenue(),
-                'verified' => $this->paymentModel->countByStatus('verified'),
-                'pending'  => $this->paymentModel->countByStatus('pending_verification')
-            ],
-            'filters' => ['status' => $statusFilter],
+            'title' => 'Manage Payments',
+            'payments' => $this->paymentModel->getAll($status),
+            'pending_count' => $this->paymentModel->countPending(),
+            'current_status' => $status,
+            'csrf_token' => $_SESSION['csrf_token'] ?? '', // Pastikan token ada
             'user' => $_SESSION
         ];
 
         $this->view('admin/payments/index', $data);
     }
 
-    // HALAMAN DETAIL / VERIFY (INI YANG ANDA CARI)
+    /**
+     * Verifikasi Pembayaran (Halaman Detail)
+     */
     public function verify($id) {
-        $paymentId = filter_var($id, FILTER_VALIDATE_INT);
-        if (!$paymentId) {
+        $payment = $this->paymentModel->find($id);
+
+        if (!$payment) {
+            $_SESSION['flash_error'] = "Data pembayaran tidak ditemukan.";
             header('Location: ' . BASE_URL . '/admin/payments');
             exit;
         }
-
-        $payment = $this->paymentModel->find($paymentId);
         
-        if (!$payment) {
-            $_SESSION['flash_error'] = "Pembayaran tidak ditemukan.";
-            header('Location: ' . BASE_URL . '/admin/payments');
-            exit;
+        // Generate token jika belum ada
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
 
         $data = [
-            'title' => 'Detail Verifikasi',
+            'title' => 'Verify Payment',
             'payment' => $payment,
-            'csrf_token' => $_SESSION['csrf_token']
+            'csrf_token' => $_SESSION['csrf_token'],
+            'user' => $_SESSION
         ];
 
         $this->view('admin/payments/verify', $data);
     }
 
-    // PROSES EKSEKUSI (POST)
-    public function process() {
+    /**
+     * Proses Konfirmasi (Terima)
+     */
+    public function confirm() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . BASE_URL . '/admin/payments');
             exit;
         }
 
-        if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-            $_SESSION['flash_error'] = "Token keamanan tidak valid.";
-            header('Location: ' . BASE_URL . '/admin/payments');
-            exit;
-        }
-
+        $this->validateCsrf();
         $paymentId = filter_input(INPUT_POST, 'payment_id', FILTER_VALIDATE_INT);
-        $action = $_POST['action'] ?? '';
-        $adminNote = strip_tags(trim($_POST['admin_note'] ?? ''));
 
-        if (!$paymentId || !in_array($action, ['approve', 'reject'])) {
-            $_SESSION['flash_error'] = "Aksi tidak valid.";
-            header('Location: ' . BASE_URL . '/admin/payments');
-            exit;
-        }
-
-        // Logic Approve/Reject menggunakan Model yang sudah Anda update
-        if ($action === 'approve') {
-            $success = $this->paymentModel->verify($paymentId, $_SESSION['user_id'], $adminNote);
-            $msg = "Pembayaran diterima dan Booking dikonfirmasi.";
+        if ($this->paymentModel->confirm($paymentId, $_SESSION['user_id'])) {
+            $_SESSION['flash_success'] = "Pembayaran berhasil diverifikasi. Booking dikonfirmasi.";
         } else {
-            $success = $this->paymentModel->reject($paymentId, $_SESSION['user_id'], $adminNote);
-            $msg = "Pembayaran ditolak. User diminta upload ulang.";
-        }
-
-        if ($success) {
-            $_SESSION['flash_success'] = $msg;
-        } else {
-            $_SESSION['flash_error'] = "Terjadi kesalahan saat memproses data.";
+            $_SESSION['flash_error'] = "Gagal memverifikasi pembayaran.";
         }
 
         header('Location: ' . BASE_URL . '/admin/payments');
         exit;
     }
 
-    private function ensureCsrfToken() {
-        if (empty($_SESSION['csrf_token'])) {
-            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    /**
+     * Proses Reject (Tolak)
+     */
+    public function reject() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '/admin/payments');
+            exit;
         }
+
+        $this->validateCsrf();
+        $paymentId = filter_input(INPUT_POST, 'payment_id', FILTER_VALIDATE_INT);
+        $reason = $_POST['reason'] ?? 'Bukti tidak valid';
+
+        if ($this->paymentModel->reject($paymentId, $_SESSION['user_id'], $reason)) {
+            $_SESSION['flash_success'] = "Pembayaran ditolak.";
+        } else {
+            $_SESSION['flash_error'] = "Gagal menolak pembayaran.";
+        }
+
+        header('Location: ' . BASE_URL . '/admin/payments');
+        exit;
     }
 }

@@ -15,18 +15,24 @@ class AdminRefundController extends BaseAdminController {
         $this->bookingModel = new Booking();
     }
 
+    // Helper pengganti sanitizeGet agar lebih robust
+    private function getQuery($key, $default = null) {
+        return isset($_GET[$key]) && $_GET[$key] !== '' ? htmlspecialchars($_GET[$key], ENT_QUOTES, 'UTF-8') : $default;
+    }
+
     /**
      * Display list of all refunds
      */
     public function index() {
-        $status = $this->sanitizeGet('status', 'pending');
+        $status = $this->getQuery('status', 'requested'); // Default ke 'requested' (pending)
         
         $data = [
             'title' => 'Manage Refunds',
             'refunds' => $this->refundModel->getAll($status),
             'pending_count' => $this->refundModel->countPending(),
             'current_status' => $status,
-            'user' => $_SESSION
+            'user' => $_SESSION,
+            'csrf_token' => $_SESSION['csrf_token'] ?? ''
         ];
         
         $this->view('admin/refunds/index', $data);
@@ -39,12 +45,12 @@ class AdminRefundController extends BaseAdminController {
         $refund = $this->refundModel->find($id);
         
         if (!$refund) {
-            $_SESSION['flash_error'] = "Refund not found.";
+            $_SESSION['flash_error'] = "Refund request not found.";
             header('Location: ' . BASE_URL . '/admin/refunds');
             exit;
         }
 
-        // Generate CSRF token
+        // Generate CSRF token jika belum ada
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
@@ -80,12 +86,11 @@ class AdminRefundController extends BaseAdminController {
         }
 
         if ($this->refundModel->approve($refundId, $_SESSION['user_id'], $notes)) {
-            $_SESSION['flash_success'] = "Refund approved. Please proceed with bank transfer and upload receipt.";
-            
-            // Redirect to upload receipt page
+            $_SESSION['flash_success'] = "Refund disetujui. Silakan upload bukti transfer.";
+            // Redirect kembali ke halaman process untuk upload bukti
             header('Location: ' . BASE_URL . '/admin/refunds/process/' . $refundId);
         } else {
-            $_SESSION['flash_error'] = "Failed to approve refund.";
+            $_SESSION['flash_error'] = "Gagal menyetujui refund.";
             header('Location: ' . BASE_URL . '/admin/refunds');
         }
         exit;
@@ -112,18 +117,15 @@ class AdminRefundController extends BaseAdminController {
         }
 
         if (empty($reason)) {
-            $_SESSION['flash_error'] = "Please provide rejection reason.";
+            $_SESSION['flash_error'] = "Alasan penolakan wajib diisi.";
             header('Location: ' . BASE_URL . '/admin/refunds/process/' . $refundId);
             exit;
         }
 
         if ($this->refundModel->reject($refundId, $_SESSION['user_id'], $reason)) {
-            $_SESSION['flash_success'] = "Refund rejected.";
-            
-            // TODO: Send notification to customer
-            
+            $_SESSION['flash_success'] = "Refund ditolak.";
         } else {
-            $_SESSION['flash_error'] = "Failed to reject refund.";
+            $_SESSION['flash_error'] = "Gagal menolak refund.";
         }
 
         header('Location: ' . BASE_URL . '/admin/refunds');
@@ -151,7 +153,7 @@ class AdminRefundController extends BaseAdminController {
 
         // Validate file upload
         if (!isset($_FILES['refund_receipt']) || $_FILES['refund_receipt']['error'] !== UPLOAD_ERR_OK) {
-            $_SESSION['flash_error'] = "Please upload refund receipt.";
+            $_SESSION['flash_error'] = "Silakan upload bukti transfer.";
             header('Location: ' . BASE_URL . '/admin/refunds/process/' . $refundId);
             exit;
         }
@@ -160,19 +162,16 @@ class AdminRefundController extends BaseAdminController {
         $receiptFile = $this->uploadReceipt($_FILES['refund_receipt']);
         
         if (!$receiptFile) {
-            $_SESSION['flash_error'] = "Failed to upload receipt. Please check file format and size.";
+            $_SESSION['flash_error'] = "Gagal upload bukti. Pastikan format JPG/PNG/PDF max 5MB.";
             header('Location: ' . BASE_URL . '/admin/refunds/process/' . $refundId);
             exit;
         }
 
         // Complete refund (atomic transaction - restore slots)
         if ($this->refundModel->complete($refundId, $receiptFile, $_SESSION['user_id'])) {
-            $_SESSION['flash_success'] = "Refund completed successfully. Room slots restored and booking marked as refunded.";
-            
-            // TODO: Send completion notification to customer
-            
+            $_SESSION['flash_success'] = "Refund selesai. Slot kamar telah dikembalikan.";
         } else {
-            $_SESSION['flash_error'] = "Failed to complete refund.";
+            $_SESSION['flash_error'] = "Gagal memproses penyelesaian refund.";
         }
 
         header('Location: ' . BASE_URL . '/admin/refunds');
@@ -182,7 +181,9 @@ class AdminRefundController extends BaseAdminController {
     // --- Helpers ---
 
     private function uploadReceipt($file) {
-        $targetDir = "../public/uploads/refunds/";
+        // Gunakan path absolute yang benar berdasarkan root project
+        $targetDir = __DIR__ . "/../../public/uploads/refunds/";
+        
         if (!file_exists($targetDir)) {
             mkdir($targetDir, 0777, true);
         }
@@ -194,28 +195,19 @@ class AdminRefundController extends BaseAdminController {
         $targetFilePath = $targetDir . $fileName;
         $fileType = strtolower(pathinfo($targetFilePath, PATHINFO_EXTENSION));
 
-        // Allow specific file formats
         $allowTypes = array('jpg', 'png', 'jpeg', 'pdf');
         
         if (!in_array($fileType, $allowTypes)) {
             return false;
         }
 
-        // Validate file size (max 5MB)
         if ($file['size'] > 5 * 1024 * 1024) {
             return false;
         }
 
-        // Validate is image or PDF
-        if (in_array($fileType, ['jpg', 'png', 'jpeg'])) {
-            $check = getimagesize($file["tmp_name"]);
-            if ($check === false) {
-                return false;
-            }
-        }
-
         if (move_uploaded_file($file["tmp_name"], $targetFilePath)) {
-            return '/uploads/refunds/' . $fileName;
+            // Return path relative untuk disimpan di DB
+            return 'uploads/refunds/' . $fileName;
         }
         
         return false;
