@@ -48,7 +48,7 @@ class Payment extends Model {
     public function countPending() {
         try {
             // Asumsikan status di DB adalah 'pending' untuk yang menunggu verifikasi
-            $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE payment_status = 'pending'");
+            $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE payment_status = 'Pending_verification'");
             $result = $this->single();
             return (int)($result['total'] ?? 0);
         } catch (PDOException $e) {
