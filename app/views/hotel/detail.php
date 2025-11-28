@@ -3,157 +3,91 @@
 require_once __DIR__ . '/../../../helpers/functions.php';
 trevio_start_session();
 
-// zekk: DATA DUMMY START - Hapus blok ini saat integrasi backend
-if (!isset($hotel)) {
-    $hotel = [
-        'id' => 1,
-        'name' => 'Grand Luxury Hotel Jakarta',
-        'city' => 'Jakarta Pusat',
-        'province' => 'DKI Jakarta',
-        'average_rating' => 4.8,
-        'total_reviews' => 1250,
-        'main_image' => 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-        'description' => 'Nikmati pengalaman menginap mewah di jantung kota Jakarta. Hotel kami menawarkan pemandangan kota yang menakjubkan, layanan kelas dunia, dan fasilitas lengkap untuk memanjakan Anda. Terletak strategis dekat pusat perbelanjaan dan bisnis.',
-        'facilities' => ['Kolam Renang', 'Spa', 'Gym', 'Wi-Fi', 'Restoran', 'Bar', 'Layanan Kamar 24 Jam', 'Parkir Valet'],
-        'images' => [
-             'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
-             'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80',
-             'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80'
-        ],
-        'rooms' => [
-            [
-                'id' => 101,
-                'room_type' => 'Deluxe Room',
-                'price_per_night' => 1500000,
-                'room_size' => 32,
-                'bed_type' => 'King Bed',
-                'capacity' => 2,
-                'amenities' => ['AC', 'Wi-Fi', 'TV Kabel', 'Minibar', 'Shower', 'Brankas']
-            ],
-            [
-                'id' => 102,
-                'room_type' => 'Executive Suite',
-                'price_per_night' => 2500000,
-                'room_size' => 45,
-                'bed_type' => 'King Bed',
-                'capacity' => 2,
-                'amenities' => ['AC', 'Wi-Fi', 'TV Kabel', 'Minibar', 'Bathtub', 'Ruang Tamu', 'View Kota']
-            ],
-            [
-                'id' => 103,
-                'room_type' => 'Family Room',
-                'price_per_night' => 3200000,
-                'room_size' => 60,
-                'bed_type' => '2 Queen Beds',
-                'capacity' => 4,
-                'amenities' => ['AC', 'Wi-Fi', 'TV Kabel', 'Kulkas', 'Bathtub', 'Ruang Makan']
-            ]
-        ]
-    ];
-    // zekk: Simulasi variabel tambahan dari controller
-    $galleryImages = $hotel['images']; 
-}
-// zekk: DATA DUMMY END
-
-// Pastikan variabel $hotel tersedia (dikirim dari HotelController)
-// Jika file ini diakses langsung tanpa melalui Controller, redirect ke halaman pencarian
+// Pastikan variabel $hotel tersedia
 if (!isset($hotel) || !is_array($hotel)) {
     $searchUrl = defined('BASE_URL') ? BASE_URL . '/hotel/search' : 'search.php';
     header("Location: " . $searchUrl);
     exit;
 }
 
-// --- 1. Normalisasi Data Hotel (DB -> View Structure) ---
+// [FIX FLOW]: Ambil parameter pencarian dari URL (agar tanggal & tamu terbawa ke booking)
+$queryParams = $_GET;
+$bookingParams = [
+    'check_in' => $queryParams['check_in'] ?? '',
+    'check_out' => $queryParams['check_out'] ?? '',
+    'guests' => $queryParams['guests'] ?? '',
+    'num_rooms' => $queryParams['num_rooms'] ?? ''
+];
+$bookingQueryString = http_build_query(array_filter($bookingParams));
 
-// Siapkan array baru untuk view agar tidak mengubah variabel asli sembarangan
+// --- 1. Normalisasi Data Hotel ---
 $viewHotel = $hotel;
-
-// Lokasi: Gabungkan City dan Province
 $city = $hotel['city'] ?? '';
 $province = $hotel['province'] ?? '';
 $viewHotel['location'] = $city . ($province ? ', ' . $province : '');
-
-// Rating & Reviews
-// Gunakan nilai default jika null
 $viewHotel['rating'] = isset($hotel['average_rating']) ? (float)$hotel['average_rating'] : 4.5;
 $viewHotel['reviews'] = isset($hotel['total_reviews']) ? (int)$hotel['total_reviews'] : 0;
 
-// Amenities / Fasilitas (Mapping dari kolom 'facilities' di DB)
 $viewHotel['amenities'] = [];
 if (isset($hotel['facilities'])) {
-    // Jika formatnya JSON string, decode dulu
     $viewHotel['amenities'] = is_string($hotel['facilities']) 
         ? (json_decode($hotel['facilities'], true) ?? []) 
         : $hotel['facilities'];
 }
 
-// Images
-// Gunakan $galleryImages dari controller, atau fallback ke main_image
 $viewHotel['images'] = isset($galleryImages) ? $galleryImages : [];
 if (empty($viewHotel['images']) && !empty($hotel['main_image'])) {
     $viewHotel['images'][] = $hotel['main_image'];
 }
-// Fallback jika tidak ada gambar sama sekali
 if (empty($viewHotel['images'])) {
     $viewHotel['images'][] = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
 }
 
 // --- 2. Normalisasi Data Kamar ---
-
 $viewRooms = [];
-$minPrice = PHP_INT_MAX; // Untuk mencari harga "Mulai dari"
+$minPrice = PHP_INT_MAX; 
 
 if (!empty($hotel['rooms']) && is_array($hotel['rooms'])) {
     foreach ($hotel['rooms'] as $r) {
         $price = (float) $r['price_per_night'];
-        
-        // Cari harga terendah untuk ditampilkan di header
         if ($price < $minPrice) {
             $minPrice = $price;
         }
 
-        // Parse amenities kamar
         $rInc = $r['amenities'] ?? [];
         if (is_string($rInc)) {
             $rInc = json_decode($rInc, true) ?? [];
         }
 
-        // Struktur data kamar untuk view
         $viewRooms[] = [
-            'id' => $r['id'], // Penting untuk link booking
+            'id' => $r['id'],
             'name' => $r['room_type'],
             'size' => ($r['room_size'] ?? '0') . ' m²',
             'bed' => $r['bed_type'] ?? 'Standard Bed',
             'guests' => ($r['capacity'] ?? 2) . ' dewasa',
             'price_raw' => $price,
             'price_formatted' => 'Rp ' . number_format($price, 0, ',', '.') . ' / malam',
-            'inclusive' => array_slice((array)$rInc, 0, 3) // Ambil 3 fasilitas utama
+            'inclusive' => array_slice((array)$rInc, 0, 3)
         ];
     }
 }
 
-// Set harga hotel (mulai dari)
 if ($minPrice === PHP_INT_MAX) $minPrice = 0;
 $viewHotel['price'] = 'Rp ' . number_format($minPrice, 0, ',', '.') . ' / malam';
 
-// Highlights untuk slider galeri
 $galleryHighlightsData = isset($galleryHighlights) 
     ? $galleryHighlights 
     : array_slice($viewHotel['amenities'], 0, count($viewHotel['images']));
 
-// Override variabel lama dengan data yang sudah dinormalisasi
 $hotel = $viewHotel;
 $rooms = $viewRooms;
 $galleryHighlights = $galleryHighlightsData;
-
-// Judul halaman
 $pageTitle = 'Trevio | ' . $hotel['name'];
 
 require __DIR__ . '/../layouts/header.php';
 ?>
 
 <style>
-    /* Fallback styling untuk hero detail supaya foto dummy tampil rapi */
     .detail-hero {
         position: relative;
         height: 520px;
@@ -323,34 +257,14 @@ require __DIR__ . '/../layouts/header.php';
 
 <section class="bg-white py-16">
     <div class="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[300px_1fr]">
-        
         <aside class="relative">
             <div class="sticky top-24 space-y-6">
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                     <h3 class="text-base font-semibold text-primary">Ringkasan singkat</h3>
                     <ul class="mt-4 space-y-3 text-sm text-slate-600">
-                        <li class="flex items-center gap-2">
-                            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <path d="m12 6 4 8H8z"></path>
-                            </svg>
-                            Check-in 15:00 • Check-out 12:00
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M12 2c3.5 0 6 2.5 6 7 0 6-6 13-6 13S6 15 6 9c0-4.5 2.5-7 6-7z"></path>
-                                <circle cx="12" cy="9" r="2"></circle>
-                            </svg>
-                            Lokasi Strategis
-                        </li>
-                        <li class="flex items-center gap-2">
-                            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M8 21h8"></path>
-                                <path d="M12 17v4"></path>
-                                <rect width="18" height="12" x="3" y="3" rx="2"></rect>
-                            </svg>
-                            Pembatalan gratis (S&K Berlaku)
-                        </li>
+                        <li class="flex items-center gap-2">Check-in 15:00 • Check-out 12:00</li>
+                        <li class="flex items-center gap-2">Lokasi Strategis</li>
+                        <li class="flex items-center gap-2">Pembatalan gratis (S&K Berlaku)</li>
                     </ul>
                 </div>
                 <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -359,14 +273,6 @@ require __DIR__ . '/../layouts/header.php';
                     <div class="mt-4 h-48 overflow-hidden rounded-2xl bg-slate-100">
                         <iframe class="h-full w-full" src="https://maps.google.com/maps?q=<?= urlencode($hotel['location']) ?>&t=&z=13&ie=UTF8&iwloc=&output=embed" loading="lazy" frameborder="0"></iframe>
                     </div>
-                </div>
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h3 class="text-base font-semibold text-primary">Kebijakan penting</h3>
-                    <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-500">
-                        <li>Deposit keamanan dibutuhkan saat check-in.</li>
-                        <li>Tidak diperbolehkan merokok di kamar. Area merokok tersedia di lounge.</li>
-                        <li>Hewan peliharaan diperbolehkan di kamar tertentu (hubungi concierge).</li>
-                    </ul>
                 </div>
             </div>
         </aside>
@@ -378,37 +284,13 @@ require __DIR__ . '/../layouts/header.php';
                 <div class="mt-6 grid gap-3 sm:grid-cols-2">
                     <?php foreach ($hotel['amenities'] as $amenity): ?>
                         <span class="flex items-center gap-2 text-sm text-slate-600">
-                            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="m5 12 5 5L20 7"></path>
-                            </svg>
+                            <svg class="h-4 w-4 text-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
                             <?= htmlspecialchars($amenity) ?>
                         </span>
                     <?php endforeach; ?>
                 </div>
             </div>
             
-            <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                <h2 class="text-lg font-semibold text-primary">Highlight pengalaman</h2>
-                <div class="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div class="rounded-2xl border border-slate-200 p-5">
-                        <h3 class="text-sm font-semibold text-primary">Fasilitas Lengkap</h3>
-                        <p class="mt-2 text-sm text-slate-500">Menyediakan berbagai fasilitas terbaik untuk kenyamanan menginap Anda.</p>
-                    </div>
-                    <div class="rounded-2xl border border-slate-200 p-5">
-                        <h3 class="text-sm font-semibold text-primary">Lokasi Strategis</h3>
-                        <p class="mt-2 text-sm text-slate-500">Akses mudah ke berbagai destinasi wisata dan pusat perbelanjaan.</p>
-                    </div>
-                    <div class="rounded-2xl border border-slate-200 p-5">
-                        <h3 class="text-sm font-semibold text-primary">Layanan 24 Jam</h3>
-                        <p class="mt-2 text-sm text-slate-500">Staf profesional kami siap membantu kebutuhan Anda kapan saja.</p>
-                    </div>
-                    <div class="rounded-2xl border border-slate-200 p-5">
-                        <h3 class="text-sm font-semibold text-primary">Kebersihan Terjamin</h3>
-                        <p class="mt-2 text-sm text-slate-500">Protokol kebersihan ketat untuk keamanan dan kesehatan tamu.</p>
-                    </div>
-                </div>
-            </div>
-
             <div class="space-y-5" id="rooms">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                     <div>
@@ -439,10 +321,15 @@ require __DIR__ . '/../layouts/header.php';
                                         <p class="text-xs uppercase tracking-wide text-slate-400">Harga per malam</p>
                                         <p class="text-base font-semibold text-primary"><?= htmlspecialchars($room['price_formatted']) ?></p>
                                         <?php
-                                        // Link ke booking form dengan parameter ID yang valid
-                                        $bookingUrl = defined('BASE_URL') 
-                                            ? BASE_URL . '/booking/create?hotel_id=' . urlencode($hotel['id']) . '&room_id=' . urlencode($room['id'])
-                                            : trevio_view_route('booking/form.php') . '?hotel_id=' . urlencode($hotel['id']) . '&room_id=' . urlencode($room['id']);
+                                        // [FIX FLOW]: Tambahkan parameter pencarian ke link Booking
+                                        $bookingBase = defined('BASE_URL') 
+                                            ? BASE_URL . '/booking/create'
+                                            : trevio_view_route('booking/form.php');
+                                        
+                                        $bookingUrl = $bookingBase . '?hotel_id=' . urlencode($hotel['id']) . '&room_id=' . urlencode($room['id']);
+                                        if ($bookingQueryString) {
+                                            $bookingUrl .= '&' . $bookingQueryString;
+                                        }
                                         ?>
                                         <a class="mt-3 inline-flex items-center justify-center rounded-full bg-accent px-5 py-2 text-sm font-semibold text-white transition hover:bg-accentLight" href="<?= htmlspecialchars($bookingUrl) ?>">Pesan Sekarang</a>
                                     </div>
@@ -458,11 +345,9 @@ require __DIR__ . '/../layouts/header.php';
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Kendalikan rotasi foto hero agar pengguna bisa melihat ringkasan dari tiga gambar.
     const gallery = document.querySelector('[data-detail-gallery]');
-    if (!gallery) {
-        return;
-    }
+    if (!gallery) return;
+    
     const slides = Array.from(gallery.querySelectorAll('[data-gallery-slide]'));
     const dots = Array.from(gallery.querySelectorAll('[data-gallery-target]'));
     let activeIndex = 0;
@@ -470,33 +355,24 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const setActive = function (index) {
         activeIndex = index;
-        slides.forEach(function (slide, idx) {
-            slide.classList.toggle('is-active', idx === index);
-        });
-        dots.forEach(function (dot, idx) {
-            dot.classList.toggle('is-active', idx === index);
-        });
+        slides.forEach((slide, idx) => slide.classList.toggle('is-active', idx === index));
+        dots.forEach((dot, idx) => dot.classList.toggle('is-active', idx === index));
     };
 
     const startAutoRotate = function () {
         stopAutoRotate();
-        autoTimer = setInterval(function () {
-            const nextIndex = (activeIndex + 1) % slides.length;
-            setActive(nextIndex);
+        autoTimer = setInterval(() => {
+            setActive((activeIndex + 1) % slides.length);
         }, 8000);
     };
 
     const stopAutoRotate = function () {
-        if (autoTimer) {
-            clearInterval(autoTimer);
-            autoTimer = null;
-        }
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
     };
 
-    dots.forEach(function (dot) {
-        const targetIndex = parseInt(dot.getAttribute('data-gallery-target'), 10);
+    dots.forEach(dot => {
         dot.addEventListener('click', function () {
-            setActive(targetIndex);
+            setActive(parseInt(dot.getAttribute('data-gallery-target'), 10));
             startAutoRotate();
         });
     });
@@ -510,6 +386,5 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <?php
-// Footer khusus hotel untuk menutup konten.
 require __DIR__ . '/../layouts/footer.php';
 ?>
