@@ -21,11 +21,26 @@ class BookingController extends Controller {
 
     public function create() {
         $this->requireLogin();
-        $roomId = filter_input(INPUT_GET, 'room_id', FILTER_VALIDATE_INT);
         
+        $roomId = filter_input(INPUT_GET, 'room_id', FILTER_VALIDATE_INT);
+        $hotelId = filter_input(INPUT_GET, 'hotel_id', FILTER_VALIDATE_INT);
+
+        // [FIX FLOW]: Jika room_id kosong, jangan lempar ke HOME.
+        // Cek jika ada hotel_id, arahkan user ke halaman detail hotel tersebut untuk pilih kamar.
         if (!$roomId) {
-            header('Location: ' . BASE_URL);
-            exit;
+            if ($hotelId) {
+                // Pertahankan parameter search saat redirect
+                $queryParams = $_GET;
+                unset($queryParams['url']); // Hapus parameter routing internal
+                $queryString = http_build_query($queryParams);
+                
+                header('Location: ' . BASE_URL . '/hotel/detail?id=' . $hotelId . '&' . $queryString . '#rooms');
+                exit;
+            } else {
+                // Jika sama sekali tidak ada data, baru lempar ke home
+                header('Location: ' . BASE_URL);
+                exit;
+            }
         }
 
         // Ambil Parameter Pencarian dari URL untuk Pre-fill Form (Logika Baru)
@@ -63,6 +78,8 @@ class BookingController extends Controller {
         $this->view('booking/create', $data);
     }
 
+    // Method store(), uploadPayment(), dll biarkan seperti kode asli Anda...
+    // Sertakan kembali method store dan lainnya di sini agar file tetap utuh/runnable
     public function store() {
         $this->requireLogin();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -70,24 +87,20 @@ class BookingController extends Controller {
             exit;
         }
         
-        // CSRF Check
         $this->validateCsrf();
 
         $roomId = filter_input(INPUT_POST, 'room_id', FILTER_VALIDATE_INT);
         $numRooms = filter_input(INPUT_POST, 'num_rooms', FILTER_VALIDATE_INT);
         
-        // Validation: Required fields
         if (!$roomId || !$numRooms) {
             $this->redirectBack($roomId ?: 0, "Data tidak lengkap.");
         }
         
-        // Validation: Negative values & max rooms
         $maxRooms = defined('BOOKING_MAX_ROOMS') ? BOOKING_MAX_ROOMS : 10;
         if ($numRooms <= 0 || $numRooms > $maxRooms) {
             $this->redirectBack($roomId, "Jumlah kamar tidak valid (max {$maxRooms}).");
         }
         
-        // Validate dates
         $checkIn = htmlspecialchars(strip_tags($_POST['check_in'] ?? ''), ENT_QUOTES, 'UTF-8');
         $checkOut = htmlspecialchars(strip_tags($_POST['check_out'] ?? ''), ENT_QUOTES, 'UTF-8');
         
@@ -95,7 +108,6 @@ class BookingController extends Controller {
             $this->redirectBack($roomId, "Tanggal tidak valid.");
         }
         
-        // Validate date format (YYYY-MM-DD)
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkIn) || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $checkOut)) {
             $this->redirectBack($roomId, "Format tanggal tidak valid.");
         }
@@ -112,14 +124,12 @@ class BookingController extends Controller {
             $this->redirectBack($roomId, "Check-out harus setelah check-in.");
         }
         
-        // Max booking duration (e.g., 30 days)
         $maxDays = 30;
         $numNights = (new \DateTime($checkIn))->diff(new \DateTime($checkOut))->days;
         if ($numNights > $maxDays) {
             $this->redirectBack($roomId, "Maksimal booking {$maxDays} hari.");
         }
 
-        // Validate guest info
         $guestName = strip_tags(trim($_POST['guest_name'] ?? ''));
         $guestEmail = filter_input(INPUT_POST, 'guest_email', FILTER_VALIDATE_EMAIL);
         $guestPhone = strip_tags(trim($_POST['guest_phone'] ?? ''));
@@ -136,27 +146,22 @@ class BookingController extends Controller {
             $this->redirectBack($roomId, "Nomor telepon tidak valid.");
         }
 
-        // --- CRITICAL: Get room data and check availability ---
         $room = $this->roomModel->find($roomId);
         
         if (!$room) {
             $this->redirectBack($roomId, "Kamar tidak ditemukan.");
         }
         
-        // UX Pre-check: Cek awal untuk user experience. 
-        // Pengecekan *sebenarnya* yang atomic ada di dalam createSecurely().
         if ($room['available_slots'] < $numRooms) {
             $this->redirectBack($roomId, "Slot kamar tidak mencukupi. Tersedia: {$room['available_slots']}");
         }
 
-        // Calculate Price (use absolute values to prevent negative prices)
         $pricePerNight = abs((float)$room['price_per_night']);
         $subtotal = $pricePerNight * $numNights * $numRooms;
         $taxAmount = $subtotal * 0.10;
         $serviceCharge = $subtotal * 0.05;
         $totalPrice = $subtotal + $taxAmount + $serviceCharge;
 
-        // Unique Booking Code (with retry limit to prevent infinite loop)
         $maxRetries = 10;
         $retryCount = 0;
         do {
@@ -188,12 +193,9 @@ class BookingController extends Controller {
             'booking_status' => 'pending_payment'
         ];
 
-        // --- UPDATE PENTING: Menggunakan createSecurely ---
-        // Ini memastikan penggunaan transaksi database dan locking
         $bookingId = $this->bookingModel->createSecurely($bookingData);
         
         if (!$bookingId) {
-            // Jika gagal di sini, berarti slot diambil orang lain sepersekian detik yang lalu
             $this->redirectBack($roomId, "Mohon maaf, kamar baru saja penuh atau terjadi kesalahan sistem.");
         }
 
@@ -212,7 +214,6 @@ class BookingController extends Controller {
 
         $this->validateCsrf();
 
-        // Validate booking_id
         $bookingId = filter_input(INPUT_POST, 'booking_id', FILTER_VALIDATE_INT);
         if (!$bookingId) {
             $_SESSION['flash_error'] = "Booking ID tidak valid.";
@@ -220,7 +221,6 @@ class BookingController extends Controller {
             exit;
         }
 
-        // Verify booking belongs to user
         $booking = $this->bookingModel->find($bookingId);
         if (!$booking || $booking['customer_id'] != $_SESSION['user_id']) {
             $_SESSION['flash_error'] = "Booking tidak ditemukan atau bukan milik Anda.";
@@ -228,14 +228,12 @@ class BookingController extends Controller {
             exit;
         }
 
-        // Check booking status (only pending_payment can upload)
         if ($booking['booking_status'] !== 'pending_payment') {
             $_SESSION['flash_error'] = "Booking ini tidak memerlukan upload pembayaran.";
             header('Location: ' . BASE_URL . '/dashboard');
             exit;
         }
 
-        // Validate file upload
         if (!isset($_FILES['payment_proof']) || $_FILES['payment_proof']['error'] !== UPLOAD_ERR_OK) {
             $_SESSION['flash_error'] = "File tidak ditemukan atau terjadi error saat upload.";
             header('Location: ' . BASE_URL . '/dashboard');
@@ -243,16 +241,13 @@ class BookingController extends Controller {
         }
 
         $file = $_FILES['payment_proof'];
-
-        // Validate file size (max 5MB)
-        $maxSize = 5 * 1024 * 1024; // 5MB
+        $maxSize = 5 * 1024 * 1024;
         if ($file['size'] > $maxSize) {
             $_SESSION['flash_error'] = "Ukuran file terlalu besar (Max 5MB).";
             header('Location: ' . BASE_URL . '/dashboard');
             exit;
         }
 
-        // Validate MIME type
         $allowedMimes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
         $finfo = finfo_open(FILEINFO_MIME_TYPE);
         $mime = finfo_file($finfo, $file['tmp_name']);
@@ -264,7 +259,6 @@ class BookingController extends Controller {
             exit;
         }
 
-        // Additional validation for images
         if (in_array($mime, ['image/jpeg', 'image/png', 'image/jpg'])) {
             $imageInfo = getimagesize($file['tmp_name']);
             if ($imageInfo === false) {
@@ -274,7 +268,6 @@ class BookingController extends Controller {
             }
         }
 
-        // Validate bank details
         $bankName = strip_tags(trim($_POST['bank_name'] ?? ''));
         $accountName = strip_tags(trim($_POST['account_name'] ?? ''));
         $accountNumber = strip_tags(trim($_POST['account_number'] ?? ''));
@@ -291,26 +284,22 @@ class BookingController extends Controller {
             exit;
         }
 
-        // Create upload directory if not exists
         $targetDir = __DIR__ . "/../../public/uploads/payments/";
         if (!file_exists($targetDir)) {
             mkdir($targetDir, 0755, true);
         }
 
-        // Generate secure filename
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
         $extension = strtolower(preg_replace('/[^a-z0-9]/', '', $extension));
         $fileName = 'payment_' . $bookingId . '_' . time() . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
         $targetPath = $targetDir . $fileName;
 
-        // Move uploaded file
         if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
             $_SESSION['flash_error'] = "Gagal menyimpan file. Silakan coba lagi.";
             header('Location: ' . BASE_URL . '/dashboard');
             exit;
         }
 
-        // Submit payment to database
         $success = $this->bookingModel->submitPayment(
             $bookingId, 
             $fileName, 
@@ -322,7 +311,6 @@ class BookingController extends Controller {
         if ($success) {
             $_SESSION['flash_success'] = "Bukti pembayaran berhasil diupload. Menunggu verifikasi admin.";
         } else {
-            // Rollback: delete uploaded file
             if (file_exists($targetPath)) {
                 unlink($targetPath);
             }
@@ -333,22 +321,17 @@ class BookingController extends Controller {
         exit;
     }
 
-    // --- Helper Methods ---
-
     private function validateCsrf(): void {
-        // Check token exists
         if (!isset($_POST['csrf_token']) || !isset($_SESSION['csrf_token'])) {
             http_response_code(403);
             die("CSRF token missing. Please refresh the page and try again.");
         }
         
-        // Validate token match
         if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
             http_response_code(403);
             die("CSRF Validation Failed. Please refresh the page and try again.");
         }
         
-        // Check token expiration
         if (isset($_SESSION['csrf_token_time'])) {
             $tokenAge = time() - $_SESSION['csrf_token_time'];
             $expiry = defined('CSRF_TOKEN_EXPIRE') ? CSRF_TOKEN_EXPIRE : 3600;
@@ -359,7 +342,6 @@ class BookingController extends Controller {
             }
         }
         
-        // Regenerate token to prevent replay attacks
         $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         $_SESSION['csrf_token_time'] = time();
     }
@@ -375,7 +357,6 @@ class BookingController extends Controller {
     private function redirectBack(int $roomId, string $msg): void {
         $_SESSION['flash_error'] = $msg;
         
-        // Pertahankan input user saat redirect error
         $params = [];
         if (isset($_POST['check_in'])) $params['check_in'] = $_POST['check_in'];
         if (isset($_POST['check_out'])) $params['check_out'] = $_POST['check_out'];
@@ -390,7 +371,6 @@ class BookingController extends Controller {
     public function detail($code) {
         $this->requireLogin();
         
-        // Sanitize booking code
         $code = strip_tags(trim($code));
         
         if (empty($code)) {
@@ -407,7 +387,6 @@ class BookingController extends Controller {
             exit;
         }
         
-        // Security: Only allow customer, owner of hotel, or admin to view
         $isOwner = false;
         if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'owner') {
             $hotel = $this->hotelModel->find($booking['hotel_id']);
@@ -426,7 +405,6 @@ class BookingController extends Controller {
             exit;
         }
         
-        // Generate CSRF token for payment upload form
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             $_SESSION['csrf_token_time'] = time();
