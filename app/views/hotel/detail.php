@@ -10,29 +10,27 @@ if (!isset($data['hotel'])) {
 }
 
 $hotel = $data['hotel'];
-$searchParams = $data['searchParams'] ?? [
-    'check_in' => date('Y-m-d'),
-    'check_out' => date('Y-m-d', strtotime('+1 day')),
-    'nights' => 1,
-    'num_rooms' => 1,
-    'guests' => '2 Tamu'
-];
+$searchParams = $data['searchParams'] ?? [];
 
-// Format Data untuk Tampilan
-$duration = $searchParams['nights'];
-$roomCount = (int)($searchParams['num_rooms'] ?? 1);
-$checkInStr = date('d M', strtotime($searchParams['check_in']));
-$checkOutStr = date('d M Y', strtotime($searchParams['check_out']));
+// [FIX 1]: Logic Ambil Data Tamu yang Benar (Matematika, bukan String Parsing)
+// Default values jika parameter kosong
+$defaultCheckIn = date('Y-m-d');
+$defaultCheckOut = date('Y-m-d', strtotime('+1 day'));
 
-// [LOGIC BARU]: Parsing Jumlah Tamu dari String (misal "3 Tamu" -> 3)
-$guestString = $searchParams['guests'] ?? '2';
-$guestCount = (int) filter_var($guestString, FILTER_SANITIZE_NUMBER_INT);
-if ($guestCount < 1) $guestCount = 2; // Default minimal 2 jika gagal parsing
+$checkInStr = date('d M', strtotime($searchParams['check_in'] ?? $defaultCheckIn));
+$checkOutStr = date('d M Y', strtotime($searchParams['check_out'] ?? $defaultCheckOut));
+$duration = (int)($searchParams['nights'] ?? 1);
+$roomCount = (int)($_GET['num_rooms'] ?? 1);
+
+// Ambil input Dewasa & Anak secara terpisah dari URL
+// Jika tidak ada di URL, default 2 Dewasa 0 Anak
+$adults = (int)($_GET['guest_adults'] ?? 2);
+$children = (int)($_GET['guest_children'] ?? 0);
+$totalGuests = $adults + $children; // 3 Dewasa + 0 Anak = 3 Orang (Bukan 130!)
 
 // Normalisasi Data Hotel
 $city = $hotel['city'] ?? '';
-$province = $hotel['province'] ?? '';
-$locationStr = $city . ($province ? ', ' . $province : '');
+$locationStr = $city . ($hotel['province'] ? ', ' . $hotel['province'] : '');
 $rating = number_format($hotel['average_rating'] ?? 0, 1);
 $reviews = $hotel['total_reviews'] ?? 0;
 $amenities = is_string($hotel['facilities'] ?? '') ? json_decode($hotel['facilities'], true) : ($hotel['facilities'] ?? []);
@@ -118,7 +116,9 @@ require __DIR__ . '/../layouts/header.php';
                     <?= $checkInStr ?> - <?= $checkOutStr ?> 
                     <span class="font-normal text-slate-500">(<?= $duration ?> Malam)</span>
                 </p>
-                <p class="text-sm text-slate-500 mt-1"><?= $searchParams['guests'] ?>, <?= $roomCount ?> Kamar</p>
+                <p class="text-sm text-slate-500 mt-1">
+                    <?= $roomCount ?> Kamar • <?= $adults ?> Dewasa, <?= $children ?> Anak
+                </p>
                 
                 <a class="mt-4 inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 w-full shadow-lg shadow-blue-500/30" href="#rooms">
                     Lihat Ketersediaan
@@ -165,7 +165,7 @@ require __DIR__ . '/../layouts/header.php';
         <article class="space-y-8">
             <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
                 <h2 class="text-lg font-semibold text-slate-900">Tentang hotel</h2>
-                <p class="mt-3 text-sm leading-7 text-slate-600"><?= nl2br(htmlspecialchars($hotel['description'] ?? 'Deskripsi hotel belum tersedia.')) ?></p>
+                <p class="mt-3 text-sm leading-7 text-slate-600"><?= nl2br(htmlspecialchars($hotel['description'] ?? '')) ?></p>
                 <div class="mt-6 grid gap-3 sm:grid-cols-2">
                     <?php foreach ($amenities as $amenity): ?>
                         <span class="flex items-center gap-2 text-sm text-slate-600">
@@ -179,7 +179,7 @@ require __DIR__ . '/../layouts/header.php';
             <div class="space-y-5" id="rooms">
                 <div class="flex flex-col gap-1">
                     <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Pilihan Kamar</p>
-                    <h2 class="text-2xl font-semibold text-slate-900">Ketersediaan untuk <?= $duration ?> malam, <?= $guestCount ?> Tamu</h2>
+                    <h2 class="text-2xl font-semibold text-slate-900">Ketersediaan untuk <?= $duration ?> malam, <?= $totalGuests ?> Tamu</h2>
                 </div>
                 
                 <div class="space-y-4">
@@ -204,22 +204,22 @@ require __DIR__ . '/../layouts/header.php';
                                 $rInc = is_string($room['amenities'] ?? '') ? json_decode($room['amenities'], true) : ($room['amenities'] ?? []);
                                 if (!is_array($rInc)) $rInc = ['Wifi', 'AC'];
 
-                                // [LOGIC CEK KAPASITAS]
+                                // [FIX 2]: LOGIC CEK KAPASITAS (Menggunakan $totalGuests, bukan string parsing)
                                 $roomCapacity = (int)($room['capacity'] ?? 2);
                                 $totalRoomCapacity = $roomCapacity * $roomCount;
-                                $isOverCapacity = $guestCount > $totalRoomCapacity;
+                                $isOverCapacity = $totalGuests > $totalRoomCapacity;
                                 
-                                // Status Ketersediaan (Penuh di DB atau Tidak Muat)
+                                // Status Ketersediaan
                                 $isAvailable = $searchData['is_available'] && !$isOverCapacity;
 
                                 // URL Booking
                                 $bookParams = [
                                     'hotel_id' => $hotel['id'],
                                     'room_id' => $room['id'],
-                                    'check_in' => $searchParams['check_in'],
-                                    'check_out' => $searchParams['check_out'],
-                                    'num_rooms' => $searchParams['num_rooms'],
-                                    'guests' => $searchParams['guests']
+                                    'check_in' => $searchParams['check_in'] ?? $defaultCheckIn,
+                                    'check_out' => $searchParams['check_out'] ?? $defaultCheckOut,
+                                    'num_rooms' => $roomCount,
+                                    'guests' => $totalGuests . ' Orang' // Kirim string bersih ke booking
                                 ];
                                 $bookingUrl = BASE_URL . '/booking/create?' . http_build_query($bookParams);
                             ?>
@@ -256,8 +256,8 @@ require __DIR__ . '/../layouts/header.php';
                                             </p>
                                             
                                             <?php if ($isOverCapacity): ?>
-                                                <p class="text-xs text-red-500 mt-1 font-medium">
-                                                    Butuh <?= $guestCount ?> orang, kapasitas hanya <?= $totalRoomCapacity ?>.
+                                                <p class="text-xs text-red-500 mt-1 font-medium bg-red-50 px-2 py-1 rounded inline-block">
+                                                    Butuh <?= $totalGuests ?> orang, kapasitas hanya <?= $totalRoomCapacity ?>.
                                                 </p>
                                             <?php endif; ?>
 
