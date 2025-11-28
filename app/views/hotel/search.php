@@ -15,7 +15,8 @@ $totalResults = isset($data['total']) ? $data['total'] : count($hotels);
 $filters = isset($data['filters']) ? $data['filters'] : [
     'query' => trim($_GET['q'] ?? ''),
     'city' => $_GET['city'] ?? 'Semua Kota',
-    'price' => $_GET['price'] ?? 'Semua Harga',
+    'min_price' => $_GET['min_price'] ?? '',
+    'max_price' => $_GET['max_price'] ?? '',
     'rating' => $_GET['rating'] ?? 'Semua Rating',
     'facility' => isset($_GET['facility']) ? (array) $_GET['facility'] : [],
     'sort' => $_GET['sort'] ?? 'recommended',
@@ -24,20 +25,16 @@ $filters = isset($data['filters']) ? $data['filters'] : [
 // 3. Opsi Filter
 $availableFilters = [
     'city' => ['Semua Kota', 'Jakarta', 'Bali', 'Bandung', 'Yogyakarta', 'Surabaya', 'Semarang', 'Malang'],
-    'price' => ['Semua Harga', '< 1 juta', '1 - 2 juta', '2 - 3 juta', '> 3 juta'],
     'rating' => ['Semua Rating', '4+', '4.5+', '5'],
     'facility' => ['Kolam Renang', 'Spa', 'Parkir Gratis', 'Wi-Fi', 'Sarapan', 'Gym', 'AC']
 ];
 
 // [FIX FLOW]: Simpan parameter pencarian (tanggal, tamu, dll) untuk diteruskan ke link detail
-$queryParams = $_GET;
-// Hapus parameter internal router/filter yang tidak perlu diteruskan ke logic booking
-// Tapi pertahankan check_in, check_out, guests, num_rooms
 $forwardParams = [
-    'check_in' => $queryParams['check_in'] ?? '',
-    'check_out' => $queryParams['check_out'] ?? '',
-    'guests' => $queryParams['guests'] ?? '',
-    'num_rooms' => $queryParams['num_rooms'] ?? ''
+    'check_in' => $filters['check_in'] ?? '',
+    'check_out' => $filters['check_out'] ?? '',
+    'guests' => $filters['guests'] ?? '',
+    'num_rooms' => $filters['num_rooms'] ?? ''
 ];
 // Buat query string bersih untuk link (misal: &check_in=2023-10-10&check_out=...)
 $forwardQueryString = http_build_query(array_filter($forwardParams));
@@ -62,19 +59,23 @@ require __DIR__ . '/../layouts/header.php';
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </span>
-                    <input type="text" name="q" value="<?= htmlspecialchars($filters['query']) ?>" class="w-full rounded-xl border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium placeholder-slate-400 focus:border-accent focus:ring-accent" placeholder="Cari nama hotel atau kota...">
+                    <input type="text" name="q" value="<?= htmlspecialchars($filters['query'] ?? '') ?>" class="w-full rounded-xl border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm font-medium placeholder-slate-400 focus:border-accent focus:ring-accent" placeholder="Cari nama hotel atau kota...">
                 </div>
-                <input type="hidden" name="city" value="<?= htmlspecialchars($filters['city']) ?>" />
-                <input type="hidden" name="price" value="<?= htmlspecialchars($filters['price']) ?>" />
-                <input type="hidden" name="rating" value="<?= htmlspecialchars($filters['rating']) ?>" />
-                <input type="hidden" name="sort" value="<?= htmlspecialchars($filters['sort']) ?>" />
                 
-                <input type="hidden" name="check_in" value="<?= htmlspecialchars($forwardParams['check_in']) ?>" />
-                <input type="hidden" name="check_out" value="<?= htmlspecialchars($forwardParams['check_out']) ?>" />
-                <input type="hidden" name="guests" value="<?= htmlspecialchars($forwardParams['guests']) ?>" />
-                <input type="hidden" name="num_rooms" value="<?= htmlspecialchars($forwardParams['num_rooms']) ?>" />
+                <input type="hidden" name="city" value="<?= htmlspecialchars($filters['city'] ?? '') ?>" />
+                
+                <input type="hidden" name="min_price" value="<?= htmlspecialchars($filters['min_price'] ?? '') ?>" />
+                <input type="hidden" name="max_price" value="<?= htmlspecialchars($filters['max_price'] ?? '') ?>" />
+                
+                <input type="hidden" name="rating" value="<?= htmlspecialchars($filters['rating'] ?? '') ?>" />
+                <input type="hidden" name="sort" value="<?= htmlspecialchars($filters['sort'] ?? '') ?>" />
+                
+                <input type="hidden" name="check_in" value="<?= htmlspecialchars($forwardParams['check_in'] ?? '') ?>" />
+                <input type="hidden" name="check_out" value="<?= htmlspecialchars($forwardParams['check_out'] ?? '') ?>" />
+                <input type="hidden" name="guests" value="<?= htmlspecialchars($forwardParams['guests'] ?? '') ?>" />
+                <input type="hidden" name="num_rooms" value="<?= htmlspecialchars($forwardParams['num_rooms'] ?? '') ?>" />
 
-                <?php foreach ($filters['facility'] as $facility): ?>
+                <?php foreach (($filters['facility'] ?? []) as $facility): ?>
                     <input type="hidden" name="facility[]" value="<?= htmlspecialchars($facility) ?>" />
                 <?php endforeach; ?>
                 <button type="submit" class="rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">Cari</button>
@@ -107,20 +108,20 @@ require __DIR__ . '/../layouts/header.php';
                         </div>
                         
                         <form class="space-y-6" method="get" action="">
-                            <input type="hidden" name="q" value="<?= htmlspecialchars($filters['query']) ?>" />
-                            <input type="hidden" name="check_in" value="<?= htmlspecialchars($forwardParams['check_in']) ?>" />
-                            <input type="hidden" name="check_out" value="<?= htmlspecialchars($forwardParams['check_out']) ?>" />
-                            <input type="hidden" name="guests" value="<?= htmlspecialchars($forwardParams['guests']) ?>" />
-                            <input type="hidden" name="num_rooms" value="<?= htmlspecialchars($forwardParams['num_rooms']) ?>" />
+                            <input type="hidden" name="q" value="<?= htmlspecialchars($filters['query'] ?? '') ?>" />
+                            <input type="hidden" name="check_in" value="<?= htmlspecialchars($forwardParams['check_in'] ?? '') ?>" />
+                            <input type="hidden" name="check_out" value="<?= htmlspecialchars($forwardParams['check_out'] ?? '') ?>" />
+                            <input type="hidden" name="guests" value="<?= htmlspecialchars($forwardParams['guests'] ?? '') ?>" />
+                            <input type="hidden" name="num_rooms" value="<?= htmlspecialchars($forwardParams['num_rooms'] ?? '') ?>" />
                             
                             <div>
                                 <label class="mb-2 block text-xs font-bold uppercase text-slate-400">Urutkan</label>
                                 <div class="relative">
                                     <select name="sort" onchange="this.form.submit()" class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 focus:border-accent focus:bg-white focus:ring-accent cursor-pointer">
-                                        <option value="recommended" <?= $filters['sort'] === 'recommended' ? 'selected' : '' ?>>Rekomendasi</option>
-                                        <option value="lowest-price" <?= $filters['sort'] === 'lowest-price' ? 'selected' : '' ?>>Harga Terendah</option>
-                                        <option value="highest-price" <?= $filters['sort'] === 'highest-price' ? 'selected' : '' ?>>Harga Tertinggi</option>
-                                        <option value="highest-rating" <?= $filters['sort'] === 'highest-rating' ? 'selected' : '' ?>>Rating Tertinggi</option>
+                                        <option value="recommended" <?= ($filters['sort'] ?? '') === 'recommended' ? 'selected' : '' ?>>Rekomendasi</option>
+                                        <option value="lowest-price" <?= ($filters['sort'] ?? '') === 'lowest-price' ? 'selected' : '' ?>>Harga Terendah</option>
+                                        <option value="highest-price" <?= ($filters['sort'] ?? '') === 'highest-price' ? 'selected' : '' ?>>Harga Tertinggi</option>
+                                        <option value="highest-rating" <?= ($filters['sort'] ?? '') === 'highest-rating' ? 'selected' : '' ?>>Rating Tertinggi</option>
                                     </select>
                                     <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
@@ -137,14 +138,14 @@ require __DIR__ . '/../layouts/header.php';
                                         <label class="mb-1 block text-[10px] text-slate-500">Min</label>
                                         <div class="relative">
                                             <span class="absolute inset-y-0 left-0 flex items-center pl-2 text-xs text-slate-400">Rp</span>
-                                            <input type="number" name="min_price" value="<?= isset($_GET['min_price']) ? htmlspecialchars($_GET['min_price']) : '' ?>" class="w-full rounded-lg border border-slate-200 py-1.5 pl-7 pr-2 text-sm focus:border-accent focus:ring-accent" placeholder="0">
+                                            <input type="number" name="min_price" value="<?= htmlspecialchars($filters['min_price'] ?? '') ?>" class="w-full rounded-lg border border-slate-200 py-1.5 pl-7 pr-2 text-sm focus:border-accent focus:ring-accent" placeholder="0">
                                         </div>
                                     </div>
                                     <div>
                                         <label class="mb-1 block text-[10px] text-slate-500">Max</label>
                                         <div class="relative">
                                             <span class="absolute inset-y-0 left-0 flex items-center pl-2 text-xs text-slate-400">Rp</span>
-                                            <input type="number" name="max_price" value="<?= isset($_GET['max_price']) ? htmlspecialchars($_GET['max_price']) : '' ?>" class="w-full rounded-lg border border-slate-200 py-1.5 pl-7 pr-2 text-sm focus:border-accent focus:ring-accent" placeholder="Jutaan">
+                                            <input type="number" name="max_price" value="<?= htmlspecialchars($filters['max_price'] ?? '') ?>" class="w-full rounded-lg border border-slate-200 py-1.5 pl-7 pr-2 text-sm focus:border-accent focus:ring-accent" placeholder="Jutaan">
                                         </div>
                                     </div>
                                 </div>
@@ -158,11 +159,14 @@ require __DIR__ . '/../layouts/header.php';
                                 <div class="space-y-2">
                                     <?php 
                                     $ratings = ['5' => '5 Bintang', '4' => '4 Bintang', '3' => '3 Bintang'];
-                                    $selectedRatings = isset($_GET['rating_check']) ? (array) $_GET['rating_check'] : [];
+                                    // Handle array rating check logic (manual handling since controller might expect single rating filter)
+                                    // Simplified: We assume controller handles 'rating' as minimum rating
+                                    $currentRating = $filters['rating'] ?? '';
                                     foreach ($ratings as $val => $label): 
+                                        $isChecked = ($currentRating === $val || $currentRating === $val . '+');
                                     ?>
                                         <label class="flex cursor-pointer items-center gap-3">
-                                            <input type="checkbox" name="rating_check[]" value="<?= $val ?>" <?= in_array($val, $selectedRatings) ? 'checked' : '' ?> onchange="this.form.submit()" class="h-4 w-4 cursor-pointer rounded border-slate-300 text-accent focus:ring-accent" />
+                                            <input type="radio" name="rating" value="<?= $val ?>+" <?= $isChecked ? 'checked' : '' ?> onchange="this.form.submit()" class="h-4 w-4 cursor-pointer rounded-full border-slate-300 text-accent focus:ring-accent" />
                                             <span class="text-sm text-slate-600"><?= $label ?></span>
                                         </label>
                                     <?php endforeach; ?>
@@ -174,10 +178,13 @@ require __DIR__ . '/../layouts/header.php';
                             <div>
                                 <label class="mb-3 block text-xs font-bold uppercase text-slate-400">Fasilitas</label>
                                 <div class="space-y-2.5">
-                                    <?php foreach ($availableFilters['facility'] as $facility): ?>
+                                    <?php 
+                                    $currentFacilities = $filters['facility'] ?? [];
+                                    foreach ($availableFilters['facility'] as $facility): 
+                                    ?>
                                         <label class="group flex cursor-pointer items-center gap-3">
                                             <div class="relative flex items-center">
-                                                <input type="checkbox" name="facility[]" value="<?= htmlspecialchars($facility) ?>" <?= in_array($facility, $filters['facility'], true) ? 'checked' : '' ?> onchange="this.form.submit()" class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-300 bg-white transition-all checked:border-accent checked:bg-accent hover:border-accent" />
+                                                <input type="checkbox" name="facility[]" value="<?= htmlspecialchars($facility) ?>" <?= in_array($facility, $currentFacilities, true) ? 'checked' : '' ?> onchange="this.form.submit()" class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-300 bg-white transition-all checked:border-accent checked:bg-accent hover:border-accent" />
                                                 <svg class="pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 transition-opacity peer-checked:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                                 </svg>
@@ -206,8 +213,8 @@ require __DIR__ . '/../layouts/header.php';
                             $hotelCity = $hotel['city'] ?? 'Indonesia';
                             $hotelRating = isset($hotel['average_rating']) ? number_format($hotel['average_rating'], 1) : '4.5';
                             $priceRaw = $hotel['min_price'] ?? 0;
-                            $hotelPrice = 'IDR ' . number_format($priceRaw, 0, ',', '.');
-                            $hotelImage = !empty($hotel['main_image']) ? $hotel['main_image'] : 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80';
+                            $hotelPrice = 'IDR ' . number_format((float)$priceRaw, 0, ',', '.');
+                            $hotelImage = !empty($hotel['main_image']) ? $hotel['main_image'] : BASE_URL . '/images/placeholder.jpg';
                             
                             $highlights = [];
                             if (isset($hotel['facilities'])) {

@@ -1,17 +1,15 @@
 <?php
-// Helper routing & Session
+// Helper global
 require_once __DIR__ . '/../../../helpers/functions.php';
 trevio_start_session();
 
-// Validasi Data dari Controller
+// Validasi Data
 if (!isset($data['hotel'])) {
-    // Redirect jika diakses langsung tanpa lewat Controller
-    header("Location: " . (defined('BASE_URL') ? BASE_URL : '/trevio-project/public') . "/hotel/search");
+    header("Location: " . BASE_URL . "/hotel/search");
     exit;
 }
 
 $hotel = $data['hotel'];
-// Ambil parameter pencarian dari controller (default values handled di controller)
 $searchParams = $data['searchParams'] ?? [
     'check_in' => date('Y-m-d'),
     'check_out' => date('Y-m-d', strtotime('+1 day')),
@@ -20,42 +18,40 @@ $searchParams = $data['searchParams'] ?? [
     'guests' => '2 Tamu'
 ];
 
-// Format Tampilan Tanggal
-$checkInDisplay = date('d M Y', strtotime($searchParams['check_in']));
-$checkOutDisplay = date('d M Y', strtotime($searchParams['check_out']));
+// Format Data untuk Tampilan
 $duration = $searchParams['nights'];
 $roomCount = $searchParams['num_rooms'];
+$checkInStr = date('d M', strtotime($searchParams['check_in']));
+$checkOutStr = date('d M Y', strtotime($searchParams['check_out']));
 
-// Normalisasi Data Hotel (Handling null values)
-$city = $hotel['city'] ?? 'Indonesia';
-$hotelRating = number_format((float)($hotel['average_rating'] ?? 0), 1);
-$hotelReviews = $hotel['total_reviews'] ?? 0;
-$description = $hotel['description'] ?? 'Deskripsi belum tersedia.';
-
-// Normalisasi Fasilitas (JSON to Array)
-$amenities = is_string($hotel['facilities'] ?? '') 
-    ? json_decode($hotel['facilities'], true) 
-    : ($hotel['facilities'] ?? []);
-if (!is_array($amenities)) $amenities = ['Wifi', 'Parkir', 'Resepsionis 24 Jam'];
+// Normalisasi Data Hotel
+$city = $hotel['city'] ?? '';
+$province = $hotel['province'] ?? '';
+$locationStr = $city . ($province ? ', ' . $province : '');
+$rating = number_format($hotel['average_rating'] ?? 0, 1);
+$reviews = $hotel['total_reviews'] ?? 0;
+$amenities = is_string($hotel['facilities'] ?? '') ? json_decode($hotel['facilities'], true) : ($hotel['facilities'] ?? []);
+if (!is_array($amenities)) $amenities = [];
 
 // Gambar Galeri
 $galleryImages = $data['galleryImages'] ?? [];
-if (empty($galleryImages)) {
-    $galleryImages[] = BASE_URL . '/images/placeholder.jpg';
-}
+if (empty($galleryImages)) $galleryImages[] = BASE_URL . '/images/placeholder.jpg';
 
-$pageTitle = 'Trevio | ' . ($hotel['name'] ?? 'Detail Hotel');
+// Highlights (untuk dot slider)
+$galleryHighlights = array_slice($amenities, 0, count($galleryImages));
 
+$pageTitle = 'Trevio | ' . $hotel['name'];
 require __DIR__ . '/../layouts/header.php';
 ?>
 
 <style>
-    /* Styles Khusus Halaman Detail */
+    /* Style Original */
     .detail-hero {
         position: relative;
-        height: 480px;
-        border-radius: 0 0 32px 32px;
+        height: 520px;
         overflow: hidden;
+        border-bottom-left-radius: 32px;
+        border-bottom-right-radius: 32px;
         background: #0f172a;
     }
     .detail-hero__slide {
@@ -64,132 +60,233 @@ require __DIR__ . '/../layouts/header.php';
         background-size: cover;
         background-position: center;
         opacity: 0;
-        transition: opacity 0.7s ease;
+        transition: opacity 0.6s ease;
     }
     .detail-hero__slide.is-active {
         opacity: 1;
     }
-    .text-shadow {
-        text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    .detail-hero__badge {
+        position: absolute;
+        top: 24px;
+        left: 24px;
+        padding: 0.35rem 0.85rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #0f172a;
+        background: rgba(255,255,255,0.9);
+        border-radius: 999px;
+    }
+    .detail-hero__indicator {
+        position: absolute;
+        bottom: 32px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: inline-flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 16px;
+        background: rgba(15, 23, 42, 0.75);
+        backdrop-filter: blur(12px);
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        z-index: 10;
+    }
+    .detail-hero__dot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.8);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+    }
+    .detail-hero__dot span {
+        font-size: 16px;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 2px;
+        letter-spacing: -0.02em;
+    }
+    .detail-hero__dot small {
+        font-size: 8px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        max-width: 90%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        opacity: 0.9;
+    }
+    .detail-hero__dot:hover {
+        background: rgba(255, 255, 255, 0.15);
+        border-color: rgba(255, 255, 255, 0.5);
+        color: #fff;
+        transform: translateY(-2px);
+    }
+    .detail-hero__dot.is-active {
+        background: #ffffff;
+        color: #0f172a;
+        border-color: #ffffff;
+        transform: scale(1.15);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+        z-index: 1;
+    }
+    @media (max-width: 640px) {
+        .detail-hero {
+            height: 400px;
+            border-radius: 0 0 24px 24px;
+        }
+        .detail-hero__indicator {
+            bottom: 20px;
+            padding: 6px 10px;
+            gap: 8px;
+            width: auto;
+            max-width: 95%;
+        }
+        .detail-hero__dot {
+            width: 52px;
+            height: 52px;
+        }
+        .detail-hero__dot span {
+            font-size: 13px;
+            margin-bottom: 0;
+        }
+        .detail-hero__dot small {
+            font-size: 7px;
+            max-width: 100%;
+        }
     }
 </style>
 
-<section class="relative w-full bg-slate-50 pb-12">
-    <div class="mx-auto max-w-7xl px-4 lg:px-6 pt-6">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
-            <div class="lg:col-span-2 relative h-[400px] lg:h-[500px] rounded-3xl overflow-hidden shadow-xl group">
-                <div class="detail-hero" data-detail-gallery>
-                    <?php foreach ($galleryImages as $index => $img): ?>
-                        <div class="detail-hero__slide <?= $index === 0 ? 'is-active' : '' ?>" 
-                             data-slide="<?= $index ?>" 
-                             style="background-image: url('<?= htmlspecialchars($img) ?>');">
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                
-                <?php if (count($galleryImages) > 1): ?>
-                <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 px-4 py-2 bg-black/30 backdrop-blur-md rounded-full z-10">
-                    <?php foreach ($galleryImages as $index => $img): ?>
-                        <button type="button" 
-                                class="w-2.5 h-2.5 rounded-full transition-all bg-white/50 hover:bg-white <?= $index === 0 ? 'bg-white scale-125' : '' ?>" 
-                                onclick="changeSlide(<?= $index ?>)">
+<section class="relative w-full bg-white">
+    <div class="mx-auto max-w-6xl px-4 pt-6 pb-0 grid grid-cols-1 md:grid-cols-5 gap-0 md:gap-8">
+        
+        <div class="md:col-span-3 flex flex-col justify-center">
+            <div class="detail-hero" data-detail-gallery>
+                <?php foreach ($galleryImages as $index => $image): ?>
+                    <div class="detail-hero__slide <?= $index === 0 ? 'is-active' : '' ?>" data-gallery-slide="<?= $index ?>" style="background-image: url('<?= htmlspecialchars($image) ?>');">
+                        <div class="detail-hero__badge">Foto <?= $index + 1 ?></div>
+                    </div>
+                <?php endforeach; ?>
+                <div class="detail-hero__indicator" data-gallery-dots>
+                    <?php foreach ($galleryImages as $index => $image): ?>
+                        <?php $dotLabel = $galleryHighlights[$index] ?? 'Preview ' . ($index + 1); ?>
+                        <button type="button" class="detail-hero__dot <?= $index === 0 ? 'is-active' : '' ?>" data-gallery-target="<?= $index ?>">
+                            <span><?= sprintf('%02d', $index + 1) ?></span>
+                            <small><?= htmlspecialchars($dotLabel) ?></small>
                         </button>
                     <?php endforeach; ?>
                 </div>
-                <?php endif; ?>
-
-                <div class="absolute top-6 left-6 z-20">
-                    <a href="<?= BASE_URL ?>/hotel/search?q=<?= urlencode($city) ?>" 
-                       class="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur rounded-full text-sm font-bold text-slate-800 hover:bg-white transition shadow-lg">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                        Kembali
-                    </a>
-                </div>
             </div>
+        </div>
 
-            <div class="flex flex-col justify-center lg:py-4">
-                <div class="mb-6">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider mb-3">
-                        <?= htmlspecialchars($city) ?>
-                    </span>
-                    <h1 class="text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight mb-3">
-                        <?= htmlspecialchars($hotel['name']) ?>
-                    </h1>
-                    
-                    <div class="flex items-center gap-4 text-sm text-slate-500 mb-6">
-                        <div class="flex items-center gap-1 text-yellow-500 font-bold">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
-                            <span><?= $hotelRating ?></span>
-                        </div>
-                        <span class="w-1 h-1 rounded-full bg-slate-300"></span>
-                        <span><?= $hotelReviews ?> Ulasan</span>
-                    </div>
-
-                    <div class="bg-white border border-blue-100 rounded-2xl p-5 shadow-sm relative overflow-hidden">
-                        <div class="absolute top-0 right-0 w-20 h-20 bg-blue-50 rounded-bl-full -mr-4 -mt-4"></div>
-                        
-                        <div class="flex justify-between items-center mb-4 relative z-10">
-                            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Detail Perjalananmu</h3>
-                            <a href="<?= BASE_URL ?>/hotel/search?q=<?= urlencode($city) ?>" class="text-xs font-bold text-blue-600 hover:text-blue-700">Ubah</a>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4 text-sm relative z-10">
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Check-In</p>
-                                <p class="font-bold text-slate-800"><?= $checkInDisplay ?></p>
-                            </div>
-                            <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                                <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Check-Out</p>
-                                <p class="font-bold text-slate-800"><?= $checkOutDisplay ?></p>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-4 flex flex-wrap gap-2 text-xs font-medium text-slate-600 relative z-10">
-                            <span class="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg font-bold">
-                                <?= $duration ?> Malam
-                            </span>
-                            <span class="bg-slate-100 px-3 py-1.5 rounded-lg">
-                                <?= $roomCount ?> Kamar
-                            </span>
-                            <span class="bg-slate-100 px-3 py-1.5 rounded-lg">
-                                <?= htmlspecialchars($searchParams['guests']) ?>
-                            </span>
-                        </div>
-                    </div>
-                    </div>
+        <div class="md:col-span-2 flex flex-col justify-center items-start md:items-start pt-8 md:pt-0">
+            <nav class="mb-2 text-xs text-slate-400">
+                <a class="hover:text-blue-600" href="<?= BASE_URL ?>">Beranda</a>
+                <span class="mx-1">/</span>
+                <a class="hover:text-blue-600" href="<?= BASE_URL ?>/hotel/search">Hotel</a>
+                <span class="mx-1">/</span>
+                <span class="font-semibold text-blue-600"><?= htmlspecialchars($hotel['name']) ?></span>
+            </nav>
+            <h1 class="text-3xl md:text-4xl font-bold text-slate-900 leading-tight mb-2"><?= htmlspecialchars($hotel['name']) ?></h1>
+            <p class="text-base text-slate-500 mb-3 flex items-center gap-2">
+                <svg class="h-5 w-5 text-emerald-500 inline-block" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 .587 15.668 8l8.2 1.193-5.934 5.781 1.402 8.174L12 18.896l-7.336 3.869 1.402-8.174L.132 9.193 8.332 8z"></path>
+                </svg>
+                <span class="font-semibold text-emerald-600"><?= $rating ?></span>
+                <span class="text-slate-400">/ <?= $reviews ?> ulasan</span>
+            </p>
+            <p class="text-sm text-slate-400 mb-4"><span class="font-medium">Lokasi:</span> <?= htmlspecialchars($locationStr) ?></p>
+            
+            <div class="rounded-2xl border border-blue-100 bg-blue-50/50 px-5 py-4 mb-2 w-full">
+                <div class="flex justify-between items-center mb-2">
+                    <p class="text-xs uppercase tracking-wide text-blue-500 font-bold">Pencarianmu</p>
+                    <a href="<?= BASE_URL ?>/hotel/search?q=<?= urlencode($city) ?>" class="text-xs font-bold text-blue-600 underline">Ubah</a>
+                </div>
+                <p class="text-sm font-semibold text-slate-700">
+                    <?= $checkInStr ?> - <?= $checkOutStr ?> 
+                    <span class="font-normal text-slate-500">(<?= $duration ?> Malam)</span>
+                </p>
+                <p class="text-sm text-slate-500 mt-1"><?= $searchParams['guests'] ?>, <?= $roomCount ?> Kamar</p>
+                
+                <a class="mt-4 inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 w-full shadow-lg shadow-blue-500/30" href="#rooms">
+                    Lihat Ketersediaan
+                </a>
             </div>
         </div>
     </div>
 </section>
 
-<section class="bg-white py-12" id="rooms">
-    <div class="mx-auto max-w-7xl px-4 lg:px-6">
-        <div class="grid grid-cols-1 lg:grid-cols-[1fr_350px] gap-12">
-            
-            <div class="space-y-10">
-                
-                <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-100 pb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-900">Pilihan Kamar</h2>
-                        <p class="text-slate-500 text-sm mt-1">
-                            Menampilkan harga total untuk 
-                            <span class="font-bold text-slate-800"><?= $duration ?> malam</span>, 
-                            <span class="font-bold text-slate-800"><?= $roomCount ?> kamar</span>
-                        </p>
+<section class="bg-white py-16">
+    <div class="mx-auto grid max-w-6xl gap-10 px-6 md:grid-cols-[300px_1fr]">
+        
+        <aside class="relative">
+            <div class="sticky top-24 space-y-6">
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="text-base font-semibold text-slate-900">Ringkasan singkat</h3>
+                    <ul class="mt-4 space-y-3 text-sm text-slate-600">
+                        <li class="flex items-center gap-2">
+                            <svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Check-in 14:00 • Check-out 12:00
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+                            Lokasi Strategis
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Pembatalan gratis (S&K)
+                        </li>
+                    </ul>
+                </div>
+                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <h3 class="text-base font-semibold text-slate-900">Lokasi</h3>
+                    <p class="mt-2 text-sm text-slate-500"><?= htmlspecialchars($locationStr) ?></p>
+                    <div class="mt-4 h-48 overflow-hidden rounded-2xl bg-slate-100">
+                        <div class="w-full h-full flex items-center justify-center text-slate-400 text-xs">Peta Google Maps</div>
                     </div>
                 </div>
+            </div>
+        </aside>
 
-                <?php if (empty($hotel['rooms'])): ?>
-                    <div class="text-center py-12 bg-slate-50 rounded-3xl border-2 border-dashed border-slate-200">
-                        <svg class="w-12 h-12 text-slate-300 mx-auto mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                        <p class="text-slate-500 font-medium">Belum ada kamar yang tersedia saat ini.</p>
-                    </div>
-                <?php else: ?>
-                    <div class="grid gap-6">
+        <article class="space-y-8">
+            <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                <h2 class="text-lg font-semibold text-slate-900">Tentang hotel</h2>
+                <p class="mt-3 text-sm leading-7 text-slate-600"><?= nl2br(htmlspecialchars($hotel['description'] ?? 'Deskripsi hotel belum tersedia.')) ?></p>
+                <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                    <?php foreach ($amenities as $amenity): ?>
+                        <span class="flex items-center gap-2 text-sm text-slate-600">
+                            <svg class="h-4 w-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"></path></svg>
+                            <?= htmlspecialchars($amenity) ?>
+                        </span>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            
+            <div class="space-y-5" id="rooms">
+                <div class="flex flex-col gap-1">
+                    <p class="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">Pilihan Kamar</p>
+                    <h2 class="text-2xl font-semibold text-slate-900">Ketersediaan untuk <?= $duration ?> malam</h2>
+                </div>
+                
+                <div class="space-y-4">
+                    <?php if (empty($hotel['rooms'])): ?>
+                        <div class="p-8 text-center text-gray-500 border-2 border-dashed border-gray-200 rounded-3xl bg-slate-50">
+                            Belum ada kamar yang tersedia untuk tanggal ini.
+                        </div>
+                    <?php else: ?>
                         <?php foreach ($hotel['rooms'] as $room): ?>
                             <?php 
-                                // Logic Data dari Controller
+                                // LOGIC BARU: Ambil data hasil kalkulasi dari Controller
                                 $searchData = $room['search_data'] ?? [
                                     'is_available' => true,
                                     'total_price' => $room['price_per_night'],
@@ -200,20 +297,13 @@ require __DIR__ . '/../layouts/header.php';
                                 $isAvailable = $searchData['is_available'];
                                 $totalPrice = $searchData['total_price'];
                                 $perNightPrice = $room['price_per_night'];
-                                $remainingSlots = $searchData['remaining_slots'];
+                                $remaining = $searchData['remaining_slots'];
 
                                 // Amenities
-                                $roomAmenities = is_string($room['amenities'] ?? '') 
-                                    ? json_decode($room['amenities'], true) 
-                                    : ($room['amenities'] ?? []);
-                                if (!is_array($roomAmenities)) $roomAmenities = [];
+                                $rInc = is_string($room['amenities'] ?? '') ? json_decode($room['amenities'], true) : ($room['amenities'] ?? []);
+                                if (!is_array($rInc)) $rInc = ['Wifi', 'AC'];
 
-                                // Gambar Kamar
-                                $roomImage = !empty($room['main_image']) 
-                                    ? htmlspecialchars($room['main_image']) 
-                                    : BASE_URL . '/images/placeholder.jpg';
-                                
-                                // URL Booking (Membawa parameter tanggal)
+                                // Link Booking
                                 $bookParams = [
                                     'hotel_id' => $hotel['id'],
                                     'room_id' => $room['id'],
@@ -225,147 +315,107 @@ require __DIR__ . '/../layouts/header.php';
                                 $bookingUrl = BASE_URL . '/booking/create?' . http_build_query($bookParams);
                             ?>
 
-                            <div class="group relative flex flex-col md:flex-row bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg hover:border-blue-200 transition-all duration-300 <?= !$isAvailable ? 'opacity-60 bg-slate-50' : '' ?>">
-                                
-                                <div class="md:w-72 h-64 md:h-auto bg-slate-200 relative shrink-0 overflow-hidden">
-                                    <img src="<?= $roomImage ?>" alt="<?= htmlspecialchars($room['room_type']) ?>" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
-                                    
-                                    <?php if (!$isAvailable): ?>
-                                        <div class="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-[2px]">
-                                            <span class="bg-red-600 text-white px-4 py-1.5 rounded-lg font-bold text-sm uppercase tracking-widest shadow-lg transform -rotate-3">Habis Terjual</span>
-                                        </div>
-                                    <?php elseif ($remainingSlots <= 3): ?>
-                                        <div class="absolute top-3 left-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm animate-pulse">
-                                            Sisa <?= $remainingSlots ?> kamar!
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-
-                                <div class="flex-1 p-5 md:p-6 flex flex-col">
-                                    <div class="flex-1">
-                                        <div class="flex justify-between items-start mb-2">
-                                            <h3 class="text-xl font-bold text-slate-900"><?= htmlspecialchars($room['room_type']) ?></h3>
-                                        </div>
-                                        
-                                        <div class="flex flex-wrap items-center gap-4 text-xs text-slate-500 mb-4">
-                                            <span class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-md border border-slate-100">
-                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                                <?= htmlspecialchars($room['description'] ?? 'Standard Room') ?>
-                                            </span>
-                                            <span class="flex items-center gap-1.5 bg-slate-50 px-2.5 py-1.5 rounded-md border border-slate-100">
-                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                                Max <?= $room['capacity'] ?? 2 ?> Org
-                                            </span>
-                                            <?php if ($searchData['capacity_warning']): ?>
-                                                <span class="text-orange-600 bg-orange-50 px-2 py-1 rounded border border-orange-100 font-bold">
-                                                    ⚠ Kapasitas Kurang
-                                                </span>
-                                            <?php endif; ?>
-                                        </div>
-
-                                        <div class="flex flex-wrap gap-2 mb-4">
-                                            <?php foreach(array_slice($roomAmenities, 0, 4) as $am): ?>
-                                                <span class="text-[11px] font-medium text-slate-600 bg-slate-100 px-2 py-1 rounded"><?= htmlspecialchars($am) ?></span>
-                                            <?php endforeach; ?>
-                                            <?php if(count($roomAmenities) > 4): ?>
-                                                <span class="text-[11px] text-slate-400 px-1">+<?= count($roomAmenities)-4 ?> lainnya</span>
-                                            <?php endif; ?>
-                                        </div>
+                            <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md <?= !$isAvailable ? 'opacity-75 bg-slate-50' : '' ?>">
+                                <div class="flex flex-col gap-6 md:flex-row md:items-center">
+                                    <div class="w-full md:w-48 h-32 bg-slate-200 rounded-2xl overflow-hidden shrink-0 relative">
+                                        <img src="<?= !empty($room['main_image']) ? htmlspecialchars($room['main_image']) : BASE_URL.'/images/placeholder.jpg' ?>" class="w-full h-full object-cover">
+                                        <?php if (!$isAvailable): ?>
+                                            <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                                <span class="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">HABIS</span>
+                                            </div>
+                                        <?php elseif ($remaining <= 3): ?>
+                                            <div class="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded">Sisa <?= $remaining ?></div>
+                                        <?php endif; ?>
                                     </div>
 
-                                    <div class="border-t border-slate-100 pt-4 flex items-end justify-between">
-                                        <div>
-                                            <?php if ($duration > 1 || $roomCount > 1): ?>
-                                                <p class="text-xs text-slate-400 mb-0.5">Total Harga</p>
-                                                <p class="text-xl font-bold text-blue-600">Rp <?= number_format($totalPrice, 0, ',', '.') ?></p>
-                                                <p class="text-[10px] text-slate-400 mt-0.5">Rp <?= number_format($perNightPrice, 0, ',', '.') ?> /malam per kamar</p>
-                                            <?php else: ?>
-                                                <p class="text-xs text-slate-400 mb-0.5">Harga per malam</p>
-                                                <p class="text-xl font-bold text-blue-600">Rp <?= number_format($perNightPrice, 0, ',', '.') ?></p>
-                                                <p class="text-[10px] text-slate-400 mt-0.5">Termasuk pajak & biaya</p>
+                                    <div class="flex-1">
+                                        <h3 class="text-lg font-bold text-slate-900"><?= htmlspecialchars($room['room_type']) ?></h3>
+                                        <p class="text-sm text-slate-500 mt-1">
+                                            Ukuran <?= htmlspecialchars($room['room_size'] ?? '-') ?> m² • 
+                                            Max <?= htmlspecialchars($room['capacity'] ?? 2) ?> Org
+                                            <?php if ($searchData['capacity_warning']): ?>
+                                                <span class="text-orange-500 text-xs font-bold ml-1">(Kapasitas Pas-pasan)</span>
                                             <?php endif; ?>
-                                        </div>
-                                        
+                                        </p>
+                                        <ul class="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+                                            <?php foreach (array_slice($rInc, 0, 3) as $inc): ?>
+                                                <li class="rounded-full bg-slate-100 px-3 py-1"><?= htmlspecialchars($inc) ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+
+                                    <div class="text-left md:text-right shrink-0">
+                                        <?php if ($duration > 1 || $roomCount > 1): ?>
+                                            <p class="text-xs uppercase tracking-wide text-slate-400">Total Harga</p>
+                                            <p class="text-xl font-bold text-blue-600">Rp <?= number_format($totalPrice, 0, ',', '.') ?></p>
+                                            <p class="text-[10px] text-slate-400">Rp <?= number_format($perNightPrice, 0, ',', '.') ?> /malam</p>
+                                        <?php else: ?>
+                                            <p class="text-xs uppercase tracking-wide text-slate-400">Harga per malam</p>
+                                            <p class="text-xl font-bold text-blue-600">Rp <?= number_format($perNightPrice, 0, ',', '.') ?></p>
+                                        <?php endif; ?>
+
                                         <?php if ($isAvailable): ?>
-                                            <a href="<?= $bookingUrl ?>" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-md shadow-blue-500/20 hover:bg-blue-700 hover:shadow-lg transition-all active:scale-95">
-                                                Pilih Kamar
+                                            <a class="mt-3 inline-flex w-full md:w-auto items-center justify-center rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700 shadow-lg shadow-blue-500/20" href="<?= $bookingUrl ?>">
+                                                Pilih
                                             </a>
                                         <?php else: ?>
-                                            <button disabled class="bg-slate-100 text-slate-400 px-6 py-2.5 rounded-xl font-bold text-sm cursor-not-allowed border border-slate-200">
-                                                Tidak Tersedia
+                                            <button disabled class="mt-3 inline-flex w-full md:w-auto items-center justify-center rounded-xl bg-slate-200 px-6 py-2.5 text-sm font-bold text-slate-400 cursor-not-allowed">
+                                                Penuh
                                             </button>
                                         <?php endif; ?>
                                     </div>
                                 </div>
-                            </div>
+                            </article>
                         <?php endforeach; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-
-            <aside class="space-y-6">
-                <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sticky top-24">
-                    <h3 class="text-base font-bold text-slate-900 mb-4">Tentang Hotel</h3>
-                    <p class="text-sm text-slate-600 leading-relaxed mb-6">
-                        <?= nl2br(htmlspecialchars($description)) ?>
-                    </p>
-                    
-                    <h4 class="text-sm font-bold text-slate-900 mb-3">Fasilitas Populer</h4>
-                    <ul class="space-y-2.5">
-                        <?php foreach (array_slice($amenities, 0, 5) as $facility): ?>
-                            <li class="flex items-center gap-3 text-sm text-slate-600">
-                                <span class="flex items-center justify-center w-6 h-6 rounded-full bg-blue-50 text-blue-600">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                                </span>
-                                <?= htmlspecialchars($facility) ?>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
-
-                    <div class="mt-6 pt-6 border-t border-slate-100">
-                        <h4 class="text-sm font-bold text-slate-900 mb-2">Lokasi</h4>
-                        <p class="text-sm text-slate-500 mb-3"><?= htmlspecialchars($city) ?></p>
-                        <div class="h-32 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 text-xs">
-                            Map Preview (<?= htmlspecialchars($city) ?>)
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
-            </aside>
-
-        </div>
+            </div>
+        </article>
     </div>
 </section>
 
 <script>
-    const slides = document.querySelectorAll('.detail-hero__slide');
-    const dots = document.querySelectorAll('.detail-hero button'); // Dot buttons
-    let activeIndex = 0;
+document.addEventListener('DOMContentLoaded', function () {
+    // Slider Logic Original
+    const gallery = document.querySelector('[data-detail-gallery]');
+    if (!gallery) return;
     
-    function changeSlide(index) {
-        // Hide all
-        slides.forEach(s => s.classList.remove('is-active'));
-        dots.forEach(d => {
-            d.classList.remove('bg-white', 'scale-125');
-            d.classList.add('bg-white/50');
-        });
+    const slides = Array.from(gallery.querySelectorAll('[data-gallery-slide]'));
+    const dots = Array.from(gallery.querySelectorAll('[data-gallery-target]'));
+    let activeIndex = 0;
+    let autoTimer = null;
 
-        // Show active
-        slides[index].classList.add('is-active');
-        if(dots[index]) {
-            dots[index].classList.remove('bg-white/50');
-            dots[index].classList.add('bg-white', 'scale-125');
-        }
-        
+    const setActive = function (index) {
         activeIndex = index;
-    }
+        slides.forEach((slide, idx) => slide.classList.toggle('is-active', idx === index));
+        dots.forEach((dot, idx) => dot.classList.toggle('is-active', idx === index));
+    };
 
-    // Auto rotate every 5s
-    setInterval(() => {
-        const nextIndex = (activeIndex + 1) % slides.length;
-        changeSlide(nextIndex);
-    }, 5000);
+    const startAutoRotate = function () {
+        stopAutoRotate();
+        autoTimer = setInterval(() => {
+            const nextIndex = (activeIndex + 1) % slides.length;
+            setActive(nextIndex);
+        }, 5000);
+    };
+
+    const stopAutoRotate = function () {
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+    };
+
+    dots.forEach(dot => {
+        dot.addEventListener('click', function () {
+            setActive(parseInt(dot.getAttribute('data-gallery-target'), 10));
+            startAutoRotate();
+        });
+    });
+
+    gallery.addEventListener('mouseenter', stopAutoRotate);
+    gallery.addEventListener('mouseleave', startAutoRotate);
+
+    setActive(activeIndex);
+    startAutoRotate();
+});
 </script>
 
-<?php
-require __DIR__ . '/../layouts/footer.php';
-?>
+<?php require __DIR__ . '/../layouts/footer.php'; ?>
