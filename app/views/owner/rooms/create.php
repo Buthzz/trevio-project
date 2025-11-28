@@ -1,4 +1,3 @@
-// Fixed Perbaikan untuk create.php
 <?php include __DIR__ . '/../../layouts/header.php'; ?>
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
