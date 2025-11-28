@@ -1,3 +1,4 @@
+// Fixed Perbaikan untuk index.php
 <?php include __DIR__ . '/../../layouts/header.php'; ?>
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
