@@ -1,329 +1,199 @@
 <?php
-// Tetapkan judul halaman agar tab browser mencerminkan proses verifikasi.
-$pageTitle = 'Verify Payment - Trevio';
-// Pastikan logo header kembali ke dashboard admin.
-$homeLink  = '../dashboard.php';
-// Sertakan header global untuk konsistensi UI.
-include __DIR__ . '/../../layouts/header.php';
+// Tentukan judul dan layout
+$pageTitle = 'Verifikasi Pembayaran - Admin';
+require_once __DIR__ . '/../../layouts/header.php';
 
-// Ambil ID pembayaran dari query string atau gunakan default saat demo.
-$paymentId = $_GET['id'] ?? 'TXN-001';
-// Data contoh pembayaran; nantinya diganti data riil dari database.
-$payment = [
-    'id' => $paymentId,
-    'user' => 'John Doe',
-    'email' => 'john@example.com',
-    'phone' => '+62812345678',
-    'hotel' => 'Grand Hotel Jakarta',
-    'hotelLocation' => 'Jakarta Pusat',
-    'bookingDates' => '15 Jan 2024 - 17 Jan 2024',
-    'rooms' => 2,
-    'guests' => 4,
-    'amount' => 'Rp 2.500.000',
-    'amountNumeric' => 2500000,
-    'method' => 'Bank Transfer',
-    'bankName' => 'Bank Central Asia',
-    'accountNumber' => '1234567890',
-    'transferDate' => '2024-01-15 14:30:00',
-    'proofUrl' => '../../../public/images/payment-proof.jpg',
-    'status' => 'pending',
-    'notes' => 'Payment received from customer',
-];
+// Helper format rupiah (jika belum ada di global)
+if (!function_exists('formatRupiah')) {
+    function formatRupiah($angka) { return 'Rp ' . number_format((float)$angka, 0, ',', '.'); }
+}
+
+$payment = $data['payment'] ?? null;
+$csrf_token = $data['csrf_token'] ?? '';
 ?>
 
-<!-- Layout verifikasi pembayaran -->
-<div class="flex min-h-[calc(100vh-var(--header-height,4rem))] bg-slate-50">
-    <!-- Sidebar Toggle Button (Mobile) -->
-    <button id="sidebarToggle" class="fixed top-4 left-4 z-50 lg:hidden rounded-lg bg-accent p-2 text-white shadow-lg hover:bg-accentLight transition" onclick="toggleSidebar()">
-        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-        </svg>
-    </button>
-
-    <!-- Sidebar Overlay (Mobile) -->
-    <div id="sidebarOverlay" class="fixed inset-0 z-20 hidden bg-black/50 lg:hidden" onclick="closeSidebar()"></div>
-
+<div class="flex min-h-[calc(100vh-4rem)] bg-slate-50">
     <!-- Sidebar -->
-    <!-- Sidebar navigasi admin -->
-    <aside id="adminSidebar" class="fixed inset-y-0 left-0 z-30 w-64 border-r border-slate-200 bg-white overflow-y-auto transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:static lg:pt-0" style="top: var(--header-height, 4rem);">
-        <!-- Sidebar Header with Close Button (Mobile) -->
-        <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 lg:hidden">
-            <h3 class="font-bold text-slate-900">Menu</h3>
-            <button class="rounded-lg p-1 hover:bg-slate-100 transition" onclick="closeSidebar()">
-                <svg class="h-6 w-6 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
-        </div>
+    <aside class="hidden w-64 border-r border-slate-200 bg-white lg:block">
         <div class="p-6">
-        <nav class="space-y-2">
-            <a href="../dashboard.php" 
-               class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4"></path>
-                </svg>
-                Dashboard
-            </a>
-                <a href="../hotels/index.php" 
-               class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path>
-                </svg>
-                Hotels
-            </a>
-                <a href="index.php" 
-               class="flex items-center gap-3 rounded-lg bg-accent/10 px-4 py-3 text-accent font-semibold transition">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                </svg>
-                Payments
-            </a>
-                <a href="../refunds/index.php" 
-               class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path>
-                </svg>
-                Refunds
-            </a>
-                <a href="../users/index.php" 
-               class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-100 transition font-medium">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-2a6 6 0 0112 0v2zm6-11a4 4 0 110 5.292M21 21h-8v-2a6 6 0 018-5.73"></path>
-                </svg>
-                Users
-            </a>
-        </nav>
+            <nav class="space-y-1">
+                <a href="<?= BASE_URL ?>/admin/dashboard" class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-50 transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4"></path></svg>
+                    Dashboard
+                </a>
+                <a href="<?= BASE_URL ?>/admin/hotels" class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-50 transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path></svg>
+                    Hotels
+                </a>
+                <a href="<?= BASE_URL ?>/admin/payments" class="flex items-center gap-3 rounded-lg bg-accent/10 px-4 py-3 text-accent font-semibold transition">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    Payments
+                </a>
+            </nav>
         </div>
     </aside>
 
     <!-- Main Content -->
-    <!-- Konten detail pembayaran -->
-    <main class="flex-1 overflow-auto">
-        <div class="p-6 md:p-8">
-            <!-- Page Header -->
-            <div class="mb-8 flex items-center justify-between">
-                <div>
-                    <a href="index.php" class="text-accent hover:underline text-sm font-medium">← Back to Payments</a>
-                    <h1 class="mt-2 text-3xl font-bold text-slate-900">Verify Payment</h1>
-                    <p class="mt-1 text-slate-600">Transaction ID: <?= htmlspecialchars($payment['id']) ?></p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-                <!-- Left Column - Payment Details -->
-                <div class="lg:col-span-2 space-y-6">
-                    <!-- Transaction Details -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-6 text-lg font-bold text-slate-900">Transaction Details</h2>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Transaction ID</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($payment['id']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Status</p>
-                                    <p class="mt-1">
-                                        <span class="inline-flex rounded-full bg-yellow-100 px-3 py-1 text-sm font-medium text-yellow-700">
-                                            <?= ucfirst($payment['status']) ?>
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Amount</p>
-                                    <p class="mt-1 text-xl font-bold text-slate-900"><?= htmlspecialchars($payment['amount']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Payment Method</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($payment['method']) ?></p>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Bank Name</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($payment['bankName']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Account Number</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($payment['accountNumber']) ?></p>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-slate-600">Transfer Date & Time</p>
-                                <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($payment['transferDate']) ?></p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Customer Information -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-6 text-lg font-bold text-slate-900">Customer Information</h2>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Full Name</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($payment['user']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Email</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($payment['email']) ?></p>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-sm font-medium text-slate-600">Phone Number</p>
-                                <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($payment['phone']) ?></p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Booking Details -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-6 text-lg font-bold text-slate-900">Booking Details</h2>
-                        <div class="space-y-4">
-                            <div>
-                                <p class="text-sm font-medium text-slate-600">Hotel Name</p>
-                                <p class="mt-1 font-semibold text-slate-900"><?= htmlspecialchars($payment['hotel']) ?></p>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Location</p>
-                                    <p class="mt-1 text-slate-900"><?= htmlspecialchars($payment['hotelLocation']) ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Check-in & Check-out</p>
-                                    <p class="mt-1 text-slate-900"><?= htmlspecialchars($payment['bookingDates']) ?></p>
-                                </div>
-                            </div>
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Rooms</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= $payment['rooms'] ?></p>
-                                </div>
-                                <div>
-                                    <p class="text-sm font-medium text-slate-600">Number of Guests</p>
-                                    <p class="mt-1 font-semibold text-slate-900"><?= $payment['guests'] ?></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Payment Proof -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-6 text-lg font-bold text-slate-900">Payment Proof</h2>
-                        <div class="rounded-lg overflow-hidden bg-slate-100 h-80">
-                            <img src="<?= $payment['proofUrl'] ?>" alt="Payment Proof" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22320%22%3E%3Crect fill=%22%23e2e8f0%22 width=%22400%22 height=%22320%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 font-family=%22Arial%22 font-size=%2216%22 fill=%22%239ca3af%22 text-anchor=%22middle%22 dominant-baseline=%22middle%22%3EPayment Proof Image%3C/text%3E%3C/svg%3E'">
-                        </div>
-                        <p class="mt-4 text-sm text-slate-600">Download or view original proof image for verification</p>
-                    </div>
-                </div>
-
-                <!-- Right Column - Action Panel -->
-                <div class="space-y-6">
-                    <!-- Verification Status -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-6 text-lg font-bold text-slate-900">Verification Status</h2>
-                        <div class="space-y-4">
-                            <div class="flex items-center gap-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
-                                <svg class="h-5 w-5 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 0v2M15 9h2m0 4h2m0 0h2M9 9h2m0 4h2m0 0h2"></path>
-                                </svg>
-                                <div>
-                                    <p class="text-sm font-semibold text-yellow-900">Awaiting Verification</p>
-                                    <p class="text-xs text-yellow-800">Review payment proof carefully</p>
-                                </div>
-                            </div>
-
-                            <div class="space-y-3 pt-4 border-t border-slate-200">
-                                <div class="flex items-center gap-2">
-                                    <input type="checkbox" id="check1" class="rounded">
-                                    <label for="check1" class="text-sm text-slate-700">Amount matches booking</label>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <input type="checkbox" id="check2" class="rounded">
-                                    <label for="check2" class="text-sm text-slate-700">Customer verified</label>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <input type="checkbox" id="check3" class="rounded">
-                                    <label for="check3" class="text-sm text-slate-700">Proof document valid</label>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <input type="checkbox" id="check4" class="rounded">
-                                    <label for="check4" class="text-sm text-slate-700">Payment received</label>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Action Buttons -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-4 text-lg font-bold text-slate-900">Actions</h2>
-                        <div class="space-y-3">
-                            <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-3 text-white font-semibold hover:bg-green-700 transition">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                                Approve Payment
-                            </button>
-                            <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 text-white font-semibold hover:bg-red-700 transition">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l5.5-5.5M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                </svg>
-                                Reject Payment
-                            </button>
-                            <button class="w-full inline-flex items-center justify-center gap-2 rounded-lg bg-slate-200 px-4 py-3 text-slate-700 font-semibold hover:bg-slate-300 transition">
-                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                                </svg>
-                                Request Information
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Notes -->
-                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="mb-4 text-lg font-bold text-slate-900">Admin Notes</h2>
-                        <textarea placeholder="Add notes about this payment..." rows="5" class="w-full rounded-lg border border-slate-300 p-3 text-sm focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"></textarea>
-                        <button class="mt-3 w-full rounded-lg bg-accent px-4 py-2 text-white font-medium hover:bg-accentLight transition">
-                            Save Notes
-                        </button>
-                    </div>
-                </div>
+    <main class="flex-1 overflow-auto p-8">
+        <!-- Header -->
+        <div class="mb-8 flex items-center justify-between">
+            <div>
+                <a href="<?= BASE_URL ?>/admin/payments" class="text-sm font-medium text-accent hover:underline">← Kembali ke Daftar</a>
+                <h1 class="mt-2 text-2xl font-bold text-slate-900">Verifikasi Pembayaran #<?= $payment['id'] ?? '-' ?></h1>
+                <p class="text-slate-500">Booking Code: <?= htmlspecialchars($payment['booking_code'] ?? 'N/A') ?></p>
             </div>
         </div>
+
+        <?php if (!$payment): ?>
+            <div class="rounded-lg bg-red-50 p-4 text-red-700">Data pembayaran tidak ditemukan.</div>
+        <?php else: ?>
+
+            <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                <!-- Kolom Kiri: Detail -->
+                <div class="lg:col-span-2 space-y-6">
+                    
+                    <!-- Info Transaksi -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 class="mb-4 text-lg font-bold text-slate-900">Detail Transfer</h2>
+                        <div class="grid grid-cols-2 gap-y-4 text-sm">
+                            <div>
+                                <p class="text-slate-500">Jumlah Transfer</p>
+                                <p class="text-lg font-bold text-slate-900"><?= formatRupiah($payment['transfer_amount'] ?? 0) ?></p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Metode</p>
+                                <p class="font-semibold text-slate-900 uppercase"><?= htmlspecialchars($payment['payment_method'] ?? '-') ?></p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Bank Pengirim</p>
+                                <p class="font-semibold text-slate-900"><?= htmlspecialchars($payment['transfer_from_bank'] ?? '-') ?></p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Atas Nama / No. Rek</p>
+                                <p class="font-semibold text-slate-900"><?= htmlspecialchars($payment['payment_notes'] ?? '-') ?></p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Tanggal Upload</p>
+                                <p class="font-semibold text-slate-900"><?= isset($payment['uploaded_at']) ? date('d M Y H:i', strtotime($payment['uploaded_at'])) : '-' ?></p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500">Status Saat Ini</p>
+                                <?php
+                                $status = $payment['payment_status'] ?? 'unknown';
+                                $badges = [
+                                    'verified' => 'bg-emerald-100 text-emerald-700',
+                                    'pending_verification' => 'bg-amber-100 text-amber-700',
+                                    'failed' => 'bg-red-100 text-red-700'
+                                ];
+                                $badgeClass = $badges[$status] ?? 'bg-slate-100 text-slate-600';
+                                ?>
+                                <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $badgeClass ?>">
+                                    <?= ucwords(str_replace('_', ' ', $status)) ?>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Info Booking -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 class="mb-4 text-lg font-bold text-slate-900">Data Booking</h2>
+                        <div class="space-y-4 text-sm">
+                            <div class="flex justify-between border-b border-slate-100 pb-3">
+                                <span class="text-slate-500">Tamu</span>
+                                <span class="font-medium text-slate-900"><?= htmlspecialchars($payment['customer_name'] ?? 'Data User Terhapus') ?></span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-100 pb-3">
+                                <span class="text-slate-500">Hotel</span>
+                                <span class="font-medium text-slate-900"><?= htmlspecialchars($payment['hotel_name'] ?? 'Data Hotel Terhapus') ?> (<?= htmlspecialchars($payment['hotel_location'] ?? '-') ?>)</span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-100 pb-3">
+                                <span class="text-slate-500">Kamar</span>
+                                <span class="font-medium text-slate-900"><?= $payment['num_rooms'] ?? 0 ?>x <?= htmlspecialchars($payment['room_type'] ?? 'Standard') ?></span>
+                            </div>
+                            <div class="flex justify-between border-b border-slate-100 pb-3">
+                                <span class="text-slate-500">Check-in</span>
+                                <span class="font-medium text-slate-900"><?= isset($payment['check_in_date']) ? date('d M Y', strtotime($payment['check_in_date'])) : '-' ?></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-slate-500">Total Tagihan</span>
+                                <span class="font-medium text-slate-900"><?= formatRupiah($payment['total_price'] ?? 0) ?></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bukti Foto -->
+                    <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 class="mb-4 text-lg font-bold text-slate-900">Bukti Pembayaran</h2>
+                        <div class="overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
+                            <?php 
+                            $proofFile = $payment['payment_proof'] ?? '';
+                            $proofUrl = BASE_URL . '/uploads/payments/' . $proofFile;
+                            $ext = pathinfo($proofFile, PATHINFO_EXTENSION);
+                            ?>
+                            
+                            <?php if (!empty($proofFile) && in_array(strtolower($ext), ['jpg', 'jpeg', 'png'])): ?>
+                                <img src="<?= $proofUrl ?>" class="h-auto w-full object-contain" alt="Bukti Transfer">
+                            <?php elseif (!empty($proofFile) && strtolower($ext) === 'pdf'): ?>
+                                <iframe src="<?= $proofUrl ?>" class="h-96 w-full"></iframe>
+                            <?php else: ?>
+                                <div class="p-10 text-center">
+                                    <p class="text-slate-500 mb-2">File tidak tersedia atau format tidak didukung.</p>
+                                    <?php if(!empty($proofFile)): ?>
+                                        <a href="<?= $proofUrl ?>" target="_blank" class="text-accent underline">Download File</a>
+                                    <?php endif; ?>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                        <?php if (!empty($proofFile)): ?>
+                        <div class="mt-4 text-center">
+                            <a href="<?= $proofUrl ?>" target="_blank" class="text-sm font-medium text-accent hover:text-accentLight">
+                                Buka Ukuran Penuh ↗
+                            </a>
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Kolom Kanan: Aksi -->
+                <div class="space-y-6">
+                    <div class="sticky top-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <h2 class="mb-4 text-lg font-bold text-slate-900">Aksi Admin</h2>
+                        
+                        <?php if (($payment['payment_status'] ?? '') !== 'pending_verification'): ?>
+                            <div class="rounded-lg bg-slate-100 p-4 text-center text-sm text-slate-600">
+                                Transaksi ini sudah diproses.<br>
+                                Status: <strong><?= ucwords(str_replace('_', ' ', $payment['payment_status'] ?? 'Unknown')) ?></strong>
+                            </div>
+                        <?php else: ?>
+                            <form action="<?= BASE_URL ?>/admin/payments/process" method="POST" class="space-y-4">
+                                <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+                                <input type="hidden" name="payment_id" value="<?= $payment['id'] ?>">
+                                
+                                <div>
+                                    <label class="mb-1 block text-sm font-medium text-slate-700">Catatan (Opsional)</label>
+                                    <textarea name="admin_note" rows="3" class="w-full rounded-lg border border-slate-300 p-2 text-sm focus:border-accent focus:ring-accent" placeholder="Alasan terima/tolak..."></textarea>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-3">
+                                    <button type="submit" name="action" value="approve" 
+                                            class="rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                                            onclick="return confirm('Yakin ingin menerima pembayaran ini?')">
+                                        Terima
+                                    </button>
+                                    <button type="submit" name="action" value="reject" 
+                                            class="rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                            onclick="return confirm('Yakin ingin menolak? User akan diminta upload ulang.')">
+                                        Tolak
+                                    </button>
+                                </div>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+
+        <?php endif; ?>
     </main>
 </div>
 
-<script>
-    function toggleSidebar() {
-        // Atur buka/tutup sidebar ketika tombol mobile ditekan.
-        const sidebar = document.getElementById('adminSidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        sidebar.classList.toggle('-translate-x-full');
-        overlay.classList.toggle('hidden');
-    }
-
-    function closeSidebar() {
-        // Paksa sidebar tertutup agar konten utama fokus.
-        const sidebar = document.getElementById('adminSidebar');
-        const overlay = document.getElementById('sidebarOverlay');
-        sidebar.classList.add('-translate-x-full');
-        overlay.classList.add('hidden');
-    }
-
-    // Tutup sidebar otomatis ketika user memilih salah satu menu.
-    document.querySelectorAll('#adminSidebar a').forEach(link => {
-        link.addEventListener('click', closeSidebar);
-    });
-
-    // Pastikan sidebar tampil di layar lebar dan overlay menghilang.
-    window.addEventListener('resize', () => {
-        if (window.innerWidth >= 1024) {
-            document.getElementById('adminSidebar').classList.remove('-translate-x-full');
-            document.getElementById('sidebarOverlay').classList.add('hidden');
-        }
-    });
-</script>
-
-<?php include __DIR__ . '/../../layouts/footer.php'; ?>
+<?php require_once __DIR__ . '/../../layouts/footer.php'; ?>
