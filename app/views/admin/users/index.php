@@ -5,11 +5,11 @@ $stats = $data['stats'] ?? [];
 $filters = $data['filters'] ?? [];
 $csrf_token = $data['csrf_token'] ?? '';
 
+// Menggunakan path yang aman untuk include header
 require_once __DIR__ . '/../../layouts/header.php';
 ?>
 
 <div class="flex min-h-[calc(100vh-4rem)] bg-slate-50">
-    <!-- Sidebar -->
     <aside class="hidden w-64 border-r border-slate-200 bg-white lg:block">
         <div class="p-6">
             <nav class="space-y-1">
@@ -33,14 +33,12 @@ require_once __DIR__ . '/../../layouts/header.php';
         </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="flex-1 overflow-auto p-6 md:p-8">
         <div class="mb-8">
             <h1 class="text-3xl font-bold text-slate-900">Manajemen Pengguna</h1>
             <p class="mt-2 text-slate-600">Kelola data customer, owner hotel, dan administrator.</p>
         </div>
 
-        <!-- Flash Messages -->
         <?php if (isset($_SESSION['flash_success'])): ?>
             <div class="mb-6 rounded-lg bg-emerald-50 p-4 text-sm text-emerald-700 border border-emerald-200">
                 <?= $_SESSION['flash_success']; unset($_SESSION['flash_success']); ?>
@@ -52,27 +50,25 @@ require_once __DIR__ . '/../../layouts/header.php';
             </div>
         <?php endif; ?>
 
-        <!-- Stats -->
         <div class="grid grid-cols-1 gap-6 md:grid-cols-4 mb-8">
             <div class="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
                 <p class="text-sm font-medium text-slate-600">Total Users</p>
-                <p class="mt-2 text-2xl font-bold text-slate-900"><?= number_format($stats['total']) ?></p>
+                <p class="mt-2 text-2xl font-bold text-slate-900"><?= number_format($stats['total'] ?? 0) ?></p>
             </div>
             <div class="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
                 <p class="text-sm font-medium text-slate-600">Owners</p>
-                <p class="mt-2 text-2xl font-bold text-slate-900 text-blue-600"><?= number_format($stats['owner']) ?></p>
+                <p class="mt-2 text-2xl font-bold text-slate-900 text-blue-600"><?= number_format($stats['owners'] ?? 0) ?></p>
             </div>
             <div class="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
                 <p class="text-sm font-medium text-slate-600">Customers</p>
-                <p class="mt-2 text-2xl font-bold text-slate-900 text-purple-600"><?= number_format($stats['customer']) ?></p>
+                <p class="mt-2 text-2xl font-bold text-slate-900 text-purple-600"><?= number_format($stats['customers'] ?? 0) ?></p>
             </div>
             <div class="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
                 <p class="text-sm font-medium text-slate-600">Active</p>
-                <p class="mt-2 text-2xl font-bold text-slate-900 text-emerald-600"><?= number_format($stats['active']) ?></p>
+                <p class="mt-2 text-2xl font-bold text-slate-900 text-emerald-600"><?= number_format($stats['active'] ?? 0) ?></p>
             </div>
         </div>
 
-        <!-- Filters -->
         <div class="mb-6">
             <form method="GET" class="flex flex-col gap-4 lg:flex-row">
                 <div class="flex-1 relative">
@@ -97,7 +93,6 @@ require_once __DIR__ . '/../../layouts/header.php';
             </form>
         </div>
 
-        <!-- Table -->
         <div class="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-sm">
@@ -123,11 +118,11 @@ require_once __DIR__ . '/../../layouts/header.php';
                                 <td class="px-6 py-4">
                                     <div class="flex items-center gap-3">
                                         <div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-500 font-bold uppercase">
-                                            <?= substr($u['name'], 0, 1) ?>
+                                            <?= substr($u['name'] ?? '?', 0, 1) ?>
                                         </div>
                                         <div>
-                                            <p class="font-medium text-slate-900"><?= htmlspecialchars($u['name']) ?></p>
-                                            <p class="text-xs text-slate-500"><?= htmlspecialchars($u['email']) ?></p>
+                                            <p class="font-medium text-slate-900"><?= htmlspecialchars($u['name'] ?? 'Unknown') ?></p>
+                                            <p class="text-xs text-slate-500"><?= htmlspecialchars($u['email'] ?? '-') ?></p>
                                         </div>
                                     </div>
                                 </td>
@@ -138,9 +133,10 @@ require_once __DIR__ . '/../../layouts/header.php';
                                             'owner' => 'bg-blue-100 text-blue-700',
                                             'customer' => 'bg-purple-100 text-purple-700'
                                         ];
+                                        $userRole = $u['role'] ?? 'customer';
                                     ?>
-                                    <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $roleColors[$u['role']] ?? 'bg-gray-100' ?>">
-                                        <?= ucfirst($u['role']) ?>
+                                    <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $roleColors[$userRole] ?? 'bg-gray-100' ?>">
+                                        <?= ucfirst($userRole) ?>
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
@@ -155,20 +151,19 @@ require_once __DIR__ . '/../../layouts/header.php';
                                     <?php endif; ?>
                                 </td>
                                 <td class="px-6 py-4 text-slate-500">
-                                    <?= date('d M Y', strtotime($u['created_at'])) ?>
+                                    <?= isset($u['created_at']) ? date('d M Y', strtotime($u['created_at'])) : '-' ?>
                                 </td>
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex justify-end gap-2">
-                                        <!-- Toggle Status -->
                                         <?php if ($u['is_active']): ?>
-                                            <form action="<?= $baseUrl ?>/admin/users/status/<?= $u['id'] ?>/deactivate" method="POST" onsubmit="return confirm('Non-aktifkan user ini?')">
+                                            <form action="<?= $baseUrl ?>/admin/users/deactivate/<?= $u['id'] ?>" method="POST" onsubmit="return confirm('Non-aktifkan user ini?')">
                                                 <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
                                                 <button type="submit" class="rounded-lg bg-amber-100 p-2 text-amber-700 hover:bg-amber-200 transition" title="Non-aktifkan">
                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
                                                 </button>
                                             </form>
                                         <?php else: ?>
-                                            <form action="<?= $baseUrl ?>/admin/users/status/<?= $u['id'] ?>/activate" method="POST" onsubmit="return confirm('Aktifkan user ini?')">
+                                            <form action="<?= $baseUrl ?>/admin/users/activate/<?= $u['id'] ?>" method="POST" onsubmit="return confirm('Aktifkan user ini?')">
                                                 <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
                                                 <button type="submit" class="rounded-lg bg-emerald-100 p-2 text-emerald-700 hover:bg-emerald-200 transition" title="Aktifkan">
                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
@@ -176,7 +171,6 @@ require_once __DIR__ . '/../../layouts/header.php';
                                             </form>
                                         <?php endif; ?>
 
-                                        <!-- Delete -->
                                         <form action="<?= $baseUrl ?>/admin/users/delete/<?= $u['id'] ?>" method="POST" onsubmit="return confirm('Hapus permanen user ini? Data tidak bisa dikembalikan.')">
                                             <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
                                             <button type="submit" class="rounded-lg bg-red-100 p-2 text-red-700 hover:bg-red-200 transition" title="Hapus Permanen">
@@ -192,7 +186,6 @@ require_once __DIR__ . '/../../layouts/header.php';
                 </table>
             </div>
             
-            <!-- Footer -->
             <div class="border-t border-slate-200 px-6 py-4 bg-slate-50">
                 <p class="text-xs text-slate-500">Menampilkan <?= count($users) ?> pengguna</p>
             </div>
