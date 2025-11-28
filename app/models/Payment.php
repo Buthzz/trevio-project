@@ -1,160 +1,89 @@
 <?php
 
-namespace App\Models;
-
-use App\Core\Model;
-use PDO;
-use PDOException;
-
 class Payment extends Model {
-    protected $table = 'payments';
+    private $table = 'payments';
 
-    /**
-     * Get all payments with optional status filter
-     * Menggunakan JOIN ke bookings dan users untuk info lengkap
-     */
-    public function getAll($status = null) {
+    public function getAllPayments()
+    {
+        // PERBAIKAN PENTING:
+        // Menggunakan LEFT JOIN (bukan INNER JOIN) agar data pembayaran tetap muncul
+        // meskipun data user atau booking terkait sudah dihapus/bermasalah.
+        // Kita juga mengurutkan dari yang terbaru (DESC).
+        
         $query = "SELECT p.*, 
-                         b.booking_code, b.total_price as booking_total,
-                         u.name as customer_name, u.email as customer_email,
-                         h.name as hotel_name
-                  FROM {$this->table} p
-                  JOIN bookings b ON p.booking_id = b.id
-                  JOIN users u ON b.customer_id = u.id
-                  JOIN hotels h ON b.hotel_id = h.id";
-        
-        if ($status) {
-            $query .= " WHERE p.payment_status = :status";
-        }
-        
-        // Urutkan dari yang terbaru
-        $query .= " ORDER BY p.payment_date DESC";
-        
-        try {
-            $this->query($query);
-            if ($status) {
-                $this->bind(':status', $status);
-            }
-            return $this->resultSet();
-        } catch (PDOException $e) {
-            error_log("Payment getAll Error: " . $e->getMessage());
-            return [];
-        }
+                         u.name as customer_name, 
+                         u.email as customer_email,
+                         b.booking_code,
+                         b.check_in,
+                         b.check_out,
+                         b.total_price as bill_amount
+                  FROM " . $this->table . " p
+                  LEFT JOIN users u ON p.user_id = u.id
+                  LEFT JOIN bookings b ON p.booking_id = b.id
+                  ORDER BY CASE 
+                    WHEN p.status = 'waiting_confirmation' THEN 1 
+                    WHEN p.status = 'pending' THEN 2
+                    ELSE 3 
+                  END ASC, p.created_at DESC";
+
+        $this->db->query($query);
+        return $this->db->resultSet();
     }
 
-    /**
-     * Hitung jumlah pembayaran yang pending (butuh verifikasi)
-     */
-    public function countPending() {
-        try {
-            // Asumsikan status di DB adalah 'pending' untuk yang menunggu verifikasi
-            $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE payment_status = 'pending'");
-            $result = $this->single();
-            return (int)($result['total'] ?? 0);
-        } catch (PDOException $e) {
-            return 0;
-        }
-    }
-
-    /**
-     * Find payment detail by ID
-     */
-    public function find($id) {
+    public function getPaymentById($id)
+    {
         $query = "SELECT p.*, 
-                         b.booking_code, b.total_price, b.check_in, b.check_out, b.num_rooms,
-                         u.name as customer_name, u.email as customer_email,
-                         h.name as hotel_name
-                  FROM {$this->table} p
-                  JOIN bookings b ON p.booking_id = b.id
-                  JOIN users u ON b.customer_id = u.id
-                  JOIN hotels h ON b.hotel_id = h.id
+                         u.name as customer_name,
+                         b.booking_code
+                  FROM " . $this->table . " p
+                  LEFT JOIN users u ON p.user_id = u.id
+                  LEFT JOIN bookings b ON p.booking_id = b.id
                   WHERE p.id = :id";
+
+        $this->db->query($query);
+        $this->db->bind('id', $id);
+        return $this->db->single();
+    }
+
+    public function confirmPayment($id)
+    {
+        // Update status pembayaran jadi paid
+        $query = "UPDATE " . $this->table . " SET status = 'paid', updated_at = NOW() WHERE id = :id";
+        $this->db->query($query);
+        $this->db->bind('id', $id);
         
-        try {
-            $this->query($query);
-            $this->bind(':id', $id);
-            return $this->single();
-        } catch (PDOException $e) {
-            return false;
+        if ($this->db->execute()) {
+            // Jika berhasil, update juga status booking jadi confirmed
+            // Ambil booking_id dulu
+            $payment = $this->getPaymentById($id);
+            if ($payment) {
+                $qBooking = "UPDATE bookings SET status = 'confirmed' WHERE id = :booking_id";
+                $this->db->query($qBooking);
+                $this->db->bind('booking_id', $payment->booking_id);
+                $this->db->execute();
+            }
+            return true;
         }
+        return false;
     }
 
-    /**
-     * Confirm payment (Admin Action)
-     * Mengupdate status payment jadi 'paid' DAN booking jadi 'confirmed'
-     */
-    public function confirm($paymentId, $adminId) {
-        try {
-            $this->beginTransaction();
-
-            // 1. Update Payment Status
-            $query = "UPDATE {$this->table} 
-                      SET payment_status = 'paid', 
-                          confirmed_by = :admin_id, 
-                          confirmed_at = NOW() 
-                      WHERE id = :id";
-            $this->query($query);
-            $this->bind(':id', $paymentId);
-            $this->bind(':admin_id', $adminId);
-            $this->execute();
-
-            // 2. Ambil Booking ID dari payment ini
-            $this->query("SELECT booking_id FROM {$this->table} WHERE id = :id");
-            $this->bind(':id', $paymentId);
-            $payment = $this->single();
-
+    public function rejectPayment($id)
+    {
+        $query = "UPDATE " . $this->table . " SET status = 'failed', updated_at = NOW() WHERE id = :id";
+        $this->db->query($query);
+        $this->db->bind('id', $id);
+        
+        if ($this->db->execute()) {
+             // Jika ditolak, status booking kembali ke cancelled atau pending
+            $payment = $this->getPaymentById($id);
             if ($payment) {
-                // 3. Update Booking Status jadi 'confirmed'
-                $this->query("UPDATE bookings SET booking_status = 'confirmed' WHERE id = :booking_id");
-                $this->bind(':booking_id', $payment['booking_id']);
-                $this->execute();
+                $qBooking = "UPDATE bookings SET status = 'cancelled' WHERE id = :booking_id";
+                $this->db->query($qBooking);
+                $this->db->bind('booking_id', $payment->booking_id);
+                $this->db->execute();
             }
-
-            $this->commit();
             return true;
-        } catch (PDOException $e) {
-            $this->rollBack();
-            error_log("Payment Confirm Error: " . $e->getMessage());
-            return false;
         }
-    }
-
-    /**
-     * Reject payment
-     */
-    public function reject($paymentId, $adminId, $reason) {
-        try {
-            $this->beginTransaction();
-
-            // Update Payment jadi 'failed'
-            $query = "UPDATE {$this->table} 
-                      SET payment_status = 'failed', 
-                          confirmed_by = :admin_id, 
-                          confirmed_at = NOW() 
-                      WHERE id = :id"; // Catatan: Anda mungkin perlu menambah kolom 'rejection_reason' di tabel payments jika ingin menyimpan alasan
-            
-            $this->query($query);
-            $this->bind(':id', $paymentId);
-            $this->bind(':admin_id', $adminId);
-            $this->execute();
-
-            // Update Booking jadi 'cancelled' atau 'waiting_payment' (tergantung logika bisnis)
-            // Di sini kita kembalikan ke cancelled agar user book ulang atau upload ulang (opsional)
-            $this->query("SELECT booking_id FROM {$this->table} WHERE id = :id");
-            $this->bind(':id', $paymentId);
-            $payment = $this->single();
-
-            if ($payment) {
-                $this->query("UPDATE bookings SET booking_status = 'cancelled' WHERE id = :booking_id");
-                $this->bind(':booking_id', $payment['booking_id']);
-                $this->execute();
-            }
-
-            $this->commit();
-            return true;
-        } catch (PDOException $e) {
-            $this->rollBack();
-            return false;
-        }
+        return false;
     }
 }
