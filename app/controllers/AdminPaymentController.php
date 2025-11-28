@@ -1,12 +1,22 @@
 <?php
 
+namespace App\Controllers;
+
+use App\Core\Controller;
+use App\Core\Flasher; // Pastikan class Flasher ada di namespace ini atau sesuaikan
+
 class AdminPaymentController extends Controller {
     
     public function __construct()
     {
+        // Pastikan session dimulai (opsional jika sudah di init)
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+
         // Pastikan hanya admin yang bisa akses
-        // Sesuaikan 'isAdmin' dengan middleware/session check Anda
-        if ($_SESSION['user_role'] != 'admin') {
+        // Menggunakan isset untuk mencegah error "Undefined index" jika belum login
+        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] != 'admin') {
             header('Location: ' . BASEURL . '/auth/login');
             exit;
         }
@@ -16,13 +26,12 @@ class AdminPaymentController extends Controller {
     {
         $data['title'] = 'Kelola Pembayaran';
         
-        // Mengambil semua pembayaran menggunakan Model yang sudah diperbaiki (Part 1)
+        // Mengambil semua pembayaran menggunakan Model Payment
         $data['payments'] = $this->model('Payment')->getAllPayments();
 
         // Load View
-        // Pastikan path view sesuai dengan struktur folder Anda
         $this->view('layouts/header', $data);
-        $this->view('admin/payments/index', $data); // Sesuaikan jika view ada di folder lain
+        $this->view('admin/payments/index', $data); 
         $this->view('layouts/footer');
     }
 
@@ -34,7 +43,7 @@ class AdminPaymentController extends Controller {
 
         if (!$data['payment']) {
             Flasher::setFlash('Data pembayaran tidak ditemukan', 'danger');
-            header('Location: ' . BASEURL . '/adminpayment');
+            header('Location: ' . BASEURL . '/admin/payment'); // Sesuaikan URL routing admin payment Anda
             exit;
         }
 
@@ -50,7 +59,7 @@ class AdminPaymentController extends Controller {
         } else {
             Flasher::setFlash('Gagal mengonfirmasi pembayaran', 'danger');
         }
-        header('Location: ' . BASEURL . '/adminpayment');
+        header('Location: ' . BASEURL . '/admin/payment');
         exit;
     }
 
@@ -61,7 +70,7 @@ class AdminPaymentController extends Controller {
         } else {
             Flasher::setFlash('Gagal menolak pembayaran', 'danger');
         }
-        header('Location: ' . BASEURL . '/adminpayment');
+        header('Location: ' . BASEURL . '/admin/payment');
         exit;
     }
 }
