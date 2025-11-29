@@ -19,7 +19,7 @@ class AdminPaymentController extends BaseAdminController {
 
     public function index() {
         // Default status 'pending' agar sesuai dengan tab "Menunggu Verifikasi"
-        $status = $this->getQuery('status', 'Pending_verification');
+        $status = $this->getQuery('status', 'pending');
 
         $data = [
             'title' => 'Manage Payments',
