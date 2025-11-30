@@ -11,10 +11,11 @@ if (!$payment) {
 }
 
 // Status badge color
+// FIX: Mengganti 'emerald' ke 'green' agar warna muncul di semua versi Tailwind
 $statusColors = [
     'pending' => 'bg-gray-100 text-gray-700',
-    'uploaded' => 'bg-amber-100 text-amber-700',
-    'verified' => 'bg-emerald-100 text-emerald-700',
+    'uploaded' => 'bg-amber-100 text-amber-700', 
+    'verified' => 'bg-green-100 text-green-700', // Ganti emerald -> green
     'rejected' => 'bg-red-100 text-red-700',
 ];
 $statusKey = $payment['payment_status'] ?? 'pending';
@@ -81,7 +82,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                         </div>
                          <div class="flex justify-between px-6 py-4 bg-yellow-50/50">
                             <span class="text-sm text-slate-600">Jumlah Ditransfer</span>
-                            <span class="font-bold text-emerald-600 text-lg">Rp <?= number_format($payment['transfer_amount'] ?? $payment['total_price'] ?? 0, 0, ',', '.') ?></span>
+                            <span class="font-bold text-green-600 text-lg">Rp <?= number_format($payment['transfer_amount'] ?? $payment['total_price'] ?? 0, 0, ',', '.') ?></span>
                         </div>
                         <div class="flex justify-between px-6 py-4">
                             <span class="text-sm text-slate-500">Tanggal Upload</span>
@@ -113,7 +114,9 @@ require_once __DIR__ . '/../../layouts/header.php';
                         <h3 class="font-bold text-slate-900">Aksi Admin</h3>
                     </div>
                     <div class="p-6">
-                        <?php if (in_array($statusKey, ['pending', 'uploaded'])): ?> <p class="mb-6 text-sm text-slate-600">
+                        <?php if (in_array($statusKey, ['pending', 'uploaded'])): ?>
+                            
+                            <p class="mb-6 text-sm text-slate-600">
                                 Harap periksa bukti transfer dengan teliti. Jika sesuai, klik <strong>Konfirmasi</strong>. Trigger sistem akan otomatis mengubah status booking menjadi "Confirmed".
                             </p>
 
@@ -140,7 +143,8 @@ require_once __DIR__ . '/../../layouts/header.php';
                                     <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
                                     <input type="hidden" name="payment_id" value="<?= $payment['id'] ?>">
                                     <div class="mb-3 h-[38px]"></div> 
-                                    <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-emerald-700 hover:shadow-lg transition">
+                                    
+                                    <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-bold text-white shadow-md hover:bg-green-700 hover:shadow-lg transition">
                                         <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                         Konfirmasi Valid
                                     </button>
@@ -151,7 +155,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                             <div class="rounded-lg bg-slate-50 border border-slate-100 p-4 text-center">
                                 <div class="mb-2 flex justify-center">
                                     <?php if ($statusKey === 'verified'): ?>
-                                        <div class="rounded-full bg-emerald-100 p-3 text-emerald-600">
+                                        <div class="rounded-full bg-green-100 p-3 text-green-600">
                                             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                                         </div>
                                     <?php else: ?>
