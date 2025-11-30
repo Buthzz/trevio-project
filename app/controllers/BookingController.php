@@ -19,36 +19,81 @@ class BookingController extends Controller {
         $this->hotelModel = new Hotel();
     }
 
+    public function index() {
+        header('Location: ' . BASE_URL);
+        exit;
+    }
+
+    // --- UPDATE BAGIAN INI ---
+    public function ticket($code) {
+        $this->requireLogin();
+        
+        $code = strip_tags(trim($code));
+        $booking = $this->bookingModel->findByCode($code); // Pastikan Model punya findByCode
+        
+        if (!$booking) {
+            $_SESSION['flash_error'] = "Tiket tidak ditemukan.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        // Validasi Akses (Hanya Pemilik Booking, Owner Hotel, atau Admin)
+        $isOwner = false;
+        if (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'owner') {
+            $hotel = $this->hotelModel->find($booking['hotel_id']);
+            $isOwner = ($hotel && $hotel['owner_id'] == $_SESSION['user_id']);
+        }
+        
+        $isAuthorized = (
+            $booking['customer_id'] == $_SESSION['user_id'] ||
+            $isOwner ||
+            (isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'admin')
+        );
+
+        if (!$isAuthorized) {
+            $_SESSION['flash_error'] = "Akses ditolak.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        // Load View Khusus Cetak Tiket
+        // Kita tidak menggunakan layout header/footer standar disini
+        $data = [
+            'title' => 'E-Ticket - ' . $booking['booking_code'],
+            'booking' => $booking,
+            'hotel' => $this->hotelModel->find($booking['hotel_id']),
+            'room' => $this->roomModel->find($booking['room_id'])
+        ];
+
+        // Pastikan Anda membuat file view ini di langkah selanjutnya
+        require_once '../app/views/booking/ticket.php';
+    }
+    // -------------------------
+
     public function create() {
         $this->requireLogin();
         
         $roomId = filter_input(INPUT_GET, 'room_id', FILTER_VALIDATE_INT);
         $hotelId = filter_input(INPUT_GET, 'hotel_id', FILTER_VALIDATE_INT);
 
-        // [FIX FLOW]: Jika room_id kosong, jangan lempar ke HOME.
-        // Cek jika ada hotel_id, arahkan user ke halaman detail hotel tersebut untuk pilih kamar.
         if (!$roomId) {
             if ($hotelId) {
-                // Pertahankan parameter search saat redirect
                 $queryParams = $_GET;
-                unset($queryParams['url']); // Hapus parameter routing internal
+                unset($queryParams['url']); 
                 $queryString = http_build_query($queryParams);
                 
                 header('Location: ' . BASE_URL . '/hotel/detail?id=' . $hotelId . '&' . $queryString . '#rooms');
                 exit;
             } else {
-                // Jika sama sekali tidak ada data, baru lempar ke home
                 header('Location: ' . BASE_URL);
                 exit;
             }
         }
 
-        // Ambil Parameter Pencarian dari URL untuk Pre-fill Form (Logika Baru)
         $checkIn = filter_input(INPUT_GET, 'check_in', FILTER_SANITIZE_SPECIAL_CHARS);
         $checkOut = filter_input(INPUT_GET, 'check_out', FILTER_SANITIZE_SPECIAL_CHARS);
         $numRooms = filter_input(INPUT_GET, 'num_rooms', FILTER_VALIDATE_INT);
 
-        // Generate CSRF Token if not exists
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             $_SESSION['csrf_token_time'] = time();
@@ -67,7 +112,6 @@ class BookingController extends Controller {
             'hotel' => $this->hotelModel->find($room['hotel_id']),
             'user' => ['name' => $_SESSION['user_name'], 'email' => $_SESSION['user_email']],
             'csrf_token' => $_SESSION['csrf_token'],
-            // Kirim parameter pencarian ke view agar form terisi otomatis
             'search_params' => [
                 'check_in' => $checkIn,
                 'check_out' => $checkOut,
@@ -78,8 +122,6 @@ class BookingController extends Controller {
         $this->view('booking/create', $data);
     }
 
-    // Method store(), uploadPayment(), dll biarkan seperti kode asli Anda...
-    // Sertakan kembali method store dan lainnya di sini agar file tetap utuh/runnable
     public function store() {
         $this->requireLogin();
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

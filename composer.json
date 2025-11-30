@@ -4,8 +4,8 @@
     "type": "project",
     "require": {
         "php": "^7.4 || ^8.0",
-        "phpmailer/phpmailer": "^7.0",
-        "mpdf/mpdf": "^6.1"
+        "phpmailer/phpmailer": "^6.9",
+        "mpdf/mpdf": "^8.2"
     },
     "autoload": {
         "psr-4": {
