@@ -1,11 +1,11 @@
 <?php include __DIR__ . '/../layouts/header.php'; ?>
 <?php include __DIR__ . '/../layouts/navbar.php'; ?>
 
-<div class="flex min-h-screen bg-gray-50">
+<div class="flex h-screen bg-gray-50 overflow-hidden">
     
     <?php include __DIR__ . '/../layouts/sidebar.php'; ?>
     
-    <div class="flex-1 flex flex-col relative transition-all duration-300">
+    <div class="flex-1 flex flex-col overflow-y-auto relative transition-all duration-300">
         
         <div class="bg-white/80 backdrop-blur-md border-b border-gray-200 p-6 flex justify-between items-center sticky top-0 z-20">
             <div>
@@ -20,7 +20,7 @@
             </a>
         </div>
 
-        <div class="flex-1 p-6 md:p-8">
+        <div class="p-6 md:p-8">
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group">
