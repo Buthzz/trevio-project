@@ -4,11 +4,20 @@ $payments = $data['payments'] ?? [];
 $currentStatus = $data['current_status'] ?? 'pending';
 $pendingCount = $data['pending_count'] ?? 0;
 
-// Warna badge status
+// Warna badge status (Sesuaikan dengan ENUM di Database)
 $statusColors = [
-    'Pending_verification' => 'bg-amber-100 text-amber-700',
-    'paid' => 'bg-emerald-100 text-emerald-700',
-    'failed' => 'bg-red-100 text-red-700',
+    'pending' => 'bg-gray-100 text-gray-700',
+    'uploaded' => 'bg-amber-100 text-amber-700', // Status saat user sudah upload
+    'verified' => 'bg-emerald-100 text-emerald-700', // Pengganti 'paid'
+    'rejected' => 'bg-red-100 text-red-700', // Pengganti 'failed'
+];
+
+// Helper untuk label status yang lebih user friendly
+$statusLabels = [
+    'pending' => 'Menunggu Upload',
+    'uploaded' => 'Perlu Verifikasi',
+    'verified' => 'Diterima',
+    'rejected' => 'Ditolak'
 ];
 
 require_once __DIR__ . '/../../layouts/header.php';
@@ -42,7 +51,7 @@ require_once __DIR__ . '/../../layouts/header.php';
                     <div>
                         <p class="text-sm font-medium text-slate-600">Perlu Verifikasi</p>
                         <p class="mt-2 text-2xl font-bold text-slate-900"><?= $pendingCount ?></p>
-                        <p class="mt-1 text-xs text-amber-600">Pending tasks</p>
+                        <p class="mt-1 text-xs text-amber-600">Pending & Uploaded</p>
                     </div>
                     <div class="rounded-full bg-amber-100 p-3">
                         <svg class="h-6 w-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -54,16 +63,16 @@ require_once __DIR__ . '/../../layouts/header.php';
         <div class="mb-6 border-b border-slate-200">
             <div class="flex gap-6 overflow-x-auto">
                 <a href="<?= $baseUrl ?>/admin/payments?status=pending" 
-                   class="border-b-2 pb-3 text-sm font-medium transition whitespace-nowrap <?= $currentStatus === 'Pending_verification' ? 'border-accent text-accent' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
-                    Menunggu Verifikasi (Pending)
+                   class="border-b-2 pb-3 text-sm font-medium transition whitespace-nowrap <?= $currentStatus === 'pending' ? 'border-accent text-accent' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
+                    Menunggu Verifikasi
                 </a>
-                <a href="<?= $baseUrl ?>/admin/payments?status=paid" 
-                   class="border-b-2 pb-3 text-sm font-medium transition whitespace-nowrap <?= $currentStatus === 'paid' ? 'border-accent text-accent' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
-                    Berhasil (Paid)
+                <a href="<?= $baseUrl ?>/admin/payments?status=verified" 
+                   class="border-b-2 pb-3 text-sm font-medium transition whitespace-nowrap <?= $currentStatus === 'verified' ? 'border-accent text-accent' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
+                    Berhasil (Verified)
                 </a>
-                <a href="<?= $baseUrl ?>/admin/payments?status=failed" 
-                   class="border-b-2 pb-3 text-sm font-medium transition whitespace-nowrap <?= $currentStatus === 'failed' ? 'border-accent text-accent' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
-                    Gagal / Ditolak (Failed)
+                <a href="<?= $baseUrl ?>/admin/payments?status=rejected" 
+                   class="border-b-2 pb-3 text-sm font-medium transition whitespace-nowrap <?= $currentStatus === 'rejected' ? 'border-accent text-accent' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
+                    Ditolak (Rejected)
                 </a>
             </div>
         </div>
@@ -104,23 +113,34 @@ require_once __DIR__ . '/../../layouts/header.php';
                                     <div class="text-xs text-slate-500"><?= htmlspecialchars($p['customer_email'] ?? '-') ?></div>
                                 </td>
                                 <td class="px-6 py-4 font-bold text-slate-900">
-                                    Rp <?= number_format($p['amount'] ?? 0, 0, ',', '.') ?>
+                                    Rp <?= number_format($p['total_price'] ?? $p['booking_total'] ?? 0, 0, ',', '.') ?>
                                 </td>
                                 <td class="px-6 py-4 text-slate-600">
-                                    <?= htmlspecialchars($p['payment_method'] ?? 'Transfer') ?>
+                                    <?= htmlspecialchars(str_replace('_', ' ', $p['payment_method'] ?? 'Transfer')) ?>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $statusColors[$p['payment_status']] ?? 'bg-slate-100 text-slate-600' ?>">
-                                        <?= ucfirst($p['payment_status']) ?>
+                                    <?php 
+                                        $statusKey = $p['payment_status'] ?? 'pending';
+                                        $statusClass = $statusColors[$statusKey] ?? 'bg-slate-100 text-slate-600';
+                                        $statusLabel = $statusLabels[$statusKey] ?? ucfirst($statusKey);
+                                    ?>
+                                    <span class="inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold <?= $statusClass ?>">
+                                        <?= $statusLabel ?>
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 text-slate-500">
-                                    <?= date('d M Y H:i', strtotime($p['payment_date'])) ?>
+                                    <?= isset($p['created_at']) ? date('d M Y H:i', strtotime($p['created_at'])) : '-' ?>
                                 </td>
                                 <td class="px-6 py-4 text-right">
-                                    <a href="<?= $baseUrl ?>/admin/payments/verify/<?= $p['id'] ?>" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition shadow-sm">
-                                        Lihat & Verifikasi
-                                    </a>
+                                    <?php if(in_array($p['payment_status'], ['pending', 'uploaded'])): ?>
+                                        <a href="<?= $baseUrl ?>/admin/payments/verify/<?= $p['id'] ?>" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 transition shadow-sm">
+                                            Verifikasi
+                                        </a>
+                                    <?php else: ?>
+                                        <a href="<?= $baseUrl ?>/admin/payments/verify/<?= $p['id'] ?>" class="inline-flex items-center gap-2 rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-200 transition shadow-sm">
+                                            Detail
+                                        </a>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
