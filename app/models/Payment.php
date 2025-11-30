@@ -11,39 +11,44 @@ class Payment extends Model {
 
     /**
      * Get all payments with smart status filter
-     * Fix: Menggabungkan status 'pending' dan 'uploaded' agar muncul di tab Verifikasi
+     * FIX: Menggunakan LEFT JOIN agar data tetap muncul meski data booking/user terhapus (orphan data)
      */
     public function getAll($status = null) {
+        // Menggunakan LEFT JOIN untuk keamanan data
+        // Menambahkan COALESCE untuk menangani nilai NULL jika data relasi hilang
         $query = "SELECT p.*, 
-                         b.booking_code, b.total_price as booking_total,
-                         u.name as customer_name, u.email as customer_email,
-                         h.name as hotel_name
+                         p.transfer_amount,
+                         COALESCE(b.booking_code, 'DATA BOOKING HILANG') as booking_code, 
+                         COALESCE(b.total_price, 0) as booking_total,
+                         COALESCE(u.name, 'Unknown User') as customer_name, 
+                         COALESCE(u.email, '-') as customer_email,
+                         COALESCE(h.name, 'Unknown Hotel') as hotel_name
                   FROM {$this->table} p
-                  JOIN bookings b ON p.booking_id = b.id
-                  JOIN users u ON b.customer_id = u.id
-                  JOIN hotels h ON b.hotel_id = h.id";
+                  LEFT JOIN bookings b ON p.booking_id = b.id
+                  LEFT JOIN users u ON b.customer_id = u.id
+                  LEFT JOIN hotels h ON b.hotel_id = h.id";
         
-        // Logika Filter Status yang Diperbaiki
+        // Logika Filter Status
         if ($status) {
             if ($status === 'pending') {
-                // Tampilkan yang statusnya 'pending' ATAU 'uploaded'
+                // Tampilkan yang statusnya 'pending' ATAU 'uploaded' (Menunggu Verifikasi)
                 $query .= " WHERE p.payment_status IN ('pending', 'uploaded')";
             } else {
                 $query .= " WHERE p.payment_status = :status";
             }
         }
         
-        // Urutkan dari yang terbaru (uploaded duluan, lalu pending)
-        // FIELD function memastikan 'uploaded' muncul paling atas jika status pending
+        // Urutkan: Uploaded (prioritas) -> Pending -> Lainnya, lalu berdasarkan tanggal terbaru
         if ($status === 'pending') {
-            $query .= " ORDER BY FIELD(p.payment_status, 'uploaded', 'pending'), p.payment_date DESC";
+            $query .= " ORDER BY FIELD(p.payment_status, 'uploaded', 'pending'), p.created_at DESC";
         } else {
-            $query .= " ORDER BY p.payment_date DESC";
+            $query .= " ORDER BY p.created_at DESC";
         }
         
         try {
             $this->query($query);
             
+            // Bind parameter jika status bukan 'pending' (karena pending pakai IN query langsung)
             if ($status && $status !== 'pending') {
                 $this->bind(':status', $status);
             }
@@ -77,9 +82,9 @@ class Payment extends Model {
                          u.name as customer_name, u.email as customer_email,
                          h.name as hotel_name
                   FROM {$this->table} p
-                  JOIN bookings b ON p.booking_id = b.id
-                  JOIN users u ON b.customer_id = u.id
-                  JOIN hotels h ON b.hotel_id = h.id
+                  LEFT JOIN bookings b ON p.booking_id = b.id
+                  LEFT JOIN users u ON b.customer_id = u.id
+                  LEFT JOIN hotels h ON b.hotel_id = h.id
                   WHERE p.id = :id";
         
         try {
@@ -93,7 +98,7 @@ class Payment extends Model {
 
     /**
      * Confirm payment (Admin Action)
-     * Fix: Update status ke 'verified' (sesuai ENUM DB) bukan 'paid'
+     * Mengupdate status payment jadi 'verified' DAN booking jadi 'confirmed'
      */
     public function confirm($paymentId, $adminId) {
         try {
@@ -110,7 +115,7 @@ class Payment extends Model {
             $this->bind(':admin_id', $adminId);
             $this->execute();
 
-            // 2. Ambil Booking ID
+            // 2. Ambil Booking ID dari payment ini
             $this->query("SELECT booking_id FROM {$this->table} WHERE id = :id");
             $this->bind(':id', $paymentId);
             $payment = $this->single();
@@ -133,13 +138,12 @@ class Payment extends Model {
 
     /**
      * Reject payment
-     * Fix: Update status ke 'rejected' (sesuai ENUM DB) bukan 'failed'
      */
     public function reject($paymentId, $adminId, $reason) {
         try {
             $this->beginTransaction();
 
-            // Update Payment jadi 'rejected' dan simpan alasan
+            // Update Payment jadi 'rejected'
             $query = "UPDATE {$this->table} 
                       SET payment_status = 'rejected', 
                           verified_by = :admin_id, 
