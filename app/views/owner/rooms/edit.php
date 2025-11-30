@@ -6,9 +6,9 @@
         <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     </div>
     
-    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
         
-        <main class="flex-1 overflow-y-auto bg-gray-50">
+        <main class="flex-1 bg-gray-50">
             
             <div class="bg-white border-b border-gray-200 px-8 py-6 flex items-center justify-between sticky top-0 z-10 shadow-sm">
                 <div class="flex items-center gap-4">
