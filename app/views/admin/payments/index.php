@@ -1,7 +1,7 @@
 <?php
 $baseUrl = defined('BASE_URL') ? BASE_URL : '';
 $payments = $data['payments'] ?? [];
-$currentStatus = $data['current_status'] ?? 'Pending_verification';
+$currentStatus = $data['current_status'] ?? 'pending';
 $pendingCount = $data['pending_count'] ?? 0;
 
 // Warna badge status
@@ -53,7 +53,7 @@ require_once __DIR__ . '/../../layouts/header.php';
 
         <div class="mb-6 border-b border-slate-200">
             <div class="flex gap-6 overflow-x-auto">
-                <a href="<?= $baseUrl ?>/admin/payments?status=Pending_verification" 
+                <a href="<?= $baseUrl ?>/admin/payments?status=pending" 
                    class="border-b-2 pb-3 text-sm font-medium transition whitespace-nowrap <?= $currentStatus === 'Pending_verification' ? 'border-accent text-accent' : 'border-transparent text-slate-500 hover:text-slate-700' ?>">
                     Menunggu Verifikasi (Pending)
                 </a>
