@@ -1,11 +1,10 @@
 <?php include __DIR__ . '/../../layouts/header.php'; ?>
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
-<div class="flex h-screen bg-gray-100 overflow-hidden">
+<div class="flex h-[calc(100vh-70px)] bg-gray-100 overflow-hidden">
     <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     
     <div class="flex-1 flex flex-col overflow-y-auto">
-        <!-- Top Navbar -->
         <div class="bg-white shadow-sm p-6 flex justify-between items-center">
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Manajemen Pemesanan</h1>
@@ -13,10 +12,8 @@
             </div>
         </div>
 
-        <!-- Main Content -->
         <div class="p-6">
             <div class="bg-white rounded-lg shadow">
-                <!-- Filter Section -->
                 <div class="p-6 border-b border-gray-200">
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
@@ -46,7 +43,6 @@
                     </div>
                 </div>
 
-                <!-- Stats -->
                 <div class="p-6 border-b border-gray-200 grid grid-cols-4 gap-4">
                     <div class="bg-blue-50 p-4 rounded-lg">
                         <p class="text-gray-600 text-sm font-medium">Total Pemesanan</p>
@@ -66,7 +62,6 @@
                     </div>
                 </div>
 
-                <!-- Table -->
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-gray-50 border-b border-gray-200">

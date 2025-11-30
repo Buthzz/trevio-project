@@ -1,7 +1,7 @@
 <?php include __DIR__ . '/../../layouts/header.php'; ?>
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
-<div class="flex h-screen bg-gray-50 overflow-hidden">
+<div class="flex h-[calc(100vh-70px)] bg-gray-50 overflow-hidden">
     
     <div class="flex-shrink-0 hidden md:block">
         <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
@@ -57,8 +57,7 @@
                                                class="block w-full rounded-lg border-gray-300 bg-gray-50 text-gray-900 focus:bg-white focus:border-blue-500 focus:ring-blue-500 py-3 px-4 pr-10 text-base transition-colors" 
                                                placeholder="Ketik untuk mencari..." required>
                                         <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-400">
-                                            <!-- <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg> -->
-                                        </div>
+                                            </div>
                                     </div>
                                     <datalist id="city_list">
                                         <option value="Jakarta"><option value="Surabaya"><option value="Bandung"><option value="Yogyakarta"><option value="Bali"><option value="Medan"><option value="Semarang"><option value="Makassar">
@@ -180,8 +179,4 @@
     </div>
 </div>
 
-<script>
-    // Script tambahan jika perlu, misal untuk preview image realtime
-</script>
-</body>
-</html>
+<?php include __DIR__ . '/../../layouts/footer.php'; ?>
