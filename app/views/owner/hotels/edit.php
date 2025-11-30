@@ -7,7 +7,7 @@
         <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     </div>
     
-    <div class="flex-1 flex flex-col min-w-0 h-full">
+    <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
         
         <header class="bg-white border-b border-gray-200 shadow-sm z-20 flex-shrink-0">
             <div class="px-6 py-5 flex items-center justify-between">
@@ -31,7 +31,7 @@
             </div>
         </header>
 
-        <main class="flex-1 overflow-y-auto bg-gray-50 p-6 md:p-8 scroll-smooth">
+        <main class="flex-1 bg-gray-50 p-6 md:p-8">
             <div class="max-w-5xl mx-auto pb-10">
                 
                 <form id="editHotelForm" action="/owner/hotels/update" method="POST" enctype="multipart/form-data" class="space-y-8">

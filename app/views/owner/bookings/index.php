@@ -1,10 +1,10 @@
 <?php include __DIR__ . '/../../layouts/header.php'; ?>
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
-<div class="flex h-screen bg-gray-100">
+<div class="flex h-screen bg-gray-100 overflow-hidden">
     <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col overflow-y-auto">
         <!-- Top Navbar -->
         <div class="bg-white shadow-sm p-6 flex justify-between items-center">
             <div>
@@ -14,7 +14,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="flex-1 overflow-auto p-6">
+        <div class="p-6">
             <div class="bg-white rounded-lg shadow">
                 <!-- Filter Section -->
                 <div class="p-6 border-b border-gray-200">
