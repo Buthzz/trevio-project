@@ -1,11 +1,11 @@
 <?php include __DIR__ . '/../../layouts/header.php'; ?>
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
-<div class="flex min-h-screen bg-gray-100">
+<div class="flex h-screen bg-gray-100 overflow-hidden">
     
     <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     
-    <div class="flex-1 flex flex-col transition-all duration-300">
+    <div class="flex-1 flex flex-col overflow-y-auto transition-all duration-300">
         
         <div class="bg-white shadow-sm p-6 flex items-center gap-4 sticky top-0 z-10">
             <a href="index" class="text-gray-600 hover:text-gray-800 transition-colors">
@@ -19,7 +19,7 @@
             </div>
         </div>
 
-        <div class="flex-1 p-6">
+        <div class="p-6">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
                 <div class="lg:col-span-2">
