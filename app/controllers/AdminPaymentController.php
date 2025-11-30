@@ -3,13 +3,17 @@
 namespace App\Controllers;
 
 use App\Models\Payment;
+use App\Services\NotificationService; // Import Service Baru
 
 class AdminPaymentController extends BaseAdminController {
     private $paymentModel;
+    private $notificationService;
 
     public function __construct() {
         parent::__construct();
         $this->paymentModel = new Payment();
+        // Inisialisasi Service
+        $this->notificationService = new NotificationService();
     }
 
     // Helper aman untuk GET request
@@ -18,7 +22,6 @@ class AdminPaymentController extends BaseAdminController {
     }
 
     public function index() {
-        // Default status 'pending' agar sesuai dengan tab "Menunggu Verifikasi"
         $status = $this->getQuery('status', 'pending');
 
         $data = [
@@ -26,16 +29,13 @@ class AdminPaymentController extends BaseAdminController {
             'payments' => $this->paymentModel->getAll($status),
             'pending_count' => $this->paymentModel->countPending(),
             'current_status' => $status,
-            'csrf_token' => $_SESSION['csrf_token'] ?? '', // Pastikan token ada
+            'csrf_token' => $_SESSION['csrf_token'] ?? '', 
             'user' => $_SESSION
         ];
 
         $this->view('admin/payments/index', $data);
     }
 
-    /**
-     * Verifikasi Pembayaran (Halaman Detail)
-     */
     public function verify($id) {
         $payment = $this->paymentModel->find($id);
 
@@ -45,7 +45,6 @@ class AdminPaymentController extends BaseAdminController {
             exit;
         }
         
-        // Generate token jika belum ada
         if (empty($_SESSION['csrf_token'])) {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
         }
@@ -61,7 +60,7 @@ class AdminPaymentController extends BaseAdminController {
     }
 
     /**
-     * Proses Konfirmasi (Terima)
+     * Proses Konfirmasi (Terima) + KIRIM NOTIFIKASI
      */
     public function confirm() {
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -72,8 +71,26 @@ class AdminPaymentController extends BaseAdminController {
         $this->validateCsrf();
         $paymentId = filter_input(INPUT_POST, 'payment_id', FILTER_VALIDATE_INT);
 
+        // 1. Ambil data lengkap untuk notifikasi SEBELUM update status (opsional) atau SESUDAHNYA
+        // Kita ambil sesudah konfirmasi berhasil agar data valid
         if ($this->paymentModel->confirm($paymentId, $_SESSION['user_id'])) {
-            $_SESSION['flash_success'] = "Pembayaran berhasil diverifikasi. Booking dikonfirmasi.";
+            
+            // 2. Ambil detail lengkap booking untuk notifikasi
+            $paymentData = $this->paymentModel->find($paymentId);
+            
+            if ($paymentData) {
+                // 3. Panggil Service untuk kirim WA & Email Invoice
+                try {
+                    $this->notificationService->sendBookingConfirmation($paymentData);
+                    $_SESSION['flash_success'] = "Pembayaran diverifikasi. Notifikasi WA & Email telah dikirim.";
+                } catch (\Exception $e) {
+                    // Jika notifikasi gagal, booking tetap confirm, tapi beri info error
+                    $_SESSION['flash_success'] = "Pembayaran diverifikasi, tapi gagal mengirim notifikasi: " . $e->getMessage();
+                }
+            } else {
+                $_SESSION['flash_success'] = "Pembayaran berhasil diverifikasi.";
+            }
+
         } else {
             $_SESSION['flash_error'] = "Gagal memverifikasi pembayaran.";
         }
