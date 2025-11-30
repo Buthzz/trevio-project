@@ -11,14 +11,11 @@ class Payment extends Model {
 
     /**
      * Get all payments with smart status filter
-     * FIX: Menggunakan LEFT JOIN agar data tetap muncul meski data booking/user terhapus (orphan data)
      */
     public function getAll($status = null) {
-        // Menggunakan LEFT JOIN untuk keamanan data
-        // Menambahkan COALESCE untuk menangani nilai NULL jika data relasi hilang
         $query = "SELECT p.*, 
                          p.transfer_amount,
-                         COALESCE(b.booking_code, 'DATA BOOKING HILANG') as booking_code, 
+                         COALESCE(b.booking_code, 'DATA HILANG') as booking_code, 
                          COALESCE(b.total_price, 0) as booking_total,
                          COALESCE(u.name, 'Unknown User') as customer_name, 
                          COALESCE(u.email, '-') as customer_email,
@@ -28,17 +25,14 @@ class Payment extends Model {
                   LEFT JOIN users u ON b.customer_id = u.id
                   LEFT JOIN hotels h ON b.hotel_id = h.id";
         
-        // Logika Filter Status
         if ($status) {
             if ($status === 'pending') {
-                // Tampilkan yang statusnya 'pending' ATAU 'uploaded' (Menunggu Verifikasi)
                 $query .= " WHERE p.payment_status IN ('pending', 'uploaded')";
             } else {
                 $query .= " WHERE p.payment_status = :status";
             }
         }
         
-        // Urutkan: Uploaded (prioritas) -> Pending -> Lainnya, lalu berdasarkan tanggal terbaru
         if ($status === 'pending') {
             $query .= " ORDER BY FIELD(p.payment_status, 'uploaded', 'pending'), p.created_at DESC";
         } else {
@@ -47,12 +41,9 @@ class Payment extends Model {
         
         try {
             $this->query($query);
-            
-            // Bind parameter jika status bukan 'pending' (karena pending pakai IN query langsung)
             if ($status && $status !== 'pending') {
                 $this->bind(':status', $status);
             }
-            
             return $this->resultSet();
         } catch (PDOException $e) {
             error_log("Payment getAll Error: " . $e->getMessage());
@@ -60,9 +51,6 @@ class Payment extends Model {
         }
     }
 
-    /**
-     * Hitung jumlah pembayaran yang pending/uploaded (butuh verifikasi)
-     */
     public function countPending() {
         try {
             $this->query("SELECT COUNT(*) as total FROM {$this->table} WHERE payment_status IN ('pending', 'uploaded')");
@@ -74,17 +62,21 @@ class Payment extends Model {
     }
 
     /**
-     * Find payment detail by ID
+     * Find payment detail by ID (Updated for Invoice Data)
+     * Mengambil data lengkap: Booking, User, Hotel, Room
      */
     public function find($id) {
         $query = "SELECT p.*, 
-                         b.booking_code, b.total_price, b.check_in_date, b.check_out_date, b.num_rooms,
-                         u.name as customer_name, u.email as customer_email,
-                         h.name as hotel_name
+                         b.booking_code, b.total_price, b.check_in_date, b.check_out_date, b.num_rooms, b.num_nights,
+                         u.name as customer_name, u.email as customer_email, 
+                         COALESCE(u.whatsapp_number, u.phone) as customer_phone,
+                         h.name as hotel_name, h.address as hotel_address, h.city as hotel_city,
+                         r.room_type, r.price_per_night
                   FROM {$this->table} p
                   LEFT JOIN bookings b ON p.booking_id = b.id
                   LEFT JOIN users u ON b.customer_id = u.id
                   LEFT JOIN hotels h ON b.hotel_id = h.id
+                  LEFT JOIN rooms r ON b.room_id = r.id
                   WHERE p.id = :id";
         
         try {
@@ -97,31 +89,23 @@ class Payment extends Model {
     }
 
     /**
-     * Confirm payment (Admin Action)
-     * Mengupdate status payment jadi 'verified' DAN booking jadi 'confirmed'
+     * Confirm payment
      */
     public function confirm($paymentId, $adminId) {
         try {
             $this->beginTransaction();
 
-            // 1. Update Payment Status jadi 'verified'
-            $query = "UPDATE {$this->table} 
-                      SET payment_status = 'verified', 
-                          verified_by = :admin_id, 
-                          verified_at = NOW() 
-                      WHERE id = :id";
+            $query = "UPDATE {$this->table} SET payment_status = 'verified', verified_by = :admin_id, verified_at = NOW() WHERE id = :id";
             $this->query($query);
             $this->bind(':id', $paymentId);
             $this->bind(':admin_id', $adminId);
             $this->execute();
 
-            // 2. Ambil Booking ID dari payment ini
             $this->query("SELECT booking_id FROM {$this->table} WHERE id = :id");
             $this->bind(':id', $paymentId);
             $payment = $this->single();
 
             if ($payment) {
-                // 3. Update Booking Status jadi 'confirmed'
                 $this->query("UPDATE bookings SET booking_status = 'confirmed' WHERE id = :booking_id");
                 $this->bind(':booking_id', $payment['booking_id']);
                 $this->execute();
@@ -136,28 +120,16 @@ class Payment extends Model {
         }
     }
 
-    /**
-     * Reject payment
-     */
     public function reject($paymentId, $adminId, $reason) {
         try {
             $this->beginTransaction();
-
-            // Update Payment jadi 'rejected'
-            $query = "UPDATE {$this->table} 
-                      SET payment_status = 'rejected', 
-                          verified_by = :admin_id, 
-                          verified_at = NOW(),
-                          rejection_reason = :reason
-                      WHERE id = :id";
-            
+            $query = "UPDATE {$this->table} SET payment_status = 'rejected', verified_by = :admin_id, verified_at = NOW(), rejection_reason = :reason WHERE id = :id";
             $this->query($query);
             $this->bind(':id', $paymentId);
             $this->bind(':admin_id', $adminId);
             $this->bind(':reason', $reason);
             $this->execute();
 
-            // Update Booking jadi 'cancelled'
             $this->query("SELECT booking_id FROM {$this->table} WHERE id = :id");
             $this->bind(':id', $paymentId);
             $payment = $this->single();
@@ -167,7 +139,6 @@ class Payment extends Model {
                 $this->bind(':booking_id', $payment['booking_id']);
                 $this->execute();
             }
-
             $this->commit();
             return true;
         } catch (PDOException $e) {

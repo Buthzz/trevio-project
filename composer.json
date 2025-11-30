@@ -1,0 +1,21 @@
+{
+    "name": "trevio/project",
+    "description": "Trevio Hotel Booking System",
+    "type": "project",
+    "require": {
+        "php": "^7.4 || ^8.0",
+        "phpmailer/phpmailer": "^7.0",
+        "mpdf/mpdf": "^6.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Admin Trevio",
+            "email": "admin@trevio.com"
+        }
+    ]
+}
