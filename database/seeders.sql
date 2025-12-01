@@ -35,14 +35,14 @@ INSERT INTO users (name, email, password, phone, whatsapp_number, role, auth_pro
 -- 2. HOTELS
 -- =====================================================
 
-INSERT INTO hotels (owner_id, name, address, city, province, postal_code, latitude, longitude, description, facilities, star_rating, check_in_time, check_out_time, main_image, is_active, created_at, updated_at) VALUES
+INSERT INTO hotels (owner_id, name, address, city, province, latitude, longitude, description, facilities, star_rating, main_image, is_active, created_at, updated_at) VALUES
 -- Hotel Owner 1
-(2, 'Grand Trevio Hotel Jakarta', 'Jl. Thamrin No. 1', 'Jakarta Pusat', 'DKI Jakarta', '10110', -6.1951, 106.8229, 
+(2, 'Grand Trevio Hotel Jakarta', 'Jl. Thamrin No. 1', 'Jakarta Pusat', 'DKI Jakarta', -6.1951, 106.8229, 
 'Hotel bintang 5 di pusat Jakarta dengan fasilitas lengkap dan pemandangan kota yang menakjubkan. Dekat dengan pusat perbelanjaan dan kawasan bisnis.', 
 'WiFi Gratis,Kolam Renang,Gym,Restaurant,Bar,Spa,Laundry,Room Service,Parking,Airport Shuttle', 
-5, '14:00:00', '12:00:00', '/uploads/hotels/grand_trevio_jakarta.jpg', 1, NOW(), NOW()),
+5, '/uploads/hotels/grand_trevio_jakarta.jpg', 1, NOW(), NOW()),
 
-(2, 'Trevio Beach Resort Bali', 'Jl. Pantai Kuta No. 99', 'Badung', 'Bali', '80361', -8.7185, 115.1680,
+(2, 'Trevio Beach Resort Bali', 'Jl. Pantai Kuta No. 99', 'Badung', 'Bali', -8.7185, 115.1680,
 'Resort tepi pantai dengan private beach, cocok untuk liburan keluarga dan bulan madu. Pemandangan sunset yang indah.', 
 'WiFi Gratis,Kolam Renang,Beach Access,Restaurant,Bar,Spa,Kids Club,Water Sports,Parking', 
 5, '15:00:00', '11:00:00', '/uploads/hotels/trevio_beach_bali.jpg', 1, NOW(), NOW()),
