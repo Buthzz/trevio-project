@@ -1,32 +1,5 @@
 <?php 
-require_once __DIR__ . '/../../../helpers/functions.php';
-trevio_start_session();
-
-// [SECURITY]: Cek apakah user sudah login
-if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
-    $loginUrl = trevio_view_route('auth/login.php') . '?return_url=' . urlencode($_SERVER['REQUEST_URI']);
-    header("Location: $loginUrl");
-    exit;
-}
-
-// Generate CSRF token
-$csrf_token = trevio_csrf_token();
-
-// [BACKEND NOTE]: Variabel ini seharusnya dikirim dari controller
-// Jika tidak ada, gunakan fallback data untuk mencegah error
-if (!isset($room) || !isset($hotel) || !isset($search_params)) {
-    $_SESSION['flash_error'] = 'Data booking tidak valid. Silakan pilih kamar terlebih dahulu.';
-    header('Location: ' . BASE_URL);
-    exit;
-}
-
-// Fallback untuk user data jika tidak ada
-if (!isset($user)) {
-    $user = [
-        'name' => $_SESSION['user_name'] ?? '',
-        'email' => $_SESSION['user_email'] ?? ''
-    ];
-}
+require_once '../app/views/layouts/header.php'; 
 
 // [LOGIC DATA]: Normalisasi Gambar & Fasilitas
 $roomImage = !empty($room['main_image']) ? $room['main_image'] : ($hotel['main_image'] ?? BASE_URL . '/public/images/placeholder.jpg');
@@ -45,9 +18,6 @@ $d1 = new DateTime($checkIn);
 $d2 = new DateTime($checkOut);
 $nights = $d1->diff($d2)->days;
 if ($nights < 1) $nights = 1;
-
-// Include header setelah semua logic
-require_once __DIR__ . '/../layouts/header.php';
 ?>
 
 <div class="min-h-screen bg-slate-50 py-8 lg:py-12">
@@ -178,12 +148,12 @@ require_once __DIR__ . '/../layouts/header.php';
                 </div>
 
                 <div class="hidden lg:block">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transform active:scale-[0.98] hover:shadow-xl hover:shadow-blue-500/40">
-                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                        Konfirmasi & Lihat Invoice
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transform active:scale-[0.98]">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                        Lanjut ke Pembayaran
                     </button>
                     <p class="text-xs text-slate-400 mt-3 text-center">
-                        Transaksi aman dan terenkripsi. Dengan melanjutkan, Anda menyetujui <span class="text-blue-600 underline cursor-pointer">Syarat & Ketentuan</span> Trevio.
+                        Transaksi aman dan terenkripsi. Dengan melanjutkan, Anda menyetujui S&K Trevio.
                     </p>
                 </div>
             </div>
@@ -253,9 +223,8 @@ require_once __DIR__ . '/../layouts/header.php';
                     </div>
 
                     <div class="block lg:hidden mt-6">
-                        <button type="submit" form="bookingForm" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-blue-500/30 flex items-center justify-center gap-2 transform active:scale-[0.98]">
-                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                            Konfirmasi & Lihat Invoice
+                        <button type="submit" form="bookingForm" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-xl transition-all shadow-lg shadow-blue-500/30">
+                            Lanjut ke Pembayaran
                         </button>
                     </div>
                 </div>
@@ -308,4 +277,4 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+<?php require_once '../app/views/layouts/footer.php'; ?>

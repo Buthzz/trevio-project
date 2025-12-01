@@ -1,49 +1,4 @@
-<?php
-require_once __DIR__ . '/../../../helpers/functions.php';
-trevio_start_session();
-
-// [SECURITY]: Cek apakah user sudah login
-if (!isset($_SESSION['is_logged_in']) || $_SESSION['is_logged_in'] !== true) {
-    $loginUrl = trevio_view_route('auth/login.php') . '?return_url=' . urlencode($_SERVER['REQUEST_URI']);
-    header("Location: $loginUrl");
-    exit;
-}
-
-// [BACKEND NOTE]: Ambil booking code dari URL
-$bookingCode = $_GET['code'] ?? '';
-
-if (!$bookingCode) {
-    $_SESSION['flash_error'] = 'Kode booking tidak valid.';
-    header('Location: ' . trevio_view_route('booking/history.php'));
-    exit;
-}
-
-// [BACKEND NOTE]: Untuk production, query dari database
-// SELECT * FROM bookings WHERE booking_code = ? AND user_id = ?
-// Sementara gunakan dummy data untuk development
-$booking = [
-    'id' => 1,
-    'booking_code' => $bookingCode,
-    'booking_status' => 'pending_payment',
-    'hotel_name' => 'Merlynn Park Hotel',
-    'room_type' => 'Single Room',
-    'check_in_date' => '2025-12-01',
-    'check_out_date' => '2025-12-02',
-    'num_nights' => 1,
-    'num_rooms' => 1,
-    'guest_name' => $_SESSION['user_name'] ?? 'Guest',
-    'guest_email' => $_SESSION['user_email'] ?? 'guest@example.com',
-    'guest_phone' => '08123456789',
-    'price_per_night' => 300000,
-    'subtotal' => 300000,
-    'tax_amount' => 30000,
-    'service_charge' => 15000,
-    'total_price' => 345000
-];
-
-// Include header setelah logic
-require_once __DIR__ . '/../layouts/header.php';
-?>
+<?php require_once '../app/views/layouts/header.php'; ?>
 
 <div class="max-w-4xl mx-auto px-4 py-8">
     <!-- Breadcrumb -->
@@ -246,4 +201,4 @@ require_once __DIR__ . '/../layouts/header.php';
     </div>
 </div>
 
-<?php require_once __DIR__ . '/../layouts/footer.php'; ?>
+<?php require_once '../app/views/layouts/footer.php'; ?>
