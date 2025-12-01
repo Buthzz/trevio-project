@@ -141,18 +141,30 @@ INSERT INTO reviews (booking_id, customer_id, hotel_id, rating, review_text, rev
 -- 7. NOTIFICATIONS (Sample)
 -- =====================================================
 
-INSERT INTO notifications (user_id, type, title, message, related_id, is_read, created_at) VALUES
+INSERT INTO notifications (
+  user_id,
+  notification_type,
+  title,
+  message,
+  booking_id,
+  is_read,
+  send_email,
+  send_whatsapp,
+  email_sent,
+  whatsapp_sent,
+  created_at
+) VALUES
 -- For Siti (Customer - Booking Confirmed)
-(6, 'booking_confirmed', 'Booking Dikonfirmasi', 'Booking Anda dengan kode TRV-20251120-A001 telah dikonfirmasi. Selamat menikmati penginapan!', 1, 1, NOW()),
+(6, 'booking_confirmed', 'Booking Dikonfirmasi', 'Booking Anda dengan kode TRV-20251120-A001 telah dikonfirmasi. Selamat menikmati penginapan!', 1, 1, 1, 0, 0, 0, NOW()),
 
 -- For Hotel Owner 1 (New Booking)
-(2, 'new_booking', 'Booking Baru', 'Anda mendapat booking baru dengan kode TRV-20251120-A001 untuk Grand Trevio Hotel Jakarta.', 1, 0, NOW()),
+(2, 'new_booking', 'Booking Baru', 'Anda mendapat booking baru dengan kode TRV-20251120-A001 untuk Grand Trevio Hotel Jakarta.', 1, 0, 1, 1, 0, 0, NOW()),
 
 -- For Andi (Customer - Payment Uploaded)
-(7, 'payment_uploaded', 'Bukti Pembayaran Diupload', 'Bukti pembayaran untuk booking TRV-20251121-B002 berhasil diupload. Menunggu verifikasi admin.', 2, 0, NOW()),
+(7, 'payment_uploaded', 'Bukti Pembayaran Diupload', 'Bukti pembayaran untuk booking TRV-20251121-B002 berhasil diupload. Menunggu verifikasi admin.', 2, 0, 1, 0, 0, 0, NOW()),
 
 -- For Admin (Payment Needs Verification)
-(1, 'payment_verification', 'Pembayaran Perlu Verifikasi', 'Pembayaran untuk booking TRV-20251122-C003 menunggu verifikasi Anda.', 3, 0, NOW());
+(1, 'payment_verification', 'Pembayaran Perlu Verifikasi', 'Pembayaran untuk booking TRV-20251122-C003 menunggu verifikasi Anda.', 3, 0, 1, 1, 0, 0, NOW());
 
 -- =====================================================
 -- 8. ADDITIONAL BOOKINGS FOR TESTING
