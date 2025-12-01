@@ -200,47 +200,45 @@ require_once __DIR__ . '/../layouts/header.php';
         </div>
     </main>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
-<script src="<?= BASE_URL ?>/js/charts.js"></script>
+
 <script>
     // Debug: Log BASE_URL untuk memastikan path benar
-    // console.log('BASE_URL:', '');
-    // console.log('Chart.js URL:', '/js/chart.min.js');
-    // console.log('Charts.js URL:', '/js/charts.js');
+    console.log('BASE_URL:', '<?= BASE_URL ?>');
+    console.log('Chart.js URL:', '<?= BASE_URL ?>/js/chart.min.js');
+    console.log('Charts.js URL:', '<?= BASE_URL ?>/js/charts.js');
     
-    // // Load Chart.js dengan fallback
-    // function loadScript(src, callback, fallback) {
-    //     const script = document.createElement('script');
-    //     script.src = src;
-    //     script.onload = callback;
-    //     script.onerror = function() {
-    //         console.warn(`Failed to load ${src}, trying fallback...`);
-    //         if (fallback) {
-    //             const fallbackScript = document.createElement('script');
-    //             fallbackScript.src = fallback;
-    //             fallbackScript.onload = callback;
-    //             fallbackScript.onerror = function() {
-    //                 console.error(`Both ${src} and ${fallback} failed to load`);
-    //             };
-    //             document.head.appendChild(fallbackScript);
-    //         }
-    //     };
-    //     document.head.appendChild(script);
-    // }
+    // Load Chart.js dengan fallback
+    function loadScript(src, callback, fallback) {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = callback;
+        script.onerror = function() {
+            console.warn(`Failed to load ${src}, trying fallback...`);
+            if (fallback) {
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = fallback;
+                fallbackScript.onload = callback;
+                fallbackScript.onerror = function() {
+                    console.error(`Both ${src} and ${fallback} failed to load`);
+                };
+                document.head.appendChild(fallbackScript);
+            }
+        };
+        document.head.appendChild(script);
+    }
 
-    // // Load Chart.js pertama
-    // loadScript(
-    //     '/js/chart.min.js',
-    //     function() {
-    //         console.log('Chart.js loaded successfully');
-    //         // Kemudian load Charts.js
-            
-    //         loadScript('/js/charts.js', function() {
-    //             console.log('Charts.js loaded successfully');
-    //         });
-    //     },
-    //     'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js'
-    // );
+    // Load Chart.js pertama
+    loadScript(
+        '<?= BASE_URL ?>/js/chart.min.js',
+        function() {
+            console.log('Chart.js loaded successfully');
+            // Kemudian load Charts.js
+            loadScript('<?= BASE_URL ?>/js/charts.js', function() {
+                console.log('Charts.js loaded successfully');
+            });
+        },
+        'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js'
+    );
 </script>
 
 <script>
