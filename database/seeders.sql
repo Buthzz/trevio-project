@@ -119,12 +119,12 @@ INSERT INTO bookings (customer_id, room_id, booking_code, check_in_date, check_o
 -- =====================================================
 
 -- Payment Verified (for Booking 1)
-INSERT INTO payments (booking_id, payment_proof, payment_status, bank_name, account_name, account_number, payment_date, verified_by, verified_at, admin_notes, created_at, updated_at) VALUES
-(1, '/uploads/payments/payment_1_proof.jpg', 'verified', 'BCA', 'Siti Nurhaliza', '1234567890', '2025-11-21 10:30:00', 1, '2025-11-21 11:00:00', 'Payment verified successfully', NOW(), NOW());
+INSERT INTO payments (booking_id, payment_proof, payment_status, transfer_to_bank, transfer_from_bank, transfer_date, verified_by, verified_at, payment_notes, created_at, updated_at) VALUES
+(1, '/uploads/payments/payment_1_proof.jpg', 'verified', 'BCA', 'Siti Nurhaliza', '2025-11-21 10:30:00', 1, '2025-11-21 11:00:00', 'Payment verified successfully', NOW(), NOW());
 
 -- Payment Pending Verification (for Booking 3)
-INSERT INTO payments (booking_id, payment_proof, payment_status, bank_name, account_name, account_number, payment_date, created_at, updated_at) VALUES
-(3, '/uploads/payments/payment_3_proof.jpg', 'pending', 'Mandiri', 'Dewi Lestari', '9876543210', '2025-11-22 14:20:00', NOW(), NOW());
+INSERT INTO payments (booking_id, payment_proof, payment_status, transfer_to_bank, transfer_from_bank, transfer_date, created_at, updated_at) VALUES
+(3, '/uploads/payments/payment_3_proof.jpg', 'pending', 'Mandiri', 'Dewi Lestari', '2025-11-22 14:20:00', NOW(), NOW());
 
 -- =====================================================
 -- 6. REVIEWS
