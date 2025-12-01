@@ -37,6 +37,11 @@ class AdminController extends BaseAdminController {
             ? $this->bookingModel->countByStatus('pending_verification') 
             : 0;
 
+        // Get daily revenue for the last 7 days
+        $dailyRevenue = method_exists($this->bookingModel, 'getDailyRevenue') 
+            ? $this->bookingModel->getDailyRevenue(7) 
+            : [];
+
         $stats = [
             'total_users'      => $this->userModel->countAll(),
             'total_hotels'     => method_exists($this->hotelModel, 'countAll') 
@@ -53,6 +58,7 @@ class AdminController extends BaseAdminController {
             'title' => 'Admin Dashboard',
             'user' => $_SESSION,
             'stats' => $stats,
+            'daily_revenue' => $dailyRevenue,
             'recent_bookings' => method_exists($this->bookingModel, 'getRecentBookings')
                 ? $this->bookingModel->getRecentBookings(5)
                 : [],
