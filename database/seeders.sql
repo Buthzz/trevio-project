@@ -131,11 +131,11 @@ INSERT INTO payments (booking_id, payment_proof, payment_status, bank_name, acco
 -- =====================================================
 
 -- Review for Grand Trevio Hotel Jakarta
-INSERT INTO reviews (booking_id, customer_id, hotel_id, rating, review_text, review_images, response_text, response_by, response_at, is_visible, created_at, updated_at) VALUES
+INSERT INTO reviews (booking_id, customer_id, hotel_id, rating, review_text, review_images, owner_response, owner_response_at, is_approved, created_at, updated_at) VALUES
 (1, 6, 1, 5, 'Hotel yang sangat bagus! Pelayanan ramah, kamar bersih dan nyaman. Lokasi strategis di pusat Jakarta. Breakfast juga enak. Highly recommended!', 
 '["/uploads/reviews/review_1_img1.jpg"]', 
 'Terima kasih atas review positifnya! Kami senang Anda menikmati menginap di hotel kami. Sampai jumpa lagi!', 
-2, '2025-11-22 09:00:00', 1, NOW(), NOW());
+'2025-11-22 09:00:00', 1, NOW(), NOW());
 
 -- =====================================================
 -- 7. NOTIFICATIONS (Sample)
