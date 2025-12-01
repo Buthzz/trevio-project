@@ -1,37 +1,9 @@
-<?php
-// [BACKEND NOTE]: File ini seharusnya di-load melalui controller
-// yang sudah menyediakan variabel $data dengan struktur lengkap
-// Jika diakses langsung, akan menggunakan data dummy/fallback
-
-if (!isset($data)) {
-    $data = [
-        'title' => 'E-Ticket Booking',
-        'booking' => [
-            'booking_code' => 'N/A',
-            'booking_status' => 'pending',
-            'guest_name' => 'Guest',
-            'guest_phone' => 'N/A',
-            'check_in_date' => date('Y-m-d'),
-            'check_out_date' => date('Y-m-d', strtotime('+1 day')),
-            'num_nights' => 1,
-            'num_rooms' => 1
-        ],
-        'hotel' => [
-            'name' => 'Hotel',
-            'address' => 'N/A'
-        ],
-        'room' => [
-            'name' => 'Standard Room'
-        ]
-    ];
-}
-?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($data['title']) ?></title>
+    <title><?= $data['title'] ?></title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -101,12 +73,7 @@ if (!isset($data)) {
         .print-btn:hover { background-color: #1d4ed8; }
 
         @media print {
-            body { 
-                background-color: white; 
-                padding: 0; 
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
+            body { background-color: white; padding: 0; -webkit-print-color-adjust: exact; }
             .ticket-container { box-shadow: none; border: 2px solid #000; width: 100%; max-width: 100%; border-radius: 0; }
             .print-btn { display: none; }
             .header { background-color: #2563eb !important; color: white !important; }
@@ -133,13 +100,13 @@ if (!isset($data)) {
             <div class="row">
                 <div class="col">
                     <div class="label">Kode Booking</div>
-                    <div class="value highlight"><?= htmlspecialchars($data['booking']['booking_code']) ?></div>
+                    <div class="value highlight"><?= $data['booking']['booking_code'] ?></div>
                 </div>
                 <div class="col">
                     <div class="label">Hotel</div>
-                    <div class="value"><?= htmlspecialchars($data['hotel']['name'] ?? 'Unknown Hotel') ?></div>
+                    <div class="value"><?= $data['hotel']['name'] ?? 'Unknown Hotel' ?></div>
                     <div style="font-size: 12px; color: #666; margin-top: 2px;">
-                        <?= htmlspecialchars($data['hotel']['address'] ?? '-') ?>
+                        <?= $data['hotel']['address'] ?? '-' ?>
                     </div>
                 </div>
             </div>
@@ -147,11 +114,11 @@ if (!isset($data)) {
             <div class="row">
                 <div class="col">
                     <div class="label">Nama Tamu</div>
-                    <div class="value"><?= htmlspecialchars($data['booking']['guest_name']) ?></div>
+                    <div class="value"><?= $data['booking']['guest_name'] ?></div>
                 </div>
                 <div class="col">
                     <div class="label">Kontak</div>
-                    <div class="value"><?= htmlspecialchars($data['booking']['guest_phone']) ?></div>
+                    <div class="value"><?= $data['booking']['guest_phone'] ?></div>
                 </div>
             </div>
 
@@ -168,18 +135,18 @@ if (!isset($data)) {
                 </div>
                 <div class="col">
                     <div class="label">Durasi</div>
-                    <div class="value"><?= htmlspecialchars($data['booking']['num_nights']) ?> Malam</div>
+                    <div class="value"><?= $data['booking']['num_nights'] ?> Malam</div>
                 </div>
             </div>
 
             <div class="row">
                 <div class="col">
                     <div class="label">Tipe Kamar</div>
-                    <div class="value"><?= htmlspecialchars($data['room']['name'] ?? 'Standard Room') ?></div>
+                    <div class="value"><?= $data['room']['name'] ?? 'Standard Room' ?></div>
                 </div>
                 <div class="col">
                     <div class="label">Jumlah Kamar</div>
-                    <div class="value"><?= htmlspecialchars($data['booking']['num_rooms']) ?> Kamar</div>
+                    <div class="value"><?= $data['booking']['num_rooms'] ?> Kamar</div>
                 </div>
             </div>
         </div>
