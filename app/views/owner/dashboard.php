@@ -60,9 +60,19 @@
             </div>
             
             <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-                 <h3 class="text-lg font-bold text-gray-800 mb-4">Statistik Mingguan</h3>
-                 <div class="h-64 bg-gray-50 rounded-xl flex items-center justify-center border border-dashed border-gray-300">
-                     <p class="text-gray-400">Grafik data mingguan akan muncul di sini</p>
+                 <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-800">Analitik Pendapatan</h3>
+                        <p class="text-sm text-gray-500">Statistik pendapatan dalam 7 hari terakhir</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-indigo-500"></span>
+                        <span class="text-sm text-gray-600">Revenue</span>
+                    </div>
+                 </div>
+                 
+                 <div class="h-80 w-full relative">
+                     <canvas id="revenueChart"></canvas>
                  </div>
             </div>
 
@@ -72,3 +82,97 @@
         </div>
     </div>
 </div>
+
+<script src="<?= BASE_URL ?>/js/chart.min.js"></script>
+<script src="<?= BASE_URL ?>/js/charts.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ambil data dari PHP
+        const rawData = <?= json_encode($chart_data ?? []) ?>;
+        
+        // Setup default data jika kosong (untuk demo/fallback)
+        const labels = (rawData.labels && rawData.labels.length > 0) 
+            ? rawData.labels 
+            : ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+            
+        const dataValues = (rawData.revenue && rawData.revenue.length > 0) 
+            ? rawData.revenue 
+            : [0, 0, 0, 0, 0, 0, 0];
+
+        // Format Rupiah Helper
+        const formatRupiah = (value) => {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(value);
+        };
+
+        // Render Chart menggunakan helper Charts.createAreaChart
+        if (document.getElementById('revenueChart')) {
+            Charts.createAreaChart('#revenueChart', {
+                labels: labels,
+                datasets: [{
+                    label: 'Pendapatan Harian',
+                    data: dataValues,
+                    borderColor: '#4f46e5', // Indigo-600
+                    gradientColor: ['rgba(79, 70, 229, 0.2)', 'rgba(79, 70, 229, 0.0)'],
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    fill: true
+                }]
+            }, {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false // Kita sembunyikan default legend agar lebih bersih
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += formatRupiah(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                // Format sumbu Y menjadi format singkat (e.g., 1jt, 500rb)
+                                if (value >= 1000000) return 'Rp ' + (value/1000000).toFixed(1) + ' Jt';
+                                if (value >= 1000) return 'Rp ' + (value/1000).toFixed(0) + ' Rb';
+                                return value;
+                            },
+                            font: { family: "'Inter', sans-serif", size: 11 }, 
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.05)',
+                            drawBorder: false
+                        }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { family: "'Inter', sans-serif", size: 11 }, 
+                            color: '#94a3b8'
+                        }
+                    }
+                }
+            });
+        }
+    });
+</script>
