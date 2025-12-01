@@ -32,10 +32,17 @@ if (empty($profilePhoto)) {
 // Judul default
 $pageTitle = $pageTitle ?? 'Trevio';
 
-// [PERBAIKAN ROUTING]: Definisi BASE_URL
+// [PERBAIKAN ROUTING]: Definisi BASE_URL (jangan hardcode path!)
 if (!defined('BASE_URL')) {
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
-    define('BASE_URL', $protocol . '://' . $_SERVER['HTTP_HOST'] . '/trevio-project/public'); 
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $scriptDir = dirname($_SERVER['SCRIPT_NAME']);
+
+    // Clean up script directory path
+    $scriptDir = str_replace('\\', '/', $scriptDir);
+    $scriptDir = rtrim($scriptDir, '/');
+
+    define('BASE_URL', $protocol . '://' . $host . $scriptDir);
 }
 
 // Link Navigasi (MVC Friendly)

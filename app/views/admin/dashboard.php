@@ -201,8 +201,45 @@ require_once __DIR__ . '/../layouts/header.php';
     </main>
 </div>
 
-<script src="<?= BASE_URL ?>/js/chart.min.js"></script>
-<script src="<?= BASE_URL ?>/js/charts.js"></script>
+<script>
+    // Debug: Log BASE_URL untuk memastikan path benar
+    console.log('BASE_URL:', '<?= BASE_URL ?>');
+    console.log('Chart.js URL:', '<?= BASE_URL ?>/js/chart.min.js');
+    console.log('Charts.js URL:', '<?= BASE_URL ?>/js/charts.js');
+    
+    // Load Chart.js dengan fallback
+    function loadScript(src, callback, fallback) {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = callback;
+        script.onerror = function() {
+            console.warn(`Failed to load ${src}, trying fallback...`);
+            if (fallback) {
+                const fallbackScript = document.createElement('script');
+                fallbackScript.src = fallback;
+                fallbackScript.onload = callback;
+                fallbackScript.onerror = function() {
+                    console.error(`Both ${src} and ${fallback} failed to load`);
+                };
+                document.head.appendChild(fallbackScript);
+            }
+        };
+        document.head.appendChild(script);
+    }
+
+    // Load Chart.js pertama
+    loadScript(
+        '<?= BASE_URL ?>/js/chart.min.js',
+        function() {
+            console.log('Chart.js loaded successfully');
+            // Kemudian load Charts.js
+            loadScript('<?= BASE_URL ?>/js/charts.js', function() {
+                console.log('Charts.js loaded successfully');
+            });
+        },
+        'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js'
+    );
+</script>
 
 <script>
     // Sidebar Toggle Logic
@@ -237,57 +274,124 @@ require_once __DIR__ . '/../layouts/header.php';
 
     // Initialize Chart
     document.addEventListener('DOMContentLoaded', function() {
+        // Debug: Periksa apakah Chart.js dimuat
+        console.log('Chart.js loaded:', typeof Chart !== 'undefined');
+        console.log('Charts module loaded:', typeof Charts !== 'undefined');
+        
         // Ambil data statistik dari PHP
         const pendingPayments = <?= $data['stats']['pending_payments'] ?? 0 ?>;
         const pendingRefunds = <?= $data['stats']['pending_refunds'] ?? 0 ?>;
+        
+        console.log('Chart data:', {pendingPayments, pendingRefunds});
 
-        if (document.getElementById('adminActionChart')) {
-            // Kita gunakan Bar Chart untuk perbandingan yang jelas
-            Charts.createBarChart('#adminActionChart', {
-                labels: ['Pending Payments', 'Pending Refunds'],
-                datasets: [{
-                    label: 'Jumlah Request',
-                    data: [pendingPayments, pendingRefunds],
-                    backgroundColor: [
-                        'rgba(59, 130, 246, 0.8)', // Blue for Payments
-                        'rgba(239, 68, 68, 0.8)'   // Red for Refunds
-                    ],
-                    borderColor: [
-                        'rgb(59, 130, 246)',
-                        'rgb(239, 68, 68)'
-                    ],
-                    borderWidth: 1,
-                    barThickness: 60, // Lebar bar fixed agar rapi
-                }]
-            }, {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false // Sembunyikan legend karena label sumbu X sudah jelas
-                    },
-                    tooltip: {
-                        callbacks: {
-                            label: function(context) {
-                                return context.parsed.y + ' Tasks';
+        const chartElement = document.getElementById('adminActionChart');
+        console.log('Chart element found:', !!chartElement);
+        
+        if (chartElement) {
+            // Tunggu sebentar untuk memastikan semua library dimuat
+            setTimeout(() => {
+                // Cek apakah Chart.js tersedia
+                if (typeof Chart === 'undefined') {
+                    console.error('Chart.js library not loaded!');
+                    chartElement.innerHTML = `
+                        <div class="flex items-center justify-center h-full text-slate-500">
+                            <div class="text-center">
+                                <svg class="h-12 w-12 mx-auto mb-3 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <p class="text-sm text-red-600">Chart.js library gagal dimuat</p>
+                                <p class="text-xs mt-1 text-slate-500">Pending Payments: ${pendingPayments}</p>
+                                <p class="text-xs text-slate-500">Pending Refunds: ${pendingRefunds}</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Cek apakah Charts module tersedia
+                if (typeof Charts === 'undefined') {
+                    console.error('Charts module not loaded!');
+                    chartElement.innerHTML = `
+                        <div class="flex items-center justify-center h-full text-slate-500">
+                            <div class="text-center">
+                                <svg class="h-12 w-12 mx-auto mb-3 text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <p class="text-sm text-red-600">Charts module gagal dimuat</p>
+                                <p class="text-xs mt-1 text-slate-500">Pending Payments: ${pendingPayments}</p>
+                                <p class="text-xs text-slate-500">Pending Refunds: ${pendingRefunds}</p>
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+
+                try {
+                    // Kita gunakan Bar Chart untuk perbandingan yang jelas
+                    const chart = Charts.createBarChart('#adminActionChart', {
+                        labels: ['Pending Payments', 'Pending Refunds'],
+                        datasets: [{
+                            label: 'Jumlah Request',
+                            data: [pendingPayments, pendingRefunds],
+                            backgroundColor: [
+                                'rgba(59, 130, 246, 0.8)', // Blue for Payments
+                                'rgba(239, 68, 68, 0.8)'   // Red for Refunds
+                            ],
+                            borderColor: [
+                                'rgb(59, 130, 246)',
+                                'rgb(239, 68, 68)'
+                            ],
+                            borderWidth: 1,
+                            barThickness: 60, // Lebar bar fixed agar rapi
+                        }]
+                    }, {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false // Sembunyikan legend karena label sumbu X sudah jelas
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return context.parsed.y + ' Tasks';
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1 // Pastikan sumbu Y bilangan bulat (karena jumlah task)
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
                             }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            stepSize: 1 // Pastikan sumbu Y bilangan bulat (karena jumlah task)
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
+                    });
+                    
+                    console.log('Chart created successfully:', !!chart);
+                } catch (error) {
+                    console.error('Error creating chart:', error);
+                    // Fallback: tampilkan pesan jika chart gagal
+                    chartElement.innerHTML = `
+                        <div class="flex items-center justify-center h-full text-slate-500">
+                            <div class="text-center">
+                                <svg class="h-12 w-12 mx-auto mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                                <p class="text-sm">Chart tidak dapat dimuat</p>
+                                <p class="text-xs mt-1">Pending Payments: ${pendingPayments}</p>
+                                <p class="text-xs">Pending Refunds: ${pendingRefunds}</p>
+                            </div>
+                        </div>
+                    `;
                 }
-            });
+            }, 100);
         }
     });
 </script>
