@@ -9,7 +9,7 @@ $pageTitle = $data['title'] ?? 'Trevio | Temukan Hotel Favoritmu';
 // Data dari controller
 $hotels = $data['hotels'] ?? []; 
 $benefits = $data['benefits'] ?? [];
-$destinations = $data['destinations'] ?? ['🔥 Semua'];
+$destinations = $data['destinations'] ?? ['Semua'];
 $testimonials = $data['testimonials'] ?? [];
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -29,6 +29,15 @@ if (!function_exists('trevio_clean_query')) {
         return trim($value);
     }
 }
+
+// --- [FIX: LOGIKA URL GAMBAR] ---
+// Kita pastikan BASE_URL terdefinisi. Jika BASE_URL mengarah ke folder public,
+// maka kita cukup panggil /images/..., tidak perlu /public/images/...
+$baseUrl = defined('BASE_URL') ? BASE_URL : '';
+
+// URL Gambar Hero (Background Utama) & Fallback Default
+// Pastikan file ini ada di folder: public/images/photo-1618773928121-c32242e63f39.avif
+$heroImage = $baseUrl . '/images/photo-1618773928121-c32242e63f39.avif';
 
 if (defined('BASE_URL')) {
     $loginUrl = BASE_URL . '/auth/login';
@@ -81,7 +90,7 @@ require __DIR__ . '/../layouts/header.php';
 ?>
 
 <div class="relative h-[60vh] min-h-[400px] w-full overflow-hidden">
-    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[1200ms] hover:scale-105" style="background-image: url('<?= BASE_URL ?>/public/images/photo-1618773928121-c32242e63f39.avif');"></div>
+    <div class="absolute inset-0 bg-cover bg-center transition-transform duration-[1200ms] hover:scale-105" style="background-image: url('<?= $heroImage ?>');"></div>
     <div class="absolute inset-0 bg-gradient-to-br from-blue-900/70 via-black/40 to-transparent"></div>
 
     <div class="absolute top-1/4 left-1/4 h-32 w-32 rounded-full bg-white/5 blur-xl animate-pulse-slow"></div>
@@ -268,10 +277,10 @@ require __DIR__ . '/../layouts/header.php';
         <div id="hotel-grid" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
             <?php foreach ($hotels as $hotel): ?>
                 <?php 
-                // Ambil gambar dari database, fallback jika kosong
+                // [FIX]: Fallback image menggunakan variabel $heroImage yang path-nya sudah benar
                 $thumbnail = !empty($hotel['main_image']) 
                     ? htmlspecialchars($hotel['main_image']) 
-                    : BASE_URL . '/public/images/photo-1618773928121-c32242e63f39.avif';
+                    : $heroImage;
                 
                 // Ambil rating dari database
                 $ratingValue = number_format((float)($hotel['average_rating'] ?? 0), 1);

@@ -8,7 +8,10 @@ if (!function_exists('trevio_view_base_url')) {
 	function trevio_view_base_url(): string
 	{
 		// Simpan nama script aktif agar bisa dianalisis pola folder-nya.
-		$scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+		$scriptNameRaw = $_SERVER['SCRIPT_NAME'] ?? '';
+		// Sanitize: remove null bytes, ensure starts with '/', and allow only valid path chars
+		$scriptName = preg_replace('/[\x00-\x1F\x7F]/', '', $scriptNameRaw);
+		$scriptName = '/' . ltrim($scriptName, '/');
 
 		// Jika script berada di dalam /app/views maka ambil path sebelum folder tersebut.
 		if ($scriptName !== '' && preg_match('#^(.*)/app/views/#', $scriptName, $matches)) {

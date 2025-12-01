@@ -35,14 +35,14 @@ INSERT INTO users (name, email, password, phone, whatsapp_number, role, auth_pro
 -- 2. HOTELS
 -- =====================================================
 
-INSERT INTO hotels (owner_id, name, address, city, province, postal_code, latitude, longitude, description, facilities, star_rating, check_in_time, check_out_time, main_image, is_active, created_at, updated_at) VALUES
+INSERT INTO hotels (owner_id, name, address, city, province, latitude, longitude, description, facilities, star_rating, main_image, is_active, created_at, updated_at) VALUES
 -- Hotel Owner 1
-(2, 'Grand Trevio Hotel Jakarta', 'Jl. Thamrin No. 1', 'Jakarta Pusat', 'DKI Jakarta', '10110', -6.1951, 106.8229, 
+(2, 'Grand Trevio Hotel Jakarta', 'Jl. Thamrin No. 1', 'Jakarta Pusat', 'DKI Jakarta', -6.1951, 106.8229, 
 'Hotel bintang 5 di pusat Jakarta dengan fasilitas lengkap dan pemandangan kota yang menakjubkan. Dekat dengan pusat perbelanjaan dan kawasan bisnis.', 
 'WiFi Gratis,Kolam Renang,Gym,Restaurant,Bar,Spa,Laundry,Room Service,Parking,Airport Shuttle', 
-5, '14:00:00', '12:00:00', '/uploads/hotels/grand_trevio_jakarta.jpg', 1, NOW(), NOW()),
+5, '/uploads/hotels/grand_trevio_jakarta.jpg', 1, NOW(), NOW()),
 
-(2, 'Trevio Beach Resort Bali', 'Jl. Pantai Kuta No. 99', 'Badung', 'Bali', '80361', -8.7185, 115.1680,
+(2, 'Trevio Beach Resort Bali', 'Jl. Pantai Kuta No. 99', 'Badung', 'Bali', -8.7185, 115.1680,
 'Resort tepi pantai dengan private beach, cocok untuk liburan keluarga dan bulan madu. Pemandangan sunset yang indah.', 
 'WiFi Gratis,Kolam Renang,Beach Access,Restaurant,Bar,Spa,Kids Club,Water Sports,Parking', 
 5, '15:00:00', '11:00:00', '/uploads/hotels/trevio_beach_bali.jpg', 1, NOW(), NOW()),
@@ -69,15 +69,15 @@ INSERT INTO hotels (owner_id, name, address, city, province, postal_code, latitu
 -- =====================================================
 
 -- Grand Trevio Hotel Jakarta (Hotel ID 1)
-INSERT INTO rooms (hotel_id, room_type, price_per_night, total_rooms, available_slots, capacity, size_sqm, bed_type, description, amenities, room_images, is_available, created_at, updated_at) VALUES
-(1, 'Deluxe Room', 850000, 20, 20, 2, 28, 'King Bed', 'Kamar deluxe dengan pemandangan kota, dilengkapi AC, TV LED, minibar, dan kamar mandi dengan bathtub.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub', '["/uploads/rooms/deluxe_jakarta_1.jpg"]', 1, NOW(), NOW()),
-(1, 'Executive Suite', 1500000, 10, 10, 3, 45, 'King Bed + Sofa Bed', 'Suite mewah dengan ruang tamu terpisah, pantry kecil, dan balkon pribadi dengan pemandangan Jakarta.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Living Room,Balcony,Coffee Maker', '["/uploads/rooms/executive_jakarta_1.jpg"]', 1, NOW(), NOW()),
-(1, 'Presidential Suite', 3500000, 2, 2, 4, 85, '2 King Beds', 'Suite presidensial dengan 2 kamar tidur, ruang makan, ruang kerja, dan jacuzzi pribadi.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Jacuzzi,Living Room,Dining Room,Kitchen,Balcony', '["/uploads/rooms/presidential_jakarta_1.jpg"]', 1, NOW(), NOW()),
+INSERT INTO rooms (hotel_id, room_type, price_per_night, total_slots, available_slots, capacity, room_size, bed_type, description, amenities, main_image, is_available, created_at, updated_at) VALUES
+(1, 'Deluxe Room', 850000, 20, 20, 2, 28, 'King Bed', 'Kamar deluxe dengan pemandangan kota, dilengkapi AC, TV LED, minibar, dan kamar mandi dengan bathtub.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub', '/uploads/rooms/deluxe_jakarta_1.jpg', 1, NOW(), NOW()),
+(1, 'Executive Suite', 1500000, 10, 10, 3, 45, 'King Bed + Sofa Bed', 'Suite mewah dengan ruang tamu terpisah, pantry kecil, dan balkon pribadi dengan pemandangan Jakarta.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Living Room,Balcony,Coffee Maker', '/uploads/rooms/executive_jakarta_1.jpg', 1, NOW(), NOW()),
+(1, 'Presidential Suite', 3500000, 2, 2, 4, 85, '2 King Beds', 'Suite presidensial dengan 2 kamar tidur, ruang makan, ruang kerja, dan jacuzzi pribadi.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Jacuzzi,Living Room,Dining Room,Kitchen,Balcony', '/uploads/rooms/presidential_jakarta_1.jpg', 1, NOW(), NOW()),
 
 -- Trevio Beach Resort Bali (Hotel ID 2)
-INSERT INTO rooms (hotel_id, room_type, price_per_night, total_rooms, available_slots, capacity, size_sqm, bed_type, description, amenities, room_images, is_available, created_at, updated_at) VALUES
-(2, 'Garden View Room', 950000, 25, 25, 2, 30, 'Queen Bed', 'Kamar dengan pemandangan taman tropis. Cocok untuk pasangan dan family.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Balcony', '["/uploads/rooms/garden_bali_1.jpg"]', 1, NOW(), NOW()),
-(2, 'Ocean View Room', 1350000, 15, 15, 2, 32, 'King Bed', 'Kamar dengan pemandangan laut lepas. Private balcony untuk menikmati sunset.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Balcony,Ocean View', '["/uploads/rooms/ocean_bali_1.jpg"]', 1, NOW(), NOW()),
+INSERT INTO rooms (hotel_id, room_type, price_per_night, total_slots, available_slots, capacity, room_size, bed_type, description, amenities, main_image, is_available, created_at, updated_at) VALUES
+(2, 'Garden View Room', 950000, 25, 25, 2, 30, 'Queen Bed', 'Kamar dengan pemandangan taman tropis. Cocok untuk pasangan dan family.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Balcony', '/uploads/rooms/garden_bali_1.jpg', 1, NOW(), NOW()),
+(2, 'Ocean View Room', 1350000, 15, 15, 2, 32, 'King Bed', 'Kamar dengan pemandangan laut lepas. Private balcony untuk menikmati sunset.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Balcony,Ocean View', '/uploads/rooms/ocean_bali_1.jpg', 1, NOW(), NOW()),
 (2, 'Beach Front Villa', 2800000, 8, 8, 4, 75, 'King Bed + 2 Single Beds', 'Villa pribadi di tepi pantai dengan akses langsung ke beach. Private pool dan gazebo.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Outdoor Shower,Private Pool,Beach Access,Living Room', '["/uploads/rooms/villa_bali_1.jpg"]', 1, NOW(), NOW()),
 
 -- Trevio Mountain View Bandung (Hotel ID 3)
@@ -119,40 +119,52 @@ INSERT INTO bookings (customer_id, room_id, booking_code, check_in_date, check_o
 -- =====================================================
 
 -- Payment Verified (for Booking 1)
-INSERT INTO payments (booking_id, payment_proof, payment_status, bank_name, account_name, account_number, payment_date, verified_by, verified_at, admin_notes, created_at, updated_at) VALUES
-(1, '/uploads/payments/payment_1_proof.jpg', 'verified', 'BCA', 'Siti Nurhaliza', '1234567890', '2025-11-21 10:30:00', 1, '2025-11-21 11:00:00', 'Payment verified successfully', NOW(), NOW());
+INSERT INTO payments (booking_id, payment_proof, payment_status, transfer_to_bank, transfer_from_bank, transfer_date, verified_by, verified_at, payment_notes, created_at, updated_at) VALUES
+(1, '/uploads/payments/payment_1_proof.jpg', 'verified', 'BCA', 'Siti Nurhaliza', '2025-11-21 10:30:00', 1, '2025-11-21 11:00:00', 'Payment verified successfully', NOW(), NOW());
 
 -- Payment Pending Verification (for Booking 3)
-INSERT INTO payments (booking_id, payment_proof, payment_status, bank_name, account_name, account_number, payment_date, created_at, updated_at) VALUES
-(3, '/uploads/payments/payment_3_proof.jpg', 'pending', 'Mandiri', 'Dewi Lestari', '9876543210', '2025-11-22 14:20:00', NOW(), NOW());
+INSERT INTO payments (booking_id, payment_proof, payment_status, transfer_to_bank, transfer_from_bank, transfer_date, created_at, updated_at) VALUES
+(3, '/uploads/payments/payment_3_proof.jpg', 'pending', 'Mandiri', 'Dewi Lestari', '2025-11-22 14:20:00', NOW(), NOW());
 
 -- =====================================================
 -- 6. REVIEWS
 -- =====================================================
 
 -- Review for Grand Trevio Hotel Jakarta
-INSERT INTO reviews (booking_id, customer_id, hotel_id, rating, review_text, review_images, response_text, response_by, response_at, is_visible, created_at, updated_at) VALUES
+INSERT INTO reviews (booking_id, customer_id, hotel_id, rating, review_text, review_images, owner_response, owner_response_at, is_approved, created_at, updated_at) VALUES
 (1, 6, 1, 5, 'Hotel yang sangat bagus! Pelayanan ramah, kamar bersih dan nyaman. Lokasi strategis di pusat Jakarta. Breakfast juga enak. Highly recommended!', 
 '["/uploads/reviews/review_1_img1.jpg"]', 
 'Terima kasih atas review positifnya! Kami senang Anda menikmati menginap di hotel kami. Sampai jumpa lagi!', 
-2, '2025-11-22 09:00:00', 1, NOW(), NOW());
+'2025-11-22 09:00:00', 1, NOW(), NOW());
 
 -- =====================================================
 -- 7. NOTIFICATIONS (Sample)
 -- =====================================================
 
-INSERT INTO notifications (user_id, type, title, message, related_id, is_read, created_at) VALUES
+INSERT INTO notifications (
+  user_id,
+  notification_type,
+  title,
+  message,
+  booking_id,
+  is_read,
+  send_email,
+  send_whatsapp,
+  email_sent,
+  whatsapp_sent,
+  created_at
+) VALUES
 -- For Siti (Customer - Booking Confirmed)
-(6, 'booking_confirmed', 'Booking Dikonfirmasi', 'Booking Anda dengan kode TRV-20251120-A001 telah dikonfirmasi. Selamat menikmati penginapan!', 1, 1, NOW()),
+(6, 'booking_confirmed', 'Booking Dikonfirmasi', 'Booking Anda dengan kode TRV-20251120-A001 telah dikonfirmasi. Selamat menikmati penginapan!', 1, 1, 1, 0, 0, 0, NOW()),
 
 -- For Hotel Owner 1 (New Booking)
-(2, 'new_booking', 'Booking Baru', 'Anda mendapat booking baru dengan kode TRV-20251120-A001 untuk Grand Trevio Hotel Jakarta.', 1, 0, NOW()),
+(2, 'new_booking', 'Booking Baru', 'Anda mendapat booking baru dengan kode TRV-20251120-A001 untuk Grand Trevio Hotel Jakarta.', 1, 0, 1, 1, 0, 0, NOW()),
 
 -- For Andi (Customer - Payment Uploaded)
-(7, 'payment_uploaded', 'Bukti Pembayaran Diupload', 'Bukti pembayaran untuk booking TRV-20251121-B002 berhasil diupload. Menunggu verifikasi admin.', 2, 0, NOW()),
+(7, 'payment_uploaded', 'Bukti Pembayaran Diupload', 'Bukti pembayaran untuk booking TRV-20251121-B002 berhasil diupload. Menunggu verifikasi admin.', 2, 0, 1, 0, 0, 0, NOW()),
 
 -- For Admin (Payment Needs Verification)
-(1, 'payment_verification', 'Pembayaran Perlu Verifikasi', 'Pembayaran untuk booking TRV-20251122-C003 menunggu verifikasi Anda.', 3, 0, NOW());
+(1, 'payment_verification', 'Pembayaran Perlu Verifikasi', 'Pembayaran untuk booking TRV-20251122-C003 menunggu verifikasi Anda.', 3, 0, 1, 1, 0, 0, NOW());
 
 -- =====================================================
 -- 8. ADDITIONAL BOOKINGS FOR TESTING

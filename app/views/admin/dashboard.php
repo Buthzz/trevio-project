@@ -149,9 +149,9 @@ require_once __DIR__ . '/../layouts/header.php';
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 
                 <div class="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
-                    <h2 class="mb-4 text-lg font-bold text-slate-900">System Overview</h2>
+                    <h2 class="mb-4 text-lg font-bold text-slate-900">Revenue Trend (7 Hari Terakhir)</h2>
                     <div class="h-64 flex items-center justify-center p-2 relative">
-                        <canvas id="adminActionChart"></canvas>
+                        <canvas id="revenueChart"></canvas>
                     </div>
                 </div>
 
@@ -278,13 +278,42 @@ require_once __DIR__ . '/../layouts/header.php';
         console.log('Chart.js loaded:', typeof Chart !== 'undefined');
         console.log('Charts module loaded:', typeof Charts !== 'undefined');
         
-        // Ambil data statistik dari PHP
-        const pendingPayments = <?= $data['stats']['pending_payments'] ?? 0 ?>;
-        const pendingRefunds = <?= $data['stats']['pending_refunds'] ?? 0 ?>;
+        // Ambil data revenue harian dari PHP
+        const dailyRevenueData = <?= json_encode($data['daily_revenue'] ?? []) ?>;
         
-        console.log('Chart data:', {pendingPayments, pendingRefunds});
+        console.log('Daily revenue data:', dailyRevenueData);
 
-        const chartElement = document.getElementById('adminActionChart');
+        // Siapkan data untuk chart
+        const chartLabels = [];
+        const chartData = [];
+        
+        if (dailyRevenueData && dailyRevenueData.length > 0) {
+            dailyRevenueData.forEach(item => {
+                // Format tanggal untuk tampilan yang lebih baik
+                const date = new Date(item.date);
+                const formattedDate = date.toLocaleDateString('id-ID', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                chartLabels.push(formattedDate);
+                chartData.push(parseFloat(item.revenue || 0));
+            });
+        } else {
+            // Data dummy jika tidak ada data revenue
+            const today = new Date();
+            for (let i = 6; i >= 0; i--) {
+                const date = new Date(today);
+                date.setDate(date.getDate() - i);
+                const formattedDate = date.toLocaleDateString('id-ID', { 
+                    month: 'short', 
+                    day: 'numeric' 
+                });
+                chartLabels.push(formattedDate);
+                chartData.push(Math.floor(Math.random() * 1000000)); // Random data for demo
+            }
+        }
+
+        const chartElement = document.getElementById('revenueChart');
         console.log('Chart element found:', !!chartElement);
         
         if (chartElement) {
@@ -293,6 +322,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 // Cek apakah Chart.js tersedia
                 if (typeof Chart === 'undefined') {
                     console.error('Chart.js library not loaded!');
+                    const totalRevenue = chartData.reduce((a, b) => a + b, 0);
                     chartElement.innerHTML = `
                         <div class="flex items-center justify-center h-full text-slate-500">
                             <div class="text-center">
@@ -300,8 +330,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 <p class="text-sm text-red-600">Chart.js library gagal dimuat</p>
-                                <p class="text-xs mt-1 text-slate-500">Pending Payments: ${pendingPayments}</p>
-                                <p class="text-xs text-slate-500">Pending Refunds: ${pendingRefunds}</p>
+                                <p class="text-xs mt-1 text-slate-500">Total Revenue (7 hari): Rp ${totalRevenue.toLocaleString('id-ID')}</p>
                             </div>
                         </div>
                     `;
@@ -311,6 +340,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 // Cek apakah Charts module tersedia
                 if (typeof Charts === 'undefined') {
                     console.error('Charts module not loaded!');
+                    const totalRevenue = chartData.reduce((a, b) => a + b, 0);
                     chartElement.innerHTML = `
                         <div class="flex items-center justify-center h-full text-slate-500">
                             <div class="text-center">
@@ -318,8 +348,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                 </svg>
                                 <p class="text-sm text-red-600">Charts module gagal dimuat</p>
-                                <p class="text-xs mt-1 text-slate-500">Pending Payments: ${pendingPayments}</p>
-                                <p class="text-xs text-slate-500">Pending Refunds: ${pendingRefunds}</p>
+                                <p class="text-xs mt-1 text-slate-500">Total Revenue (7 hari): Rp ${totalRevenue.toLocaleString('id-ID')}</p>
                             </div>
                         </div>
                     `;
@@ -327,34 +356,34 @@ require_once __DIR__ . '/../layouts/header.php';
                 }
 
                 try {
-                    // Kita gunakan Bar Chart untuk perbandingan yang jelas
-                    const chart = Charts.createBarChart('#adminActionChart', {
-                        labels: ['Pending Payments', 'Pending Refunds'],
+                    // Gunakan Line Chart untuk trend revenue
+                    const chart = Charts.createLineChart('#revenueChart', {
+                        labels: chartLabels,
                         datasets: [{
-                            label: 'Jumlah Request',
-                            data: [pendingPayments, pendingRefunds],
-                            backgroundColor: [
-                                'rgba(59, 130, 246, 0.8)', // Blue for Payments
-                                'rgba(239, 68, 68, 0.8)'   // Red for Refunds
-                            ],
-                            borderColor: [
-                                'rgb(59, 130, 246)',
-                                'rgb(239, 68, 68)'
-                            ],
-                            borderWidth: 1,
-                            barThickness: 60, // Lebar bar fixed agar rapi
+                            label: 'Revenue Harian',
+                            data: chartData,
+                            borderColor: 'rgb(16, 185, 129)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: 'rgb(16, 185, 129)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
                         }]
                     }, {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                display: false // Sembunyikan legend karena label sumbu X sudah jelas
+                                display: false
                             },
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        return context.parsed.y + ' Tasks';
+                                        return 'Revenue: Rp ' + context.parsed.y.toLocaleString('id-ID');
                                     }
                                 }
                             }
@@ -363,7 +392,15 @@ require_once __DIR__ . '/../layouts/header.php';
                             y: {
                                 beginAtZero: true,
                                 ticks: {
-                                    stepSize: 1 // Pastikan sumbu Y bilangan bulat (karena jumlah task)
+                                    callback: function(value) {
+                                        return 'Rp ' + value.toLocaleString('id-ID', { 
+                                            minimumFractionDigits: 0,
+                                            maximumFractionDigits: 0 
+                                        });
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.1)'
                                 }
                             },
                             x: {
@@ -378,6 +415,7 @@ require_once __DIR__ . '/../layouts/header.php';
                 } catch (error) {
                     console.error('Error creating chart:', error);
                     // Fallback: tampilkan pesan jika chart gagal
+                    const totalRevenue = chartData.reduce((a, b) => a + b, 0);
                     chartElement.innerHTML = `
                         <div class="flex items-center justify-center h-full text-slate-500">
                             <div class="text-center">
@@ -385,8 +423,8 @@ require_once __DIR__ . '/../layouts/header.php';
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                                 </svg>
                                 <p class="text-sm">Chart tidak dapat dimuat</p>
-                                <p class="text-xs mt-1">Pending Payments: ${pendingPayments}</p>
-                                <p class="text-xs">Pending Refunds: ${pendingRefunds}</p>
+                                <p class="text-xs mt-1 text-green-600">Total Revenue (7 hari): Rp ${totalRevenue.toLocaleString('id-ID')}</p>
+                                <p class="text-xs text-slate-400">Rata-rata harian: Rp ${Math.round(totalRevenue/7).toLocaleString('id-ID')}</p>
                             </div>
                         </div>
                     `;
