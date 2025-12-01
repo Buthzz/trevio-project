@@ -30,8 +30,8 @@ $forwardParams = [
     'check_in' => $_GET['check_in'] ?? date('Y-m-d'),
     'check_out' => $_GET['check_out'] ?? date('Y-m-d', strtotime('+1 day')),
     'num_rooms' => $_GET['num_rooms'] ?? '1',
-    'guest_adults' => $_GET['guest_adults'] ?? '2', // Tangkap Dewasa
-    'guest_children' => $_GET['guest_children'] ?? '0' // Tangkap Anak
+    'guest_adults' => $_GET['guest_adults'] ?? '2',
+    'guest_children' => $_GET['guest_children'] ?? '0'
 ];
 
 require __DIR__ . '/../layouts/header.php';
@@ -69,9 +69,14 @@ require __DIR__ . '/../layouts/header.php';
                 <input type="hidden" name="guest_adults" value="<?= htmlspecialchars($forwardParams['guest_adults']) ?>" />
                 <input type="hidden" name="guest_children" value="<?= htmlspecialchars($forwardParams['guest_children']) ?>" />
 
-                <?php foreach (($filters['facility'] ?? []) as $facility): ?>
-                    <input type="hidden" name="facility[]" value="<?= htmlspecialchars($facility) ?>" />
-                <?php endforeach; ?>
+                <?php 
+                // Pertahankan array fasilitas
+                if(isset($filters['facility']) && is_array($filters['facility'])) {
+                    foreach ($filters['facility'] as $f) {
+                        echo '<input type="hidden" name="facility[]" value="'.htmlspecialchars($f).'" />';
+                    }
+                }
+                ?>
                 
                 <button type="submit" class="rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800">Cari</button>
             </form>
@@ -102,7 +107,8 @@ require __DIR__ . '/../layouts/header.php';
                             <a href="<?= defined('BASE_URL') ? BASE_URL . '/hotel/search' : 'search.php' ?>" class="text-xs font-semibold text-blue-600 hover:underline">Reset</a>
                         </div>
                         
-                        <form class="space-y-6" method="get" action="">
+                        <form id="filterForm" class="space-y-6" method="get" action="">
+                            
                             <input type="hidden" name="q" value="<?= htmlspecialchars($query) ?>" />
                             <input type="hidden" name="check_in" value="<?= htmlspecialchars($forwardParams['check_in']) ?>" />
                             <input type="hidden" name="check_out" value="<?= htmlspecialchars($forwardParams['check_out']) ?>" />
@@ -113,7 +119,7 @@ require __DIR__ . '/../layouts/header.php';
                             <div>
                                 <label class="mb-2 block text-xs font-bold uppercase text-slate-400">Urutkan</label>
                                 <div class="relative">
-                                    <select name="sort" onchange="this.form.submit()" class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:bg-white focus:ring-blue-500 cursor-pointer">
+                                    <select name="sort" onchange="document.getElementById('filterForm').submit()" class="w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-medium text-slate-700 focus:border-blue-500 focus:bg-white focus:ring-blue-500 cursor-pointer">
                                         <option value="recommended" <?= $sort === 'recommended' ? 'selected' : '' ?>>Rekomendasi</option>
                                         <option value="lowest-price" <?= $sort === 'lowest-price' ? 'selected' : '' ?>>Harga Terendah</option>
                                         <option value="highest-price" <?= $sort === 'highest-price' ? 'selected' : '' ?>>Harga Tertinggi</option>
@@ -129,7 +135,7 @@ require __DIR__ . '/../layouts/header.php';
 
                             <div>
                                 <label class="mb-2 block text-xs font-bold uppercase text-slate-400">Kota</label>
-                                <select name="city" onchange="this.form.submit()" class="w-full rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
+                                <select name="city" onchange="document.getElementById('filterForm').submit()" class="w-full rounded-lg border-slate-200 text-sm focus:border-blue-500 focus:ring-blue-500">
                                     <?php foreach($availableCities as $c): ?>
                                         <option value="<?= $c ?>" <?= $city === $c ? 'selected' : '' ?>><?= $c ?></option>
                                     <?php endforeach; ?>
@@ -156,7 +162,7 @@ require __DIR__ . '/../layouts/header.php';
                                         </div>
                                     </div>
                                 </div>
-                                <button type="submit" class="mt-3 w-full rounded-lg bg-slate-100 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition">Terapkan</button>
+                                <button type="submit" class="mt-3 w-full rounded-lg bg-slate-100 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-200 transition">Terapkan Harga</button>
                             </div>
 
                             <hr class="border-slate-100">
@@ -167,13 +173,18 @@ require __DIR__ . '/../layouts/header.php';
                                     <?php 
                                     $ratings = ['5' => '5 Bintang', '4.5' => '4.5+', '4' => '4+'];
                                     foreach ($ratings as $val => $label): 
-                                        $isChecked = ($rating === $val || $rating === $val . '+');
+                                        $isChecked = ($rating === (string)$val);
                                     ?>
                                         <label class="flex cursor-pointer items-center gap-3">
-                                            <input type="radio" name="rating" value="<?= $val ?>" <?= $isChecked ? 'checked' : '' ?> onchange="this.form.submit()" class="h-4 w-4 cursor-pointer text-blue-600 focus:ring-blue-500" />
+                                            <input type="radio" name="rating" value="<?= $val ?>" <?= $isChecked ? 'checked' : '' ?> onchange="document.getElementById('filterForm').submit()" class="h-4 w-4 cursor-pointer text-blue-600 focus:ring-blue-500" />
                                             <span class="text-sm text-slate-600"><?= $label ?></span>
                                         </label>
                                     <?php endforeach; ?>
+                                    
+                                    <label class="flex cursor-pointer items-center gap-3">
+                                        <input type="radio" name="rating" value="Semua Rating" <?= empty($rating) || $rating === 'Semua Rating' ? 'checked' : '' ?> onchange="document.getElementById('filterForm').submit()" class="h-4 w-4 cursor-pointer text-slate-400 focus:ring-slate-500" />
+                                        <span class="text-sm text-slate-400">Semua Rating</span>
+                                    </label>
                                 </div>
                             </div>
 
@@ -184,11 +195,13 @@ require __DIR__ . '/../layouts/header.php';
                                 <div class="space-y-2.5">
                                     <?php 
                                     $currentFacilities = $filters['facility'] ?? [];
+                                    if (!is_array($currentFacilities)) $currentFacilities = [];
+                                    
                                     foreach ($availableFacilities as $facility): 
                                     ?>
                                         <label class="group flex cursor-pointer items-center gap-3">
                                             <div class="relative flex items-center">
-                                                <input type="checkbox" name="facility[]" value="<?= htmlspecialchars($facility) ?>" <?= in_array($facility, $currentFacilities, true) ? 'checked' : '' ?> onchange="this.form.submit()" class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-300 bg-white transition-all checked:border-blue-600 checked:bg-blue-600 hover:border-blue-600" />
+                                                <input type="checkbox" name="facility[]" value="<?= htmlspecialchars($facility) ?>" <?= in_array($facility, $currentFacilities) ? 'checked' : '' ?> onchange="document.getElementById('filterForm').submit()" class="peer h-4 w-4 cursor-pointer appearance-none rounded border border-slate-300 bg-white transition-all checked:border-blue-600 checked:bg-blue-600 hover:border-blue-600" />
                                                 <svg class="pointer-events-none absolute left-1/2 top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 transition-opacity peer-checked:opacity-100" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                                                     <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                                 </svg>
@@ -217,13 +230,17 @@ require __DIR__ . '/../layouts/header.php';
                             $hotelCity = $hotel['city'] ?? 'Indonesia';
                             $hotelRating = isset($hotel['average_rating']) ? number_format($hotel['average_rating'], 1) : '4.5';
                             $priceRaw = $hotel['min_price'] ?? 0;
-                            $hotelPrice = 'IDR ' . number_format((float)$priceRaw, 0, ',', '.');
+                            
+                            if ($priceRaw === null || $priceRaw == 0) {
+                                $hotelPrice = "Cek Detail";
+                                $perMalam = "";
+                            } else {
+                                $hotelPrice = 'IDR ' . number_format((float)$priceRaw, 0, ',', '.');
+                                $perMalam = "/malam";
+                            }
+
                             $hotelImage = !empty($hotel['main_image']) ? $hotel['main_image'] : BASE_URL . '/images/placeholder.jpg';
                             
-                            $highlights = [];
-                            // (Optional) Ambil highlights dari fasilitas hotel jika ada
-                            
-                            // [FIX FLOW]: Link Detail harus membawa semua parameter search (termasuk dewasa/anak)
                             $detailBase = defined('BASE_URL') ? BASE_URL . '/hotel/detail' : 'detail.php';
                             
                             $queryParams = [
@@ -281,7 +298,7 @@ require __DIR__ . '/../layouts/header.php';
                                         <p class="text-xs font-medium text-slate-400">Mulai dari</p>
                                         <div class="flex items-baseline gap-1">
                                             <span class="text-xl font-bold text-slate-900"><?= htmlspecialchars($hotelPrice) ?></span>
-                                            <span class="text-xs text-slate-500">/malam</span>
+                                            <span class="text-xs text-slate-500"><?= $perMalam ?></span>
                                         </div>
                                     </div>
                                     <div class="flex gap-3">
