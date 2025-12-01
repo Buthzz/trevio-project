@@ -9,7 +9,7 @@ if (!function_exists('formatRupiah')) {
     }
 }
 
-// PERBAIKAN: Menambahkan '/' sebelum '..' agar path terbaca dengan benar
+// PERBAIKAN: Path include disesuaikan
 require_once __DIR__ . '/../layouts/header.php';
 ?>
 
@@ -147,27 +147,11 @@ require_once __DIR__ . '/../layouts/header.php';
             </div>
 
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                
                 <div class="rounded-xl bg-white p-6 shadow-sm border border-slate-200">
                     <h2 class="mb-4 text-lg font-bold text-slate-900">System Overview</h2>
-                    <div class="flex h-64 flex-col items-center justify-center rounded-lg bg-slate-50 text-center p-6">
-                        <p class="text-slate-600 mb-2">Statistik Pembayaran Pending vs Refund</p>
-                        <div class="flex items-end gap-4 h-32 w-full justify-center">
-                            <?php 
-                                $pay = $data['stats']['pending_payments'] ?? 0;
-                                $ref = $data['stats']['pending_refunds'] ?? 0;
-                                $total = $pay + $ref + 1; // +1 avoid division by zero
-                                $hPay = ($pay / $total) * 100;
-                                $hRef = ($ref / $total) * 100;
-                            ?>
-                            <div class="w-16 bg-blue-500 rounded-t-md relative group" style="height: <?= max($hPay, 10) ?>%">
-                                <span class="absolute -top-6 w-full text-center text-xs font-bold"><?= $pay ?></span>
-                                <span class="absolute bottom-2 w-full text-center text-white text-xs">Payment</span>
-                            </div>
-                            <div class="w-16 bg-red-500 rounded-t-md relative group" style="height: <?= max($hRef, 10) ?>%">
-                                <span class="absolute -top-6 w-full text-center text-xs font-bold"><?= $ref ?></span>
-                                <span class="absolute bottom-2 w-full text-center text-white text-xs">Refund</span>
-                            </div>
-                        </div>
+                    <div class="h-64 flex items-center justify-center p-2 relative">
+                        <canvas id="adminActionChart"></canvas>
                     </div>
                 </div>
 
@@ -177,11 +161,11 @@ require_once __DIR__ . '/../layouts/header.php';
                         <a href="<?= $baseUrl ?>/admin/payments" class="text-sm text-accent hover:underline">Lihat Semua</a>
                     </div>
                     
-                    <div class="space-y-4">
+                    <div class="space-y-4 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
                         <?php if (!empty($data['recent_bookings'])): ?>
                             <?php foreach ($data['recent_bookings'] as $booking): ?>
                                 <div class="flex items-center gap-4 pb-4 border-b border-slate-100 last:border-0 last:pb-0">
-                                    <div class="rounded-full bg-blue-50 p-2">
+                                    <div class="rounded-full bg-blue-50 p-2 shrink-0">
                                         <svg class="h-4 w-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                                         </svg>
@@ -195,7 +179,7 @@ require_once __DIR__ . '/../layouts/header.php';
                                             <?= htmlspecialchars($booking['hotel_name'] ?? 'Unknown Hotel') ?>
                                         </p>
                                     </div>
-                                    <div class="text-right">
+                                    <div class="text-right shrink-0">
                                         <span class="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-800">
                                             <?= ucfirst($booking['booking_status'] ?? 'pending') ?>
                                         </span>
@@ -217,7 +201,11 @@ require_once __DIR__ . '/../layouts/header.php';
     </main>
 </div>
 
+<script src="<?= BASE_URL ?>/js/chart.min.js"></script>
+<script src="<?= BASE_URL ?>/js/charts.js"></script>
+
 <script>
+    // Sidebar Toggle Logic
     function toggleSidebar() {
         const sidebar = document.getElementById('adminSidebar');
         const overlay = document.getElementById('sidebarOverlay');
@@ -232,14 +220,74 @@ require_once __DIR__ . '/../layouts/header.php';
         overlay.classList.add('hidden');
     }
 
+    // Close sidebar when clicking links on mobile
     document.querySelectorAll('#adminSidebar a').forEach(link => {
-        link.addEventListener('click', closeSidebar);
+        link.addEventListener('click', () => {
+            if (window.innerWidth < 1024) closeSidebar();
+        });
     });
 
+    // Handle Resize
     window.addEventListener('resize', () => {
         if (window.innerWidth >= 1024) {
             document.getElementById('adminSidebar').classList.remove('-translate-x-full');
             document.getElementById('sidebarOverlay').classList.add('hidden');
+        }
+    });
+
+    // Initialize Chart
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ambil data statistik dari PHP
+        const pendingPayments = <?= $data['stats']['pending_payments'] ?? 0 ?>;
+        const pendingRefunds = <?= $data['stats']['pending_refunds'] ?? 0 ?>;
+
+        if (document.getElementById('adminActionChart')) {
+            // Kita gunakan Bar Chart untuk perbandingan yang jelas
+            Charts.createBarChart('#adminActionChart', {
+                labels: ['Pending Payments', 'Pending Refunds'],
+                datasets: [{
+                    label: 'Jumlah Request',
+                    data: [pendingPayments, pendingRefunds],
+                    backgroundColor: [
+                        'rgba(59, 130, 246, 0.8)', // Blue for Payments
+                        'rgba(239, 68, 68, 0.8)'   // Red for Refunds
+                    ],
+                    borderColor: [
+                        'rgb(59, 130, 246)',
+                        'rgb(239, 68, 68)'
+                    ],
+                    borderWidth: 1,
+                    barThickness: 60, // Lebar bar fixed agar rapi
+                }]
+            }, {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false // Sembunyikan legend karena label sumbu X sudah jelas
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y + ' Tasks';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1 // Pastikan sumbu Y bilangan bulat (karena jumlah task)
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            });
         }
     });
 </script>
