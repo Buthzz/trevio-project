@@ -1,7 +1,6 @@
 <?php require_once '../app/views/layouts/header.php'; ?>
 
 <div class="max-w-4xl mx-auto px-4 py-8">
-    <!-- Breadcrumb -->
     <nav class="flex mb-6" aria-label="Breadcrumb">
         <ol class="inline-flex items-center space-x-1 md:space-x-3">
             <li class="inline-flex items-center">
@@ -22,7 +21,6 @@
         </ol>
     </nav>
 
-    <!-- Flash Message -->
     <?php if (isset($_SESSION['flash_success'])): ?>
         <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
             <span class="block sm:inline"><?= $_SESSION['flash_success']; ?></span>
@@ -38,7 +36,6 @@
     <?php endif; ?>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Kolom Kiri: Informasi Booking -->
         <div class="md:col-span-2 space-y-6">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                 <div class="bg-blue-600 px-6 py-4 flex justify-between items-center">
@@ -49,7 +46,6 @@
                 </div>
                 
                 <div class="p-6">
-                    <!-- Hotel Info -->
                     <div class="flex items-start mb-6 pb-6 border-b border-gray-100">
                         <div class="flex-1">
                             <h3 class="text-2xl font-bold text-gray-800 mb-1"><?= htmlspecialchars($booking['hotel_name']) ?></h3>
@@ -57,7 +53,6 @@
                         </div>
                     </div>
 
-                    <!-- Detail Tanggal & Kamar -->
                     <div class="grid grid-cols-2 gap-4 mb-6">
                         <div>
                             <p class="text-sm text-gray-500">Check-in</p>
@@ -77,7 +72,6 @@
                         </div>
                     </div>
 
-                    <!-- Detail Tamu -->
                     <div class="mb-6">
                         <h4 class="text-sm font-semibold text-gray-500 uppercase mb-3">Data Tamu</h4>
                         <div class="bg-gray-50 p-4 rounded-lg">
@@ -96,7 +90,6 @@
                         </div>
                     </div>
 
-                    <!-- Rincian Harga -->
                     <div>
                         <h4 class="text-sm font-semibold text-gray-500 uppercase mb-3">Rincian Pembayaran</h4>
                         <div class="space-y-2">
@@ -126,7 +119,6 @@
             </div>
         </div>
 
-        <!-- Kolom Kanan: Form Upload Pembayaran -->
         <div class="md:col-span-1">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
                 <h3 class="font-bold text-lg text-gray-800 mb-4">Pembayaran</h3>
@@ -163,7 +155,19 @@
 
                         <div class="mb-6">
                             <label class="block text-sm font-medium text-gray-700 mb-1">Bukti Transfer</label>
-                            <input type="file" name="payment_proof" accept=".jpg,.jpeg,.png,.pdf" required class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                            
+                            <input type="file" 
+                                   name="payment_proof" 
+                                   accept=".jpg,.jpeg,.png,.pdf" 
+                                   required 
+                                   class="block w-full text-sm text-slate-500
+                                          file:mr-4 file:py-2 file:px-4
+                                          file:rounded-full file:border-0
+                                          file:text-xs file:font-semibold
+                                          file:bg-blue-50 file:text-blue-700
+                                          hover:file:bg-blue-100
+                                          border border-slate-300 rounded-lg p-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                          
                             <p class="text-xs text-gray-400 mt-1">Format: JPG, PNG, PDF. Max 5MB.</p>
                         </div>
 
