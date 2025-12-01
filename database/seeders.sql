@@ -69,15 +69,15 @@ INSERT INTO hotels (owner_id, name, address, city, province, postal_code, latitu
 -- =====================================================
 
 -- Grand Trevio Hotel Jakarta (Hotel ID 1)
-INSERT INTO rooms (hotel_id, room_type, price_per_night, total_rooms, available_slots, capacity, size_sqm, bed_type, description, amenities, room_images, is_available, created_at, updated_at) VALUES
-(1, 'Deluxe Room', 850000, 20, 20, 2, 28, 'King Bed', 'Kamar deluxe dengan pemandangan kota, dilengkapi AC, TV LED, minibar, dan kamar mandi dengan bathtub.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub', '["/uploads/rooms/deluxe_jakarta_1.jpg"]', 1, NOW(), NOW()),
-(1, 'Executive Suite', 1500000, 10, 10, 3, 45, 'King Bed + Sofa Bed', 'Suite mewah dengan ruang tamu terpisah, pantry kecil, dan balkon pribadi dengan pemandangan Jakarta.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Living Room,Balcony,Coffee Maker', '["/uploads/rooms/executive_jakarta_1.jpg"]', 1, NOW(), NOW()),
-(1, 'Presidential Suite', 3500000, 2, 2, 4, 85, '2 King Beds', 'Suite presidensial dengan 2 kamar tidur, ruang makan, ruang kerja, dan jacuzzi pribadi.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Jacuzzi,Living Room,Dining Room,Kitchen,Balcony', '["/uploads/rooms/presidential_jakarta_1.jpg"]', 1, NOW(), NOW()),
+INSERT INTO rooms (hotel_id, room_type, price_per_night, total_slots, available_slots, capacity, room_size, bed_type, description, amenities, main_image, is_available, created_at, updated_at) VALUES
+(1, 'Deluxe Room', 850000, 20, 20, 2, 28, 'King Bed', 'Kamar deluxe dengan pemandangan kota, dilengkapi AC, TV LED, minibar, dan kamar mandi dengan bathtub.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub', '/uploads/rooms/deluxe_jakarta_1.jpg', 1, NOW(), NOW()),
+(1, 'Executive Suite', 1500000, 10, 10, 3, 45, 'King Bed + Sofa Bed', 'Suite mewah dengan ruang tamu terpisah, pantry kecil, dan balkon pribadi dengan pemandangan Jakarta.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Living Room,Balcony,Coffee Maker', '/uploads/rooms/executive_jakarta_1.jpg', 1, NOW(), NOW()),
+(1, 'Presidential Suite', 3500000, 2, 2, 4, 85, '2 King Beds', 'Suite presidensial dengan 2 kamar tidur, ruang makan, ruang kerja, dan jacuzzi pribadi.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Jacuzzi,Living Room,Dining Room,Kitchen,Balcony', '/uploads/rooms/presidential_jakarta_1.jpg', 1, NOW(), NOW()),
 
 -- Trevio Beach Resort Bali (Hotel ID 2)
-INSERT INTO rooms (hotel_id, room_type, price_per_night, total_rooms, available_slots, capacity, size_sqm, bed_type, description, amenities, room_images, is_available, created_at, updated_at) VALUES
-(2, 'Garden View Room', 950000, 25, 25, 2, 30, 'Queen Bed', 'Kamar dengan pemandangan taman tropis. Cocok untuk pasangan dan family.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Balcony', '["/uploads/rooms/garden_bali_1.jpg"]', 1, NOW(), NOW()),
-(2, 'Ocean View Room', 1350000, 15, 15, 2, 32, 'King Bed', 'Kamar dengan pemandangan laut lepas. Private balcony untuk menikmati sunset.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Balcony,Ocean View', '["/uploads/rooms/ocean_bali_1.jpg"]', 1, NOW(), NOW()),
+INSERT INTO rooms (hotel_id, room_type, price_per_night, total_slots, available_slots, capacity, room_size, bed_type, description, amenities, main_image, is_available, created_at, updated_at) VALUES
+(2, 'Garden View Room', 950000, 25, 25, 2, 30, 'Queen Bed', 'Kamar dengan pemandangan taman tropis. Cocok untuk pasangan dan family.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Balcony', '/uploads/rooms/garden_bali_1.jpg', 1, NOW(), NOW()),
+(2, 'Ocean View Room', 1350000, 15, 15, 2, 32, 'King Bed', 'Kamar dengan pemandangan laut lepas. Private balcony untuk menikmati sunset.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Bathtub,Balcony,Ocean View', '/uploads/rooms/ocean_bali_1.jpg', 1, NOW(), NOW()),
 (2, 'Beach Front Villa', 2800000, 8, 8, 4, 75, 'King Bed + 2 Single Beds', 'Villa pribadi di tepi pantai dengan akses langsung ke beach. Private pool dan gazebo.', 'AC,TV,WiFi,Minibar,Safe Box,Hair Dryer,Outdoor Shower,Private Pool,Beach Access,Living Room', '["/uploads/rooms/villa_bali_1.jpg"]', 1, NOW(), NOW()),
 
 -- Trevio Mountain View Bandung (Hotel ID 3)
