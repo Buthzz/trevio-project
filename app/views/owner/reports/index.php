@@ -1,7 +1,7 @@
 <?php include __DIR__ . '/../../layouts/header.php'; ?>
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
-<div class="flex h-screen bg-gray-50 overflow-hidden">
+<div class="flex h-[calc(100vh-70px)] bg-gray-50 overflow-hidden">
     
     <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     
@@ -219,8 +219,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Contoh inisialisasi dummy chart agar tampilan tidak kosong saat preview
-    // Anda bisa menggantinya dengan data real dari PHP/Database
     document.addEventListener('DOMContentLoaded', function() {
         const ctxRev = document.getElementById('revenueChart');
         if(ctxRev) {

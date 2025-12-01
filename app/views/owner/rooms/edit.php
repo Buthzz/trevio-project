@@ -1,7 +1,7 @@
 <?php include __DIR__ . '/../../layouts/header.php'; ?>
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
-<div class="flex h-screen bg-gray-50 overflow-hidden">
+<div class="flex h-[calc(100vh-70px)] bg-gray-50 overflow-hidden">
     <div class="flex-shrink-0 hidden md:block">
         <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     </div>
@@ -124,10 +124,25 @@
                                 </div>
                                 <div>
                                     <label for="total_rooms" class="block text-sm font-medium text-gray-700 mb-2">Jumlah Unit (Stok) <span class="text-red-500">*</span></label>
-                                    <input type="number" name="total_rooms" id="total_rooms" 
-                                           value="<?php echo htmlspecialchars($room['total_slots'] ?? '1'); ?>" 
-                                           class="block w-full rounded-lg border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500 py-3 px-4 text-base transition-colors" 
-                                           min="1" required>
+                                    <div class="space-y-3">
+                                        <input type="number" name="total_rooms" id="total_rooms" 
+                                               value="<?php echo htmlspecialchars($room['total_slots'] ?? '1'); ?>" 
+                                               class="block w-full rounded-lg border-gray-300 bg-white text-gray-900 focus:border-blue-500 focus:ring-blue-500 py-3 px-4 text-base transition-colors" 
+                                               min="1" required>
+                                        
+                                        <div class="bg-blue-50 p-3 rounded-lg border border-blue-100">
+                                            <label class="block text-xs font-semibold text-blue-900 mb-2">Tambah Stok</label>
+                                            <div class="flex gap-2">
+                                                <input type="number" id="add_stock_amount" placeholder="0" min="1"
+                                                       class="block w-full rounded-md border-gray-300 text-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
+                                                <button type="button" id="btn_add_stock"
+                                                        class="whitespace-nowrap px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                                    + Tambah
+                                                </button>
+                                            </div>
+                                            <p class="mt-1 text-xs text-blue-700">Masukkan jumlah penambahan, lalu klik tombol Tambah.</p>
+                                        </div>
+                                    </div>
                                     <p class="mt-1 text-xs text-gray-500">Total kamar fisik yang tersedia.</p>
                                 </div>
                             </div>
@@ -204,5 +219,44 @@
         </main>
     </div>
 </div>
+
+<script>
+    document.getElementById('btn_add_stock').addEventListener('click', function() {
+        const totalInput = document.getElementById('total_rooms');
+        const addInput = document.getElementById('add_stock_amount');
+        
+        // Ambil nilai saat ini, jika kosong anggap 0
+        const currentStock = parseInt(totalInput.value) || 0;
+        const addAmount = parseInt(addInput.value) || 0;
+        
+        if (addAmount > 0) {
+            // Hitung total baru
+            const newTotal = currentStock + addAmount;
+            
+            // Update nilai input utama
+            totalInput.value = newTotal;
+            
+            // Reset input penambah
+            addInput.value = '';
+            
+            // Efek visual (Flash Hijau) untuk memberitahu user bahwa stok sudah bertambah
+            const originalBg = totalInput.style.backgroundColor;
+            const originalBorder = totalInput.style.borderColor;
+            
+            totalInput.style.transition = 'all 0.5s ease';
+            totalInput.style.backgroundColor = '#dcfce7'; // Hijau muda
+            totalInput.style.borderColor = '#16a34a'; // Hijau
+            
+            // Kembalikan warna normal setelah 1 detik
+            setTimeout(() => {
+                totalInput.style.backgroundColor = originalBg;
+                totalInput.style.borderColor = originalBorder;
+            }, 1000);
+            
+            // Optional: Focus kembali ke input penambah jika ingin nambah lagi
+            addInput.focus();
+        }
+    });
+</script>
 
 <?php include __DIR__ . '/../../layouts/footer.php'; ?>

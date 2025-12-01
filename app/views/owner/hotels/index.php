@@ -1,7 +1,7 @@
 <?php include __DIR__ . '/../../layouts/header.php'; ?>
 <?php include __DIR__ . '/../../layouts/navbar.php'; ?>
 
-<div class="flex h-screen bg-gray-50 overflow-hidden">
+<div class="flex h-[calc(100vh-70px)] bg-gray-50 overflow-hidden">
     <div class="flex-shrink-0">
         <?php include __DIR__ . '/../../layouts/sidebar.php'; ?>
     </div>

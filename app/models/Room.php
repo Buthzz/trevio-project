@@ -130,11 +130,19 @@ class Room extends Model {
      * Update data kamar
      */
     public function update($id, $data) {
+        // Ambil data lama untuk menghitung selisih stok
+        $oldData = $this->find($id);
+        $stockDiff = 0;
+        if ($oldData) {
+            $stockDiff = (int)$data['total_slots'] - (int)$oldData['total_slots'];
+        }
+
         $query = "UPDATE {$this->table} SET 
                   room_type = :room_type, 
                   price_per_night = :price, 
                   capacity = :capacity, 
                   total_slots = :total_slots,
+                  available_slots = available_slots + :stock_diff,
                   description = :description, 
                   amenities = :amenities,
                   main_image = :main_image
@@ -146,6 +154,7 @@ class Room extends Model {
             $this->bind(':price', $data['price_per_night']);
             $this->bind(':capacity', $data['capacity']);
             $this->bind(':total_slots', $data['total_slots']);
+            $this->bind(':stock_diff', $stockDiff);
             $this->bind(':description', $data['description']);
             $this->bind(':amenities', $data['amenities']);
             $this->bind(':main_image', $data['main_image']);
