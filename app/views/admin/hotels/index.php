@@ -20,15 +20,15 @@ function getStatusBadge($isActive, $isVerified) {
         <div class="p-6">
             <nav class="space-y-1">
                 <a href="<?= BASE_URL ?>/admin/dashboard" class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-50 transition">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4"></path></svg>
+                    <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-3m0 0l7-4 7 4M5 9v10a1 1 0 001 1h12a1 1 0 001-1V9m-9 11l4-4m0 0l4 4m-4-4v4"></path></svg>
                     Dashboard
                 </a>
                 <a href="<?= BASE_URL ?>/admin/hotels" class="flex items-center gap-3 rounded-lg bg-accent/10 px-4 py-3 text-accent font-semibold transition">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path></svg>
+                    <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"></path></svg>
                     Hotels
                 </a>
                 <a href="<?= BASE_URL ?>/admin/payments" class="flex items-center gap-3 rounded-lg px-4 py-3 text-slate-600 hover:bg-slate-50 transition">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                    <svg class="h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h10M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
                     Payments
                 </a>
                 </nav>
@@ -48,14 +48,18 @@ function getStatusBadge($isActive, $isVerified) {
                     <option value="pending" <?= ($data['filters']['status'] ?? '') === 'pending' ? 'selected' : '' ?>>Perlu Verifikasi</option>
                     <option value="verified" <?= ($data['filters']['status'] ?? '') === 'verified' ? 'selected' : '' ?>>Terverifikasi</option>
                 </select>
+
                 <div class="relative">
+                    <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <svg class="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
                     <input type="text" name="search" placeholder="Cari nama hotel..." value="<?= htmlspecialchars($data['filters']['search'] ?? '') ?>" 
                            class="w-64 rounded-lg border-slate-200 pl-10 text-sm focus:border-accent focus:ring-accent">
-                    <svg class="absolute left-3 top-2.5 h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
                 </div>
-                <button type="submit" class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accentLight">
+
+                <button type="submit" class="rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accentLight flex items-center justify-center">
                     Filter
                 </button>
             </form>
@@ -121,14 +125,14 @@ function getStatusBadge($isActive, $isVerified) {
                                 <td class="px-6 py-4 text-right">
                                     <div class="flex items-center justify-end gap-2">
                                         <a href="<?= BASE_URL ?>/hotel/detail/<?= $hotel['id'] ?>" target="_blank" 
-                                           class="rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50 hover:text-accent transition" title="Lihat Detail">
+                                           class="flex items-center justify-center rounded-lg border border-slate-200 h-9 w-9 text-slate-600 hover:bg-slate-50 hover:text-accent transition" title="Lihat Detail">
                                             <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
                                         </a>
 
                                         <?php if (!$hotel['is_verified']): ?>
                                             <form action="<?= BASE_URL ?>/admin/hotels/verify/<?= $hotel['id'] ?>" method="POST" class="inline" onsubmit="return confirm('Verifikasi hotel ini agar bisa mulai menerima pesanan?');">
                                                 <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
-                                                <button type="submit" class="rounded-lg bg-emerald-50 border border-emerald-200 p-2 text-emerald-600 hover:bg-emerald-100 transition" title="Verifikasi Hotel">
+                                                <button type="submit" class="flex items-center justify-center rounded-lg bg-emerald-50 border border-emerald-200 h-9 w-9 text-emerald-600 hover:bg-emerald-100 transition" title="Verifikasi Hotel">
                                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
                                                 </button>
                                             </form>
@@ -136,7 +140,7 @@ function getStatusBadge($isActive, $isVerified) {
 
                                         <form action="<?= BASE_URL ?>/admin/hotels/delete/<?= $hotel['id'] ?>" method="POST" class="inline" onsubmit="return confirm('Yakin ingin menghapus hotel ini secara permanen? Data tidak bisa dikembalikan.');">
                                             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
-                                            <button type="submit" class="rounded-lg bg-red-50 border border-red-200 p-2 text-red-600 hover:bg-red-100 transition" title="Hapus Hotel">
+                                            <button type="submit" class="flex items-center justify-center rounded-lg bg-red-50 border border-red-200 h-9 w-9 text-red-600 hover:bg-red-100 transition" title="Hapus Hotel">
                                                 <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
                                         </form>
@@ -159,7 +163,7 @@ function getStatusBadge($isActive, $isVerified) {
             </div>
             
             <div class="border-t border-slate-200 px-6 py-4">
-                <p class="text-xs text-slate-500">Menampilkan <?= count($data['hotels']) ?> hotel</p>
+                <p class="text-xs text-slate-500">Menampilkan <?= count($data['hotels'] ?? []) ?> hotel</p>
             </div>
         </div>
     </main>
