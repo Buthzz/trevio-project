@@ -5,8 +5,8 @@
  * Core settings for the Trevio application
  */
 
-// Prevent duplicate loading - Check multiple guards
-if (defined('TREVIO_CONFIG_LOADED') || defined('APP_NAME') || defined('BASE_URL')) {
+// Prevent duplicate loading
+if (defined('TREVIO_CONFIG_LOADED')) {
     return;
 }
 define('TREVIO_CONFIG_LOADED', true);
