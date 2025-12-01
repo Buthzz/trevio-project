@@ -66,8 +66,7 @@ $registerUrl = BASE_URL . '/auth/register';
     <link rel="stylesheet" href="<?= BASE_URL ?>/css/tailwind.min.css?v=<?= time() ?>">
     <link rel="stylesheet" href="<?= BASE_URL ?>/css/custom.css?v=<?= time() ?>">
     <script src="<?= BASE_URL ?>/js/sweetalert2.min.js"></script>
-    <script type="module" src="<?= BASE_URL ?>/js/chart.min.js"></script>
-    <script type="module" src="<?= BASE_URL ?>/js/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
 
 </head>
 <body class="min-h-screen bg-slate-50 font-sans text-slate-900">
