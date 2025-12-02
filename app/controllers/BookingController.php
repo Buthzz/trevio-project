@@ -6,17 +6,20 @@ use App\Core\Controller;
 use App\Models\Booking;
 use App\Models\Room;
 use App\Models\Hotel;
+use App\Models\Refund;
 use Exception;
 
 class BookingController extends Controller {
     private $bookingModel;
     private $roomModel;
     private $hotelModel;
+    private $refundModel;
 
     public function __construct() {
         $this->bookingModel = new Booking();
         $this->roomModel = new Room();
         $this->hotelModel = new Hotel();
+        $this->refundModel = new Refund();
     }
 
     public function index() {
@@ -62,7 +65,6 @@ class BookingController extends Controller {
             'room' => $this->roomModel->find($booking['room_id'])
         ];
 
-        // [FIX]: Path view tiket aman
         $ticketView = __DIR__ . '/../views/booking/ticket.php';
         if (file_exists($ticketView)) {
             require_once $ticketView;
@@ -138,7 +140,6 @@ class BookingController extends Controller {
             $this->redirectBack($roomId ?: 0, "Data tidak lengkap.");
         }
         
-        // ... (Validasi input tanggal & tamu sama seperti sebelumnya) ...
         $checkIn = htmlspecialchars(strip_tags($_POST['check_in'] ?? ''), ENT_QUOTES, 'UTF-8');
         $checkOut = htmlspecialchars(strip_tags($_POST['check_out'] ?? ''), ENT_QUOTES, 'UTF-8');
         
@@ -227,7 +228,6 @@ class BookingController extends Controller {
             exit;
         }
 
-        // Redirect URL: Kembali ke detail booking
         $redirectUrl = BASE_URL . '/booking/detail/' . $booking['booking_code'];
 
         if ($booking['booking_status'] !== 'pending_payment') {
@@ -250,7 +250,6 @@ class BookingController extends Controller {
             exit;
         }
 
-        // Ambil Data Form
         $bankName = strip_tags(trim($_POST['bank_name'] ?? ''));
         $accountName = strip_tags(trim($_POST['account_name'] ?? ''));
         $accountNumber = strip_tags(trim($_POST['account_number'] ?? ''));
@@ -261,7 +260,6 @@ class BookingController extends Controller {
             exit;
         }
 
-        // Upload Logic
         $targetDir = __DIR__ . "/../../public/uploads/payments/";
         if (!file_exists($targetDir)) mkdir($targetDir, 0755, true);
 
@@ -281,6 +279,93 @@ class BookingController extends Controller {
         }
 
         header("Location: $redirectUrl");
+        exit;
+    }
+
+    /**
+     * Memproses pengajuan Refund dari customer
+     */
+    public function requestRefund() {
+        $this->requireLogin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        $this->validateCsrf();
+
+        $bookingId = filter_input(INPUT_POST, 'booking_id', FILTER_VALIDATE_INT);
+        $reason = strip_tags(trim($_POST['reason'] ?? ''));
+        
+        // Data Bank Tujuan Refund (Milik Customer)
+        $bankName = strip_tags(trim($_POST['bank_name'] ?? ''));
+        $accountNumber = strip_tags(trim($_POST['account_number'] ?? ''));
+        $accountName = strip_tags(trim($_POST['account_name'] ?? ''));
+
+        if (!$bookingId || empty($reason) || empty($bankName) || empty($accountNumber) || empty($accountName)) {
+            $_SESSION['flash_error'] = "Mohon lengkapi semua data refund (Alasan & Data Bank).";
+            header("Location: " . $_SERVER['HTTP_REFERER']);
+            exit;
+        }
+
+        // 1. Validasi Booking
+        $booking = $this->bookingModel->find($bookingId);
+        if (!$booking || $booking['customer_id'] != $_SESSION['user_id']) {
+            $_SESSION['flash_error'] = "Booking tidak valid.";
+            header('Location: ' . BASE_URL . '/dashboard');
+            exit;
+        }
+
+        // 2. Validasi Status
+        if ($booking['booking_status'] !== 'confirmed') {
+            $_SESSION['flash_error'] = "Hanya booking berstatus Confirmed yang bisa diajukan refund.";
+            header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
+            exit;
+        }
+
+        // 3. Validasi Tanggal (Tidak boleh refund jika sudah lewat check-in)
+        if (strtotime($booking['check_in_date']) <= time()) {
+            $_SESSION['flash_error'] = "Refund tidak dapat diajukan karena tanggal Check-in sudah tiba/lewat.";
+            header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
+            exit;
+        }
+
+        // 4. Cek apakah sudah ada request sebelumnya
+        $existingRefund = $this->bookingModel->getRefundStatus($bookingId);
+        if ($existingRefund) {
+            $_SESSION['flash_error'] = "Pengajuan refund sudah ada untuk booking ini.";
+            header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
+            exit;
+        }
+
+        // 5. Ambil ID Payment (Wajib ada untuk relasi tabel refunds)
+        $paymentId = $this->bookingModel->getVerifiedPaymentId($bookingId);
+        if (!$paymentId) {
+            $_SESSION['flash_error'] = "Data pembayaran tidak ditemukan. Hubungi Admin.";
+            header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
+            exit;
+        }
+
+        // 6. Proses Simpan Refund
+        $refundData = [
+            'booking_id' => $bookingId,
+            'payment_id' => $paymentId,
+            'customer_id' => $_SESSION['user_id'],
+            'refund_amount' => $booking['total_price'],
+            'reason' => $reason,
+            'bank_name' => $bankName,
+            'account_number' => $accountNumber,
+            'account_name' => $accountName
+        ];
+
+        if ($this->refundModel->create($refundData)) {
+            $_SESSION['flash_success'] = "Pengajuan Refund berhasil dikirim. Admin akan memverifikasi permohonan Anda.";
+        } else {
+            $_SESSION['flash_error'] = "Gagal mengajukan refund. Silakan coba lagi.";
+        }
+
+        header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
         exit;
     }
 
@@ -314,10 +399,14 @@ class BookingController extends Controller {
             $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
             $_SESSION['csrf_token_time'] = time();
         }
+
+        // Ambil status refund jika ada untuk ditampilkan di view
+        $refundData = $this->bookingModel->getRefundStatus($booking['id']);
         
         $this->view('booking/detail', [
             'title' => 'Detail Booking',
             'booking' => $booking,
+            'refund' => $refundData,
             'csrf_token' => $_SESSION['csrf_token'],
             'user' => $_SESSION
         ]);

@@ -17,7 +17,7 @@ class Booking extends Model {
     /**
      * Membuat booking baru dengan keamanan Transaksi & Inventory.
      * Method ini dipanggil oleh BookingController::store()
-     * * @param array $data Data booking lengkap
+     * @param array $data Data booking lengkap
      * @return int|false ID booking yang baru dibuat atau false jika gagal/penuh
      */
     public function createSecurely(array $data): int|false {
@@ -146,6 +146,39 @@ class Booking extends Model {
             return $this->single();
         } catch (PDOException $e) {
             error_log("Booking Find Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Helper: Ambil ID Payment yang verified untuk booking ini
+     * Diperlukan saat mengajukan refund
+     */
+    public function getVerifiedPaymentId(int $bookingId) {
+        $query = "SELECT id FROM payments 
+                  WHERE booking_id = :booking_id 
+                  AND payment_status = 'verified' 
+                  LIMIT 1";
+        try {
+            $this->query($query);
+            $this->bind(':booking_id', $bookingId);
+            $result = $this->single();
+            return $result ? $result['id'] : false;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Cek apakah booking ini memiliki request refund aktif
+     */
+    public function getRefundStatus(int $bookingId) {
+        $query = "SELECT * FROM refunds WHERE booking_id = :booking_id ORDER BY id DESC LIMIT 1";
+        try {
+            $this->query($query);
+            $this->bind(':booking_id', $bookingId);
+            return $this->single();
+        } catch (PDOException $e) {
             return false;
         }
     }
