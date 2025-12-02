@@ -65,12 +65,7 @@ class BookingController extends Controller {
             'room' => $this->roomModel->find($booking['room_id'])
         ];
 
-        $ticketView = __DIR__ . '/../views/booking/ticket.php';
-        if (file_exists($ticketView)) {
-            require_once $ticketView;
-        } else {
-            die("Error: File view tiket tidak ditemukan.");
-        }
+        $this->view('booking/ticket', $data);
     }
 
     public function create() {
@@ -284,6 +279,7 @@ class BookingController extends Controller {
 
     /**
      * Memproses pengajuan Refund dari customer
+     * [FIXED] Menambahkan validasi Payment ID yang lebih robust
      */
     public function requestRefund() {
         $this->requireLogin();
@@ -297,15 +293,13 @@ class BookingController extends Controller {
 
         $bookingId = filter_input(INPUT_POST, 'booking_id', FILTER_VALIDATE_INT);
         $reason = strip_tags(trim($_POST['reason'] ?? ''));
-        
-        // Data Bank Tujuan Refund (Milik Customer)
         $bankName = strip_tags(trim($_POST['bank_name'] ?? ''));
         $accountNumber = strip_tags(trim($_POST['account_number'] ?? ''));
         $accountName = strip_tags(trim($_POST['account_name'] ?? ''));
 
-        if (!$bookingId || empty($reason) || empty($bankName) || empty($accountNumber) || empty($accountName)) {
-            $_SESSION['flash_error'] = "Mohon lengkapi semua data refund (Alasan & Data Bank).";
-            header("Location: " . $_SERVER['HTTP_REFERER']);
+        if (!$bookingId) {
+            $_SESSION['flash_error'] = "Booking ID tidak ditemukan.";
+            header("Location: " . BASE_URL . "/booking/history");
             exit;
         }
 
@@ -317,17 +311,26 @@ class BookingController extends Controller {
             exit;
         }
 
+        $redirectUrl = BASE_URL . '/booking/detail/' . $booking['booking_code'];
+
+        // Validasi input form
+        if (empty($reason) || empty($bankName) || empty($accountNumber) || empty($accountName)) {
+            $_SESSION['flash_error'] = "Mohon lengkapi semua data refund (Alasan & Data Bank).";
+            header("Location: " . $redirectUrl);
+            exit;
+        }
+
         // 2. Validasi Status
         if ($booking['booking_status'] !== 'confirmed') {
             $_SESSION['flash_error'] = "Hanya booking berstatus Confirmed yang bisa diajukan refund.";
-            header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
+            header("Location: " . $redirectUrl);
             exit;
         }
 
         // 3. Validasi Tanggal (Tidak boleh refund jika sudah lewat check-in)
         if (strtotime($booking['check_in_date']) <= time()) {
             $_SESSION['flash_error'] = "Refund tidak dapat diajukan karena tanggal Check-in sudah tiba/lewat.";
-            header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
+            header("Location: " . $redirectUrl);
             exit;
         }
 
@@ -335,15 +338,15 @@ class BookingController extends Controller {
         $existingRefund = $this->bookingModel->getRefundStatus($bookingId);
         if ($existingRefund) {
             $_SESSION['flash_error'] = "Pengajuan refund sudah ada untuk booking ini.";
-            header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
+            header("Location: " . $redirectUrl);
             exit;
         }
 
         // 5. Ambil ID Payment (Wajib ada untuk relasi tabel refunds)
         $paymentId = $this->bookingModel->getVerifiedPaymentId($bookingId);
         if (!$paymentId) {
-            $_SESSION['flash_error'] = "Data pembayaran tidak ditemukan. Hubungi Admin.";
-            header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
+            $_SESSION['flash_error'] = "Data pembayaran tidak ditemukan (Payment ID Missing). Hubungi Admin.";
+            header("Location: " . $redirectUrl);
             exit;
         }
 
@@ -365,7 +368,7 @@ class BookingController extends Controller {
             $_SESSION['flash_error'] = "Gagal mengajukan refund. Silakan coba lagi.";
         }
 
-        header('Location: ' . BASE_URL . '/booking/detail/' . $booking['booking_code']);
+        header("Location: " . $redirectUrl);
         exit;
     }
 
