@@ -1,5 +1,10 @@
 <?php
 
+// Load Environment Variables from .env file
+if (file_exists(__DIR__ . '/../helpers/env_loader.php')) {
+    require_once __DIR__ . '/../helpers/env_loader.php';
+}
+
 // Load Composer Autoloader jika ada
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
@@ -19,10 +24,10 @@ spl_autoload_register(function ($class) {
 
     // Ambil nama relative class (contoh: Core\Controller)
     $relative_class = substr($class, $len);
-    
+
     // Normalisasi namespace ke path (ubah \ jadi /)
     $path = str_replace('\\', '/', $relative_class);
-    
+
     // Pecah path untuk manipulasi folder
     $parts = explode('/', $path);
     $filename = array_pop($parts); // Ambil nama file (misal: Controller)
@@ -32,10 +37,10 @@ spl_autoload_register(function ($class) {
     $paths_to_check = [
         // 1. Path Standar (Sesuai Namespace) -> app/Core/Controller.php
         $base_dir . $folder_path . '/' . $filename . '.php',
-        
+
         // 2. Folder Lowercase (Paling sering dipakai di framework custom) -> app/core/Controller.php
         $base_dir . strtolower($folder_path) . '/' . $filename . '.php',
-        
+
         // 3. Full Lowercase -> app/core/controller.php
         $base_dir . strtolower($folder_path) . '/' . strtolower($filename) . '.php'
     ];
@@ -50,5 +55,7 @@ spl_autoload_register(function ($class) {
 });
 
 // Load Config & Helpers
-if (file_exists(__DIR__ . '/../config/app.php')) require_once __DIR__ . '/../config/app.php';
-if (file_exists(__DIR__ . '/../helpers/functions.php')) require_once __DIR__ . '/../helpers/functions.php';
+if (file_exists(__DIR__ . '/../config/app.php'))
+    require_once __DIR__ . '/../config/app.php';
+if (file_exists(__DIR__ . '/../helpers/functions.php'))
+    require_once __DIR__ . '/../helpers/functions.php';
