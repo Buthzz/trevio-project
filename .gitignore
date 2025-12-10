@@ -21,3 +21,7 @@ Thumbs.db
 
 # Composer
 vendor/
+
+# Node (not needed anymore - using CDN)
+node_modules/
+package-lock.json
