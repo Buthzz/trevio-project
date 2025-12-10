@@ -1,100 +1,176 @@
-name: Auto Deploy Robust
+name: Deploy to Development
 
 on:
   push:
     branches:
-      - main
       - development
+
+env:
+  DEPLOY_PATH: /home/trevio/htdocs/trevio.mfjrxn.eu.org
+  APP_ENV: development
 
 jobs:
   deploy:
+    name: Deploy to CloudPanel VPS
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
     steps:
-      - name: Deploy to VPS via SSH
-        uses: appleboy/ssh-action@master
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          port: 2024
+          port: ${{ secrets.SSH_PORT }}
+          command_timeout: 10m
           script: |
-            # ===================================================
-            # 1. LOGIC UNTUK PRODUCTION (Branch: main)
-            # ===================================================
-            if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-              echo "🚀 STARTING DEPLOYMENT TO PRODUCTION..."
-              
-              # Definisi Folder
-              TARGET_DIR="/var/www/trevio-prod"
-              BRANCH="main"
-              
-              # Buat folder jika belum ada
-              sudo mkdir -p $TARGET_DIR
-              sudo chown -R $USER:$USER $TARGET_DIR
-              
-              # Masuk ke folder
-              cd $TARGET_DIR
-              
-              # Tandai folder aman untuk Git
-              git config --global --add safe.directory $TARGET_DIR
-              
-              # Inisialisasi Git jika folder masih kosong
-              if [ ! -d ".git" ]; then
-                echo "📂 Cloning Repository for the first time..."
-                git clone -b $BRANCH git@github.com:${{ github.repository }}.git .
-              else
-                echo "🔄 Updating Repository..."
-                
-                # [KUNCI ANTI MACET 1] Abaikan perubahan permission file
-                git config core.filemode false
-                
-                # [KUNCI ANTI MACET 2] Jangan merge. Ambil data baru, lalu RESET HARD.
-                # Ini akan membuang semua perubahan manual/konflik di server.
-                git fetch origin $BRANCH
-                git reset --hard origin/$BRANCH
-              fi
-              
-              # [STEP TERAKHIR] Fix Permission agar Nginx/PHP bisa baca tulis
-              echo "🔒 Fixing Permissions..."
-              sudo chown -R www-data:www-data $TARGET_DIR
-              sudo chmod -R 775 $TARGET_DIR
-              
-              echo "✅ PRODUCTION DEPLOYMENT SUCCESS!"
+            set -e  # Exit immediately on error
+            
+            echo "========================================="
+            echo "🚀 Deployment Started"
+            echo "Time: $(date)"
+            echo "Branch: development"
+            echo "========================================="
+            
+            # ==========================================
+            # 1. Pre-deployment Checks
+            # ==========================================
+            echo "📋 Running pre-deployment checks..."
+            
+            if [ ! -d "${{ env.DEPLOY_PATH }}" ]; then
+              echo "❌ Deployment directory not found!"
+              exit 1
             fi
-
-            # ===================================================
-            # 2. LOGIC UNTUK DEVELOPMENT (Branch: development)
-            # ===================================================
-            if [ "${{ github.ref }}" = "refs/heads/development" ]; then
-              echo "🚧 STARTING DEPLOYMENT TO DEVELOPMENT..."
-              
-              TARGET_DIR="/var/www/trevio-dev"
-              BRANCH="development"
-              
-              sudo mkdir -p $TARGET_DIR
-              sudo chown -R $USER:$USER $TARGET_DIR
-              
-              cd $TARGET_DIR
-              
-              git config --global --add safe.directory $TARGET_DIR
-              
-              if [ ! -d ".git" ]; then
-                echo "📂 Cloning Repository for the first time..."
-                git clone -b $BRANCH git@github.com:${{ github.repository }}.git .
-              else
-                echo "🔄 Updating Repository..."
-                
-                # Abaikan chmod changes
-                git config core.filemode false
-                
-                # Hard Reset (Paksa update)
-                git fetch origin $BRANCH
-                git reset --hard origin/$BRANCH
-              fi
-              
-              echo "🔒 Fixing Permissions..."
-              sudo chown -R www-data:www-data $TARGET_DIR
-              sudo chmod -R 775 $TARGET_DIR
-              
-              echo "✅ DEVELOPMENT DEPLOYMENT SUCCESS!"
+            
+            cd ${{ env.DEPLOY_PATH }}
+            
+            # ==========================================
+            # 2. Git Operations
+            # ==========================================
+            echo "📥 Fetching latest changes from GitHub..."
+            
+            git config --global --add safe.directory ${{ env.DEPLOY_PATH }}
+            git config core.filemode false
+            
+            # Store current commit for rollback
+            CURRENT_COMMIT=$(git rev-parse HEAD)
+            echo "Current commit: $CURRENT_COMMIT"
+            
+            # Fetch and reset
+            git fetch origin development
+            git reset --hard origin/development
+            git clean -fd
+            
+            NEW_COMMIT=$(git rev-parse HEAD)
+            echo "New commit: $NEW_COMMIT"
+            
+            # ==========================================
+            # 3. Dependency Management
+            # ==========================================
+            echo "📦 Managing dependencies..."
+            
+            # Composer
+            if [ -f "composer.json" ]; then
+              echo "Installing Composer dependencies..."
+              composer install \
+                --no-dev \
+                --no-interaction \
+                --prefer-dist \
+                --optimize-autoloader \
+                --no-progress \
+                --no-suggest 2>&1 | grep -v "Generating optimized autoload files"
             fi
+            
+            # NPM (only if needed)
+            if [ -f "package.json" ]; then
+              echo "Installing NPM dependencies..."
+              npm ci --production --silent
+              
+              # Build assets if needed
+              if [ -f "tailwind.config.js" ]; then
+                echo "Building Tailwind CSS..."
+                npm run build --if-present
+              fi
+            fi
+            
+            # ==========================================
+            # 4. Application Maintenance
+            # ==========================================
+            echo "🔧 Running maintenance tasks..."
+            
+            # Clear application cache
+            if [ -d "cache" ]; then
+              rm -rf cache/*
+              echo "✅ Cache cleared"
+            fi
+            
+            # Clear logs older than 7 days (optional)
+            if [ -d "logs" ]; then
+              find logs/ -name "*.log" -mtime +7 -delete 2>/dev/null || true
+              echo "✅ Old logs cleaned"
+            fi
+            
+            # ==========================================
+            # 5. Security & Permissions
+            # ==========================================
+            echo "🔒 Setting secure permissions..."
+            
+            # Directories: 755 (rwxr-xr-x)
+            find ${{ env.DEPLOY_PATH }} -type d -exec chmod 755 {} \;
+            
+            # Files: 644 (rw-r--r--)
+            find ${{ env.DEPLOY_PATH }} -type f -exec chmod 644 {} \;
+            
+            # Writable directories: 777 (rwxrwxrwx)
+            chmod -R 777 logs/ 2>/dev/null || true
+            chmod -R 777 cache/ 2>/dev/null || true
+            chmod -R 777 public/uploads/ 2>/dev/null || true
+            
+            # Protect sensitive files
+            chmod 600 .env 2>/dev/null || true
+            chmod 600 config/*.php 2>/dev/null || true
+            
+            # ==========================================
+            # 6. Health Check
+            # ==========================================
+            echo "🏥 Running health check..."
+            
+            # Wait for app to be ready
+            sleep 2
+            
+            # Check if site is reachable (optional, requires curl)
+            if command -v curl &> /dev/null; then
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" https://trevio.mfjrxn.eu.org || echo "000")
+              
+              if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 301 ] || [ "$HTTP_CODE" -eq 302 ]; then
+                echo "✅ Health check passed (HTTP $HTTP_CODE)"
+              else
+                echo "⚠️  Warning: Health check returned HTTP $HTTP_CODE"
+                # Don't fail deployment on health check failure
+                # Uncomment below to enable auto-rollback
+                # echo "Rolling back to $CURRENT_COMMIT..."
+                # git reset --hard $CURRENT_COMMIT
+                # exit 1
+              fi
+            fi
+            
+            # ==========================================
+            # 7. Post-deployment Summary
+            # ==========================================
+            echo "========================================="
+            echo "✅ Deployment Completed Successfully!"
+            echo "Environment: ${{ env.APP_ENV }}"
+            echo "Commit: $NEW_COMMIT"
+            echo "Time: $(date)"
+            echo "🌐 Site: https://trevio.mfjrxn.eu.org"
+            echo "========================================="
+      
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed! Check logs above."
+          # Add notification here (Slack, Discord, Email, etc)
