@@ -29,7 +29,18 @@ location ~* ^.+\.(css|js|jpg|jpeg|gif|png|ico|...)$ {
 - Load time lebih cepat 3-5x
 
 #### **FastCGI Buffer Optimization**
+
+> **⚠️ IMPORTANT NOTE:**  
+> Buffer settings (`fastcgi_buffer_size`, `fastcgi_buffers`, etc.) have been **removed** from the vhost config because:
+> 1. CloudPanel already sets these in `/etc/nginx/global_settings`
+> 2. Duplicate settings cause Nginx config test to fail
+> 3. Global settings are sufficient for most PHP applications
+> 
+> If you need custom buffer sizes, modify `/etc/nginx/global_settings` instead.
+
+**Default CloudPanel Buffer Settings:**
 ```nginx
+# Already set in /etc/nginx/global_settings
 fastcgi_buffer_size 128k;
 fastcgi_buffers 256 16k;
 fastcgi_busy_buffers_size 256k;
@@ -420,6 +431,45 @@ tail -f /var/log/nginx/access.log | awk '{print $NF}' | sort -n
 ---
 
 ## 🔧 Troubleshooting
+
+### Issue: "fastcgi_buffer_size" directive is duplicate
+**Error:**
+```
+nginx: [emerg] "fastcgi_buffer_size" directive is duplicate
+```
+
+**Cause:** Buffer settings already defined in `/etc/nginx/global_settings`
+
+**Solution:**
+```nginx
+# REMOVE these lines from vhost config:
+# fastcgi_buffer_size 128k;
+# fastcgi_buffers 256 16k;
+# fastcgi_busy_buffers_size 256k;
+# fastcgi_temp_file_write_size 256k;
+
+# CloudPanel already sets these globally
+```
+
+### Issue: "listen ... http2" directive is deprecated
+**Error:**
+```
+nginx: [warn] the "listen ... http2" directive is deprecated
+```
+
+**Cause:** Old syntax for HTTP/2
+
+**Solution:**
+```nginx
+# OLD (deprecated):
+listen 443 ssl http2;
+
+# NEW (correct):
+listen 443 ssl;
+http2 on;
+```
+
+**Note:** Our config already uses the new syntax. If you see this error, check other vhost files in `/etc/nginx/sites-enabled/`
 
 ### Issue: 502 Bad Gateway
 **Cause:** PHP-FPM not running or wrong port

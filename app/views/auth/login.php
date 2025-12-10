@@ -33,17 +33,13 @@ if (isset($_SESSION['is_logged_in']) && $_SESSION['is_logged_in'] === true) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
-                    colors: { trevio: '#0EA5E9', 'trevio-dark': '#0284C7' }
-                }
-            }
-        };
-    </script>
+    <style type="text/tailwindcss">
+        @theme {
+            --font-sans: 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif';
+            --color-trevio: #0EA5E9;
+            --color-trevio-dark: #0284C7;
+        }
+    </style>
 </head>
 
 <body class="min-h-screen bg-[#F5F7FA] font-sans text-base text-[#111827]">
