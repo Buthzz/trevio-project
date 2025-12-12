@@ -432,6 +432,33 @@ tail -f /var/log/nginx/access.log | awk '{print $NF}' | sort -n
 
 ## 🔧 Troubleshooting
 
+### Issue: Custom error pages not showing (default Nginx 404/500 displayed)
+**Problem:**
+```
+404 Not Found
+nginx
+```
+
+**Cause:** CloudPanel uses proxy setup - errors from backend not intercepted
+
+**Solution:**
+```nginx
+# Add to proxy server block (port 443)
+proxy_intercept_errors on;
+
+# Update error location to proxy to backend
+location ~ ^/errors/(403|404|500)$ {
+    internal;
+    {{varnish_proxy_pass}}
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+```
+
+**Note:** Without `proxy_intercept_errors on`, Nginx will show default error pages instead of proxying to your custom error pages.
+
 ### Issue: "fastcgi_buffer_size" directive is duplicate
 **Error:**
 ```
