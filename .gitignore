@@ -21,3 +21,17 @@ Thumbs.db
 
 # Composer
 vendor/
+
+# Node (not needed anymore - using CDN)
+node_modules/
+package-lock.json
+
+# Database backups
+database/backup/*.sql
+database/*.sql
+!database/seeders.sql
+!database/trevio_final.sql
+
+# Temporary files
+*.tmp
+*.cache

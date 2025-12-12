@@ -2,8 +2,8 @@
 
 > Final Project - Web Application Programming | Ganjil 2025
 
-[![PHP](https://img.shields.io/badge/PHP-8.0+-777BB4?logo=php&logoColor=white)](https://php.net)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?logo=mysql&logoColor=white)](https://mysql.com)
+[![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white)](https://php.net)
+[![MariaDB](https://img.shields.io/badge/MariaDB-10.6+-003545?logo=mariadb&logoColor=white)](https://mariadb.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0+-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 
 ---
@@ -49,7 +49,7 @@
 ## 👥 User Roles
 
 ### **Customer**
-- Register/Login (Email + Password / Google OAuth)
+- Register/Login (Email + Password)
 - Browse & search hotels
 - Check room availability (real-time slot check)
 - Book multiple rooms
@@ -60,7 +60,7 @@
 - Write reviews & ratings
 
 ### **Hotel Owner**
-- Register/Login (Email + Password / Google OAuth)
+- Register/Login (Email + Password)
 - Add/manage hotels
 - Add/manage rooms (set default slot count)
 - View bookings
@@ -82,29 +82,28 @@
 ## 🛠️ Tech Stack
 
 ### **Backend:**
-- PHP 8.0+ (Native MVC Pattern)
-- MySQL 8.0+
+- PHP 8.2 (Native MVC Pattern)
+- MariaDB 10.6+
 - PHPMailer (email notifications)
-- WhatsApp API (Fonnte/Wablas)
-- Google OAuth 2.0 (Sign in with Google)
+- WhatsApp API (Fonnte)
+- mPDF (PDF generation)
 
 ### **Frontend:**
 - Tailwind CSS 3.0+ (styling)
 - Chart.js (reports & statistics)
-- SweetAlert2 (beautiful alerts)
 - Vanilla JavaScript
 - Google Fonts
 
 ### **Deployment:**
 - VPS Server (Ubuntu/CentOS)
-- Apache/Nginx
+- Nginx Web Server
 - SSL Certificate (Let's Encrypt)
 
 ---
 
 ## 📊 Database Structure
 
-**9 Tables:**
+**Main Tables:**
 
 1. **users** - All users (customer, owner, admin)
 2. **hotels** - Hotels (owned by owners)
@@ -114,26 +113,26 @@
 6. **refunds** - Refund requests & processing
 7. **reviews** - Customer reviews & ratings
 8. **notifications** - Notification logs (email & WhatsApp)
-9. **admin_activities** - Admin action audit log
 
 See full schema: [database/trevio_final.sql](database/trevio_final.sql)
 
-See ERD: [docs/ERD.png](docs/ERD.png)
+See ERD: [docs/ERD.png](docs/ERD.png) | [docs/ERD.md](docs/ERD.md)
 
 ---
 
 ## 🚀 Installation
 
 ### **Prerequisites:**
-- PHP >= 8.0
-- MySQL >= 8.0
+- PHP >= 8.2
+- MariaDB >= 10.6
 - Composer (optional, for dependencies)
 - VPS Server with SSH access
+- Nginx Web Server
 
 ### **1. Clone Repository**
 ```bash
-git clone https://github.com/your-team/trevio.git
-cd trevio
+git clone https://github.com/Buthzz/trevio-project.git
+cd trevio-project
 ```
 
 ### **2. Configure Environment**
@@ -166,24 +165,21 @@ MAIL_FROM=noreply@trevio.com
 
 # WhatsApp (Fonnte)
 WHATSAPP_API_KEY=your_fonnte_api_key
-WHATSAPP_ENABLED=true
+WHATSAPP_ENABLED=false
+WHATSAPP_PROVIDER=fonnte
+WHATSAPP_API_URL=https://api.fonnte.com/send
 
-# Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-GOOGLE_REDIRECT_URI=https://trevio.yourdomain.com/auth/google-callback
+# Google Maps (Optional)
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 ```
 
 ### **3. Database Setup**
 ```bash
 # Create database
-mysql -u root -p -e "CREATE DATABASE trevio"
+mariadb -u root -p -e "CREATE DATABASE trevio"
 
 # Import schema
-mysql -u root -p trevio < database/trevio_final.sql
-
-# Import sample data (optional)
-mysql -u root -p trevio < database/seeders.sql
+mariadb -u root -p trevio < database/trevio_final.sql
 ```
 
 ### **4. Set Permissions**
@@ -198,13 +194,6 @@ chown -R www-data:www-data logs
 ```
 
 ### **5. Configure Web Server**
-
-**Apache (.htaccess already included):**
-```apache
-# Enable mod_rewrite
-sudo a2enmod rewrite
-sudo systemctl restart apache2
-```
 
 **Nginx:**
 ```nginx
@@ -336,29 +325,6 @@ Sent to **OWNER** only for:
 
 ---
 
-## 🔐 Google OAuth Setup
-
-### **1. Create Google OAuth App:**
-1. Go to: https://console.cloud.google.com/
-2. Create new project: "Trevio"
-3. Enable **Google+ API**
-4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI:
-   ```
-   https://trevio.yourdomain.com/auth/google-callback
-   ```
-6. Copy Client ID & Client Secret
-
-### **2. Configure in .env:**
-```env
-GOOGLE_CLIENT_ID=your_client_id_here.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your_client_secret_here
-GOOGLE_REDIRECT_URI=https://trevio.yourdomain.com/auth/google-callback
-```
-
-### **3. Add Google Sign-In Button:**
-Already included in `views/auth/login.php`
-
 ---
 
 ## 📊 Reports & Statistics
@@ -462,13 +428,13 @@ trevio/
 ssh root@your-vps-ip
 ```
 
-**2. Install LAMP Stack:**
+**2. Install LEMP Stack:**
 ```bash
 # Update system
 apt update && apt upgrade -y
 
-# Install Apache, MySQL, PHP
-apt install apache2 mysql-server php8.0 php8.0-mysql php8.0-curl php8.0-gd php8.0-mbstring -y
+# Install Nginx, MariaDB, PHP
+apt install nginx mariadb-server php8.2-fpm php8.2-mysql php8.2-curl php8.2-gd php8.2-mbstring php8.2-xml -y
 ```
 
 **3. Clone & Setup:**
@@ -482,7 +448,7 @@ nano .env  # Configure
 
 **4. Database:**
 ```bash
-mysql -u root -p < database/trevio_final.sql
+mariadb -u root -p < database/trevio_final.sql
 ```
 
 **5. Permissions:**
@@ -491,30 +457,39 @@ chown -R www-data:www-data /var/www/trevio
 chmod -R 755 /var/www/trevio/public/uploads
 ```
 
-**6. Apache Config:**
+**6. Nginx Config:**
 ```bash
-nano /etc/apache2/sites-available/trevio.conf
+nano /etc/nginx/sites-available/trevio
 ```
 
-```apache
-<VirtualHost *:80>
-    ServerName trevio.yourdomain.com
-    DocumentRoot /var/www/trevio/public
+```nginx
+server {
+    listen 80;
+    server_name trevio.yourdomain.com;
+    root /var/www/trevio/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
     
-    <Directory /var/www/trevio/public>
-        AllowOverride All
-        Require all granted
-    </Directory>
-    
-    ErrorLog ${APACHE_LOG_DIR}/trevio-error.log
-    CustomLog ${APACHE_LOG_DIR}/trevio-access.log combined
-</VirtualHost>
+    error_log /var/log/nginx/trevio-error.log;
+    access_log /var/log/nginx/trevio-access.log;
+}
 ```
 
 ```bash
-a2ensite trevio
-a2enmod rewrite
-systemctl restart apache2
+ln -s /etc/nginx/sites-available/trevio /etc/nginx/sites-enabled/
+nginx -t
+systemctl restart nginx
+systemctl restart php8.2-fpm
 ```
 
 **7. SSL (Let's Encrypt):**
@@ -523,7 +498,7 @@ apt install certbot python3-certbot-apache -y
 certbot --apache -d trevio.yourdomain.com
 ```
 
-**Full guide:** [docs/Deployment_Guide.md](docs/Deployment_Guide.md)
+**Full guide:** See [docs/Deployment_Guide.md](docs/Deployment_Guide.md) for detailed VPS deployment steps.
 
 ---
 
@@ -532,7 +507,6 @@ certbot --apache -d trevio.yourdomain.com
 - ✨ Responsive design (mobile-first)
 - 🎨 Modern Tailwind CSS
 - 📊 Interactive charts (Chart.js)
-- 🔔 Beautiful alerts (SweetAlert2)
 - 🖼️ Image galleries
 - ⭐ Star rating system
 - 📱 Mobile-friendly forms
@@ -543,10 +517,17 @@ certbot --apache -d trevio.yourdomain.com
 
 ## 📝 Documentation
 
-- [ERD Diagram](docs/ERD.png)
-- [User Flow](docs/User_Flow.pdf)
+**📚 Documentation Hub:** [docs/INDEX.md](docs/INDEX.md)
+
+### Core Documentation:
+- [ERD Diagram (PNG)](docs/ERD.png) | [ERD (Markdown)](docs/ERD.md)
+- [User Flow Documentation](docs/Userflow.md)
 - [Deployment Guide](docs/Deployment_Guide.md)
-- [API Documentation](docs/API_Documentation.md) (if applicable)
+- [Notification System](docs/notification-system.md)
+- [Git Workflow](docs/git-workflow.md)
+- [Task Division](docs/pembagian-tugas.md)
+- [Security Checklist](docs/SECURITY_PRODUCTION_CHECKLIST.md)
+- [Nginx Error Pages](docs/nginx-error-pages.md)
 
 ---
 
@@ -554,21 +535,23 @@ certbot --apache -d trevio.yourdomain.com
 
 | Name | Role | Responsibilities |
 |------|------|------------------|
-| **Hendrik** | Project Manager & Full Stack | Backend core, coordination |
-| **Fajar** | Full Stack & DevOps | Backend, deployment, notifications |
-| **Syadat** | Database & QA | Database design, testing |
-| **Zek** | UI/UX Designer | Interface design, user experience |
-| **Reno** | Frontend Developer | Frontend implementation, Tailwind |
+| **Hendrik** | Project Manager & Full Stack | Backend core, MVC structure, coordination |
+| **Fajar** | Backend & DevOps | Payment/Refund logic, database, deployment |
+| **Syadat** | Backend & QA | Owner controllers, hotel/room CRUD, testing |
+| **Zakaria** | UI/UX & Frontend | Customer views, search, Tailwind design |
+| **Reno** | Frontend Developer | Owner/Admin dashboards, Chart.js, alerts |
+
+See detailed task division: [docs/pembagian-tugas.md](docs/pembagian-tugas.md)
 
 ---
 
 ## 📊 Project Statistics
 
-- **Total Files:** 50+
-- **Lines of Code:** 5000+
-- **Database Tables:** 9
-- **Main Transactions:** 3
-- **User Roles:** 3
+- **Total Files:** 100+
+- **Lines of Code:** 10,000+
+- **Database Tables:** 8+
+- **Main Transactions:** 3 (Booking, Payment, Refund)
+- **User Roles:** 3 (Customer, Owner, Admin)
 - **Notification Channels:** 2 (Email + WhatsApp)
 
 ---
@@ -587,10 +570,11 @@ post_max_size = 10M
 - Check SMTP settings
 - Check firewall (port 587)
 
-### **Issue: Google OAuth not working**
-- Verify redirect URI exactly matches
-- Check Client ID & Secret
-- Enable Google+ API
+### **Issue: Permission denied on uploads**
+```bash
+chmod -R 755 public/uploads
+chown -R www-data:www-data public/uploads
+```
 
 ---
 
@@ -598,11 +582,12 @@ post_max_size = 10M
 
 ### **v1.0.0 (Current)**
 - Initial release
-- Manual payment verification
-- Room slot management
+- Manual payment verification system
+- Automatic room slot management
 - Email & WhatsApp notifications
-- Google OAuth integration
 - Reviews & rating system
+- Multi-role dashboard (Admin, Owner, Customer)
+- Refund processing workflow
 
 ---
 
@@ -610,26 +595,27 @@ post_max_size = 10M
 
 For questions or issues:
 - **Project Manager:** Hendrik - hendrik@email.com
-- **Lecturer:** Moch Kautsar Sophan
+- **Lecturer:** Moh. Kautsar Sophan , S.Kom., M.MT
 
 ---
 
 ## 📜 License
 
-This project is created for educational purposes as part of Web Application Programming final project.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-**© 2025 Trevio Team. All Rights Reserved.**
+This project was created for educational purposes as part of the Web Application Programming final project at Universitas Nahdlatul Ulama Surabaya.
+
+**© 2025 Trevio Development Team. All Rights Reserved.**
 
 ---
 
 ## 🙏 Acknowledgments
 
-- Moch Kautsar Sophan (Lecturer)
+- Moh. Kautsar Sophan , S.Kom., M.MT (Lecturer)
 - PHP Community
 - Tailwind CSS Team
 - Chart.js Contributors
-- SweetAlert2 Team
-- Google OAuth Documentation
+- PHPMailer & mPDF Libraries
 - Fonnte WhatsApp API
 
 ---

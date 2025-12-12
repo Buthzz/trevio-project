@@ -1,14 +1,20 @@
 <?php
 
-//fix
+// Load Environment Variables from .env file
+if (file_exists(__DIR__ . '/../helpers/env_loader.php')) {
+    require_once __DIR__ . '/../helpers/env_loader.php';
+}
+
+// Load Composer Autoloader jika ada
 if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
     require_once __DIR__ . '/../vendor/autoload.php';
 }
-// Autoloader dengan Fix untuk Linux/VPS Case-Sensitivity
+
+// Custom Autoloader
 spl_autoload_register(function ($class) {
     // Prefix Namespace
     $prefix = 'App\\';
-    $base_dir = __DIR__ . '/';
+    $base_dir = __DIR__ . '/'; // Menunjuk ke folder app/
 
     // Cek apakah class menggunakan prefix App\
     $len = strlen($prefix);
@@ -16,40 +22,40 @@ spl_autoload_register(function ($class) {
         return;
     }
 
-    // Ambil nama relative class (contoh: Core\App)
+    // Ambil nama relative class (contoh: Core\Controller)
     $relative_class = substr($class, $len);
-    
-    // 1. Normalisasi namespace ke path (ubah \ jadi /)
-    $path = str_replace('\\', '/', $relative_class);
-    
-    // Path 1: Sesuai Namespace (Capitalized) - Contoh: app/Core/App.php
-    // Ini standar PSR-4 yang benar
-    $file_psr4 = $base_dir . $path . '.php';
-    
-    // Path 2: Folder Lowercase (Lowercase) - Contoh: app/core/App.php
-    // Ini fix untuk struktur folder lowercase kamu
-    $folder = strtolower(dirname($path)); // Ambil folder dan kecilkan hurufnya
-    $filename = basename($path);          // Ambil nama file (Case sensitive, biasanya tetap Capital)
-    $file_lower = $base_dir . $folder . '/' . $filename . '.php';
 
-    // Cek keberadaan file
-    if (file_exists($file_psr4)) {
-        require $file_psr4;
-    } else if (file_exists($file_lower)) {
-        require $file_lower;
-    } else {
-        // Debugging (Hapus // jika masih error untuk melihat apa yang dicari sistem)
-        // echo "Class not found. Tried: <br>1. $file_psr4 <br>2. $file_lower <br>";
+    // Normalisasi namespace ke path (ubah \ jadi /)
+    $path = str_replace('\\', '/', $relative_class);
+
+    // Pecah path untuk manipulasi folder
+    $parts = explode('/', $path);
+    $filename = array_pop($parts); // Ambil nama file (misal: Controller)
+    $folder_path = implode('/', $parts); // Ambil sisa path folder (misal: Core)
+
+    // Definisikan beberapa kemungkinan lokasi file untuk mengatasi masalah Case Sensitivity
+    $paths_to_check = [
+        // 1. Path Standar (Sesuai Namespace) -> app/Core/Controller.php
+        $base_dir . $folder_path . '/' . $filename . '.php',
+
+        // 2. Folder Lowercase (Paling sering dipakai di framework custom) -> app/core/Controller.php
+        $base_dir . strtolower($folder_path) . '/' . $filename . '.php',
+
+        // 3. Full Lowercase -> app/core/controller.php
+        $base_dir . strtolower($folder_path) . '/' . strtolower($filename) . '.php'
+    ];
+
+    // Cek satu per satu
+    foreach ($paths_to_check as $file) {
+        if (file_exists($file)) {
+            require_once $file;
+            return;
+        }
     }
 });
 
-// Load application configuration
-if (file_exists(__DIR__ . '/../config/app.php')) {
+// Load Config & Helpers
+if (file_exists(__DIR__ . '/../config/app.php'))
     require_once __DIR__ . '/../config/app.php';
-}
-
-// Environment variables are loaded by config/app.php
-// Helper functions can be loaded here if needed
-if (file_exists(__DIR__ . '/../helpers/functions.php')) {
+if (file_exists(__DIR__ . '/../helpers/functions.php'))
     require_once __DIR__ . '/../helpers/functions.php';
-}

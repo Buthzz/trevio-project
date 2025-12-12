@@ -2,19 +2,21 @@
 
 namespace App\Core;
 
-class App {
+class App
+{
     protected $controller = 'HomeController'; // Default Controller
     protected $method = 'index';              // Default Method
     protected $params = [];
 
-    public function __construct() {
+    public function __construct()
+    {
         $url = $this->parseUrl();
 
         // 1. ROUTING KHUSUS: ADMIN & OWNER
         // Cek jika URL dimulai dengan 'admin' atau 'owner'
         if (isset($url[0]) && ($url[0] === 'admin' || $url[0] === 'owner')) {
             $rolePrefix = ucfirst($url[0]); // Menjadi 'Admin' atau 'Owner'
-            
+
             // Hapus prefix ('admin'/'owner') dari array url
             array_shift($url);
 
@@ -22,7 +24,7 @@ class App {
             if (isset($url[0])) {
                 // Ambil nama resource (misal: 'users', 'hotels')
                 $resource = ucfirst($url[0]);
-                
+
                 // Coba cari controller spesifik dengan pola: Role + Resource + Controller
                 // Contoh: 'Owner' + 'Hotel' + 'Controller' = OwnerHotelController
                 $candidates = [
@@ -33,7 +35,7 @@ class App {
                 $found = false;
                 foreach ($candidates as $candidate) {
                     $pathLower = '../app/controllers/' . $candidate . '.php';
-                    
+
                     if (file_exists($pathLower)) {
                         $this->controller = $candidate;
                         unset($url[0]); // Hapus resource dari URL karena sudah jadi controller
@@ -45,11 +47,11 @@ class App {
                 // Jika controller spesifik tidak ditemukan (misal URL: /owner/profile atau /owner/logout)
                 // Maka anggap segmen ini adalah method dari controller utama (OwnerController/AdminController)
                 if (!$found) {
-                     $mainController = $rolePrefix . 'Controller'; // AdminController atau OwnerController
-                     if (file_exists('../app/controllers/' . $mainController . '.php')) {
-                         $this->controller = $mainController;
-                         // JANGAN unset($url[0]) di sini, biarkan itu menjadi nama method nanti
-                     }
+                    $mainController = $rolePrefix . 'Controller'; // AdminController atau OwnerController
+                    if (file_exists('../app/controllers/' . $mainController . '.php')) {
+                        $this->controller = $mainController;
+                        // JANGAN unset($url[0]) di sini, biarkan itu menjadi nama method nanti
+                    }
                 }
             } else {
                 // Jika URL hanya '/admin' atau '/owner', arahkan ke Controller Utama Dashboard
@@ -58,7 +60,7 @@ class App {
                     $this->controller = $mainController;
                 }
             }
-        } 
+        }
         // 2. ROUTING STANDAR (NON-ADMIN/OWNER)
         else if (isset($url[0])) {
             // Special case untuk Error pages
@@ -68,20 +70,24 @@ class App {
             } else {
                 $u_controller = ucfirst($url[0]) . 'Controller';
                 $pathLower = '../app/controllers/' . $u_controller . '.php';
-                
+
                 if (file_exists($pathLower)) {
                     $this->controller = $u_controller;
                     unset($url[0]);
+                } else {
+                    // Controller tidak ditemukan, redirect ke 404
+                    $this->show404();
+                    return;
                 }
             }
         }
 
         // 3. INSTANSIASI CONTROLLER
         require_once '../app/controllers/' . $this->controller . '.php';
-        
+
         // Gunakan namespace penuh
         $controllerClass = "\\App\\Controllers\\" . $this->controller;
-        
+
         if (class_exists($controllerClass)) {
             $this->controller = new $controllerClass;
         } else {
@@ -97,6 +103,10 @@ class App {
             if (method_exists($this->controller, $url[0])) {
                 $this->method = $url[0];
                 unset($url[0]);
+            } else {
+                // Method tidak ditemukan, redirect ke 404
+                $this->show404();
+                return;
             }
         }
 
@@ -107,10 +117,23 @@ class App {
         call_user_func_array([$this->controller, $this->method], $this->params);
     }
 
-    public function parseUrl() {
+    /**
+     * Show 404 Error Page
+     */
+    protected function show404()
+    {
+        http_response_code(404);
+        require_once '../app/controllers/ErrorController.php';
+        $errorController = new \App\Controllers\ErrorController();
+        $errorController->error404();
+        exit;
+    }
+
+    public function parseUrl()
+    {
         // Fix untuk Nginx & Apache compatibility
         $requestUri = $_SERVER['REQUEST_URI'];
-        
+
         // Hapus query string (?foo=bar)
         if (false !== $pos = strpos($requestUri, '?')) {
             $requestUri = substr($requestUri, 0, $pos);
@@ -123,7 +146,7 @@ class App {
         }
 
         $url = trim($requestUri, '/');
-        
+
         if (!empty($url)) {
             return explode('/', filter_var($url, FILTER_SANITIZE_URL));
         }

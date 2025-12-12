@@ -10,7 +10,7 @@
 2. Make changes
 3. Commit often: `git commit -m "feat: description"`
 4. Push: `git push origin your-name-feature`
-5. Create PR to `dev` (NOT `main`)
+5. Create PR to `development` (NOT `main`)
 6. Wait for Hendrik's review
 
 ## If You Need to Edit Someone Else's File
@@ -21,7 +21,7 @@
 ## Merge Conflict?
 1. Don't panic
 2. Ask Hendrik for help
-3. Or: `git pull origin dev` → resolve conflicts → commit
+3. Or: `git pull origin development` → resolve conflicts → commit
 
 ---
 
