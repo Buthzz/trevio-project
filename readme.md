@@ -2,8 +2,8 @@
 
 > Final Project - Web Application Programming | Ganjil 2025
 
-[![PHP](https://img.shields.io/badge/PHP-8.0+-777BB4?logo=php&logoColor=white)](https://php.net)
-[![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?logo=mysql&logoColor=white)](https://mysql.com)
+[![PHP](https://img.shields.io/badge/PHP-8.2-777BB4?logo=php&logoColor=white)](https://php.net)
+[![MariaDB](https://img.shields.io/badge/MariaDB-10.6+-003545?logo=mariadb&logoColor=white)](https://mariadb.org)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.0+-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
 
 ---
@@ -82,8 +82,8 @@
 ## 🛠️ Tech Stack
 
 ### **Backend:**
-- PHP 7.4+ / 8.0+ (Native MVC Pattern)
-- MySQL 8.0+
+- PHP 8.2 (Native MVC Pattern)
+- MariaDB 10.6+
 - PHPMailer (email notifications)
 - WhatsApp API (Fonnte)
 - mPDF (PDF generation)
@@ -91,13 +91,12 @@
 ### **Frontend:**
 - Tailwind CSS 3.0+ (styling)
 - Chart.js (reports & statistics)
-- SweetAlert2 (beautiful alerts)
 - Vanilla JavaScript
 - Google Fonts
 
 ### **Deployment:**
 - VPS Server (Ubuntu/CentOS)
-- Apache/Nginx
+- Nginx Web Server
 - SSL Certificate (Let's Encrypt)
 
 ---
@@ -124,10 +123,11 @@ See ERD: [docs/ERD.png](docs/ERD.png) | [docs/ERD.md](docs/ERD.md)
 ## 🚀 Installation
 
 ### **Prerequisites:**
-- PHP >= 8.0
-- MySQL >= 8.0
+- PHP >= 8.2
+- MariaDB >= 10.6
 - Composer (optional, for dependencies)
 - VPS Server with SSH access
+- Nginx Web Server
 
 ### **1. Clone Repository**
 ```bash
@@ -176,10 +176,10 @@ GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
 ### **3. Database Setup**
 ```bash
 # Create database
-mysql -u root -p -e "CREATE DATABASE trevio"
+mariadb -u root -p -e "CREATE DATABASE trevio"
 
 # Import schema
-mysql -u root -p trevio < database/trevio_final.sql
+mariadb -u root -p trevio < database/trevio_final.sql
 ```
 
 ### **4. Set Permissions**
@@ -194,13 +194,6 @@ chown -R www-data:www-data logs
 ```
 
 ### **5. Configure Web Server**
-
-**Apache (.htaccess already included):**
-```apache
-# Enable mod_rewrite
-sudo a2enmod rewrite
-sudo systemctl restart apache2
-```
 
 **Nginx:**
 ```nginx
@@ -435,13 +428,13 @@ trevio/
 ssh root@your-vps-ip
 ```
 
-**2. Install LAMP Stack:**
+**2. Install LEMP Stack:**
 ```bash
 # Update system
 apt update && apt upgrade -y
 
-# Install Apache, MySQL, PHP
-apt install apache2 mysql-server php8.0 php8.0-mysql php8.0-curl php8.0-gd php8.0-mbstring -y
+# Install Nginx, MariaDB, PHP
+apt install nginx mariadb-server php8.2-fpm php8.2-mysql php8.2-curl php8.2-gd php8.2-mbstring php8.2-xml -y
 ```
 
 **3. Clone & Setup:**
@@ -455,7 +448,7 @@ nano .env  # Configure
 
 **4. Database:**
 ```bash
-mysql -u root -p < database/trevio_final.sql
+mariadb -u root -p < database/trevio_final.sql
 ```
 
 **5. Permissions:**
@@ -464,30 +457,39 @@ chown -R www-data:www-data /var/www/trevio
 chmod -R 755 /var/www/trevio/public/uploads
 ```
 
-**6. Apache Config:**
+**6. Nginx Config:**
 ```bash
-nano /etc/apache2/sites-available/trevio.conf
+nano /etc/nginx/sites-available/trevio
 ```
 
-```apache
-<VirtualHost *:80>
-    ServerName trevio.yourdomain.com
-    DocumentRoot /var/www/trevio/public
+```nginx
+server {
+    listen 80;
+    server_name trevio.yourdomain.com;
+    root /var/www/trevio/public;
+    index index.php;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
     
-    <Directory /var/www/trevio/public>
-        AllowOverride All
-        Require all granted
-    </Directory>
-    
-    ErrorLog ${APACHE_LOG_DIR}/trevio-error.log
-    CustomLog ${APACHE_LOG_DIR}/trevio-access.log combined
-</VirtualHost>
+    error_log /var/log/nginx/trevio-error.log;
+    access_log /var/log/nginx/trevio-access.log;
+}
 ```
 
 ```bash
-a2ensite trevio
-a2enmod rewrite
-systemctl restart apache2
+ln -s /etc/nginx/sites-available/trevio /etc/nginx/sites-enabled/
+nginx -t
+systemctl restart nginx
+systemctl restart php8.2-fpm
 ```
 
 **7. SSL (Let's Encrypt):**
@@ -505,7 +507,6 @@ certbot --apache -d trevio.yourdomain.com
 - ✨ Responsive design (mobile-first)
 - 🎨 Modern Tailwind CSS
 - 📊 Interactive charts (Chart.js)
-- 🔔 Beautiful alerts (SweetAlert2)
 - 🖼️ Image galleries
 - ⭐ Star rating system
 - 📱 Mobile-friendly forms
@@ -516,6 +517,9 @@ certbot --apache -d trevio.yourdomain.com
 
 ## 📝 Documentation
 
+**📚 Documentation Hub:** [docs/INDEX.md](docs/INDEX.md)
+
+### Core Documentation:
 - [ERD Diagram (PNG)](docs/ERD.png) | [ERD (Markdown)](docs/ERD.md)
 - [User Flow Documentation](docs/Userflow.md)
 - [Deployment Guide](docs/Deployment_Guide.md)
@@ -523,6 +527,7 @@ certbot --apache -d trevio.yourdomain.com
 - [Git Workflow](docs/git-workflow.md)
 - [Task Division](docs/pembagian-tugas.md)
 - [Security Checklist](docs/SECURITY_PRODUCTION_CHECKLIST.md)
+- [Nginx Error Pages](docs/nginx-error-pages.md)
 
 ---
 
@@ -590,25 +595,26 @@ chown -R www-data:www-data public/uploads
 
 For questions or issues:
 - **Project Manager:** Hendrik - hendrik@email.com
-- **Lecturer:** Moch Kautsar Sophan
+- **Lecturer:** Moh. Kautsar Sophan , S.Kom., M.MT
 
 ---
 
 ## 📜 License
 
-This project is created for educational purposes as part of Web Application Programming final project.
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-**© 2025 Trevio Team. All Rights Reserved.**
+This project was created for educational purposes as part of the Web Application Programming final project at Universitas Nahdlatul Ulama Surabaya.
+
+**© 2025 Trevio Development Team. All Rights Reserved.**
 
 ---
 
 ## 🙏 Acknowledgments
 
-- Moch Kautsar Sophan (Lecturer)
+- Moh. Kautsar Sophan , S.Kom., M.MT (Lecturer)
 - PHP Community
 - Tailwind CSS Team
 - Chart.js Contributors
-- SweetAlert2 Team
 - PHPMailer & mPDF Libraries
 - Fonnte WhatsApp API
 
